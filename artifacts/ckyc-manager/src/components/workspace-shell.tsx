@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Database,
   FileClock,
+  FileDown,
   FileUp,
   FolderOpen,
   LayoutDashboard,
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/clients', label: 'LMS clients', icon: Database },
   { href: '/requests', label: 'CKYC requests', icon: FileClock },
+  { href: '/download-requests', label: 'CKYC download', icon: FileDown },
 ];
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {

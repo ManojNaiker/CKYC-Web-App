@@ -72,6 +72,23 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Open request details with request content preview and download.
 - Upload a CKYC gateway response text file against its matching request.
 - Preview and download the stored response file.
+- Once a client has either a matched CKYC ID or a completed CKYC error response,
+  exclude that client from future CKYC search request files.
+
+### CKYC download request generation
+
+- Provide a separate CKYC Download tab that accepts the portal `.xlsx` response.
+- Read CKYC IDs from the `ALPHANUMERIC Reference NO` column and match each one
+  to the saved client CKYC response ID to obtain the LMS date of birth.
+- Reject generation when an uploaded reference number cannot be matched to a
+  saved client date of birth; never silently omit it.
+- Generate type 60 rows as:
+  `60|<ALPHANUMERIC Reference NO>|<DD-MM-YYYY DOB>|1||`
+- Generate the type 10 header as:
+  `10|<request-number>|IN2884|1|1BR|<record-count>|||||`
+- Use filename format:
+  `IN2884_1_DDMMYYYY_V1.3_IRA010815_D<request-number>.txt`
+- Download request numbers are unique and begin at `10701`.
 
 ### Workspace and branding
 
@@ -89,6 +106,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 - Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
 - The header uses the total generated KYC row count, not the number of selected clients; there is no branch-code field in the request builder.
 - Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNN.txt`, starting at `S10001`, for example `IN2884_02092026_V1.1_S10001.txt`.
+- CKYC download request IDs begin at `D10701`; the same numeric request ID must
+  appear in the filename and type 10 header.
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers

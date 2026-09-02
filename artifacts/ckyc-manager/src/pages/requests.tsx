@@ -85,7 +85,9 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
     { query: { queryKey: getListClientsQueryKey({ page: 1, pageSize: 200 }) } },
   );
   const generate = useGenerateCkycRequest();
-  const clients = clientsQuery.data?.items ?? [];
+  const clients = (clientsQuery.data?.items ?? []).filter(
+    (client) => client.ckycResponseStatus === null,
+  );
   const selectedClients = clients.filter((client) => selected.includes(client.id));
   let nextSequence = 1;
   const ckycRows = selectedClients.flatMap((client) => {
@@ -205,7 +207,8 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
             </div>
           ) : clients.length === 0 ? (
             <p className="rounded-lg bg-secondary p-4 text-[12px] text-muted-foreground">
-              Import client rows first, then return here to build a request.
+              No awaiting clients are available. Clients with a CKYC ID or a
+              completed error response are excluded from repeat requests.
             </p>
           ) : (
             <div className="max-h-[320px] overflow-y-auto rounded-lg border border-border">

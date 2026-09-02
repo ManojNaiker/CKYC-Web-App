@@ -8,6 +8,7 @@ import Overview from '@/pages/overview';
 import Clients from '@/pages/clients';
 import Requests from '@/pages/requests';
 import RequestDetail from '@/pages/request-detail';
+import DownloadRequests from '@/pages/download-requests';
 import { WorkspaceShell } from '@/components/workspace-shell';
 import {
   Route,
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/clients" component={Clients} />
           <Route path="/requests/:id" component={RequestDetail} />
           <Route path="/requests" component={Requests} />
+          <Route path="/download-requests" component={DownloadRequests} />
           <Route component={NotFound} />
         </Switch>
       </WorkspaceShell>

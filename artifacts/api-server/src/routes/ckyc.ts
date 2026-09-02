@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db, ckycRequestsTable, clientsTable } from "@workspace/db";
 import {
   GenerateCkycRequestBody,
@@ -208,6 +208,31 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
+  const requestedClientIds = [...new Set(data.clients.map((client) => client.clientId))];
+  const requestedClients = await db
+    .select({
+      id: clientsTable.id,
+      responseStatus: clientsTable.ckycResponseStatus,
+    })
+    .from(clientsTable)
+    .where(inArray(clientsTable.id, requestedClientIds));
+  const awaitingClientIds = new Set(
+    requestedClients
+      .filter((client) => client.responseStatus === null)
+      .map((client) => client.id),
+  );
+  const eligibleRows = data.clients
+    .filter((client) => awaitingClientIds.has(client.clientId))
+    .map((client, index) => ({ ...client, sequence: index + 1 }));
+
+  if (!eligibleRows.length) {
+    res.status(400).json({
+      error:
+        "All selected clients already have a CKYC response or error and are excluded from repeat requests.",
+    });
+    return;
+  }
+
   const created = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(10001)`);
     const existingFiles = await tx
@@ -225,10 +250,10 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
       .values({
         fileName: "pending.txt",
         content: "pending",
-        recordCount: data.clients.length,
+        recordCount: eligibleRows.length,
         status: "generated",
         clientMapping: JSON.stringify(
-          data.clients.map((client) => ({
+          eligibleRows.map((client) => ({
             sequence: client.sequence,
             clientId: client.clientId,
           })),
@@ -239,6 +264,8 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
     const fileName = `${data.institutionCode}_${data.fileDate}_${data.version}_S${fileSerial}.txt`;
     const content = createCkycContent({
       ...data,
+      rowCount: String(eligibleRows.length),
+      clients: eligibleRows,
     });
     const [updated] = await tx
       .update(ckycRequestsTable)

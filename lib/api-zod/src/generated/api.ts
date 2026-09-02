@@ -213,3 +213,45 @@ export const UploadCkycResponseResponse = zod.object({
 }))
 
 
+/**
+ * @summary List generated CKYC download request files
+ */
+export const ListCkycDownloadRequestsResponseItem = zod.object({
+  "id": zod.number(),
+  "requestNumber": zod.number(),
+  "fileName": zod.string(),
+  "recordCount": zod.number(),
+  "sourceFileName": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCkycDownloadRequestsResponse = zod.array(ListCkycDownloadRequestsResponseItem)
+
+
+/**
+ * @summary Generate a CKYC download request from a portal Excel response
+ */
+export const generateCkycDownloadRequestBodyInstitutionCodeDefault = `IN2884`;
+export const generateCkycDownloadRequestBodyVersionDefault = `V1.3`;
+export const generateCkycDownloadRequestBodyIraCodeDefault = `IRA010815`;
+
+export const GenerateCkycDownloadRequestBody = zod.object({
+  "sourceFileName": zod.string(),
+  "fileContentBase64": zod.string(),
+  "fileDate": zod.string().describe('Date used in the filename, DDMMYYYY'),
+  "institutionCode": zod.string().default(generateCkycDownloadRequestBodyInstitutionCodeDefault),
+  "version": zod.string().default(generateCkycDownloadRequestBodyVersionDefault),
+  "iraCode": zod.string().default(generateCkycDownloadRequestBodyIraCodeDefault)
+})
+
+export const GenerateCkycDownloadRequestResponse = zod.object({
+  "id": zod.number(),
+  "requestNumber": zod.number(),
+  "fileName": zod.string(),
+  "recordCount": zod.number(),
+  "sourceFileName": zod.string(),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "content": zod.string()
+}))
+
+

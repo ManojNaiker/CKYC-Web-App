@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CkycDownloadRequest,
+  CkycDownloadRequestDetail,
+  CkycDownloadRequestInput,
   CkycFile,
   CkycRequest,
   CkycRequestDetail,
@@ -751,5 +754,153 @@ export const useUploadCkycResponse = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUploadCkycResponseMutationOptions(options));
+    }
+
+export const getListCkycDownloadRequestsUrl = () => {
+
+
+
+
+  return `/api/ckyc/download-requests`
+}
+
+/**
+ * @summary List generated CKYC download request files
+ */
+export const listCkycDownloadRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadRequest[]> => {
+
+  return customFetch<CkycDownloadRequest[]>(getListCkycDownloadRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCkycDownloadRequestsQueryKey = () => {
+    return [
+    `/api/ckyc/download-requests`
+    ] as const;
+    }
+
+
+export const getListCkycDownloadRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCkycDownloadRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycDownloadRequests>>> = ({ signal }) => listCkycDownloadRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCkycDownloadRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listCkycDownloadRequests>>>
+export type ListCkycDownloadRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List generated CKYC download request files
+ */
+
+export function useListCkycDownloadRequests<TData = Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCkycDownloadRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGenerateCkycDownloadRequestUrl = () => {
+
+
+
+
+  return `/api/ckyc/download-requests`
+}
+
+/**
+ * @summary Generate a CKYC download request from a portal Excel response
+ */
+export const generateCkycDownloadRequest = async (ckycDownloadRequestInput: CkycDownloadRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadRequestDetail> => {
+
+  return customFetch<CkycDownloadRequestDetail>(getGenerateCkycDownloadRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(ckycDownloadRequestInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateCkycDownloadRequestMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext> => {
+
+const mutationKey = ['generateCkycDownloadRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, {data: BodyType<CkycDownloadRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateCkycDownloadRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateCkycDownloadRequestMutationResult = NonNullable<Awaited<ReturnType<typeof generateCkycDownloadRequest>>>
+    export type GenerateCkycDownloadRequestMutationBody = BodyType<CkycDownloadRequestInput>
+    export type GenerateCkycDownloadRequestMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate a CKYC download request from a portal Excel response
+ */
+export const useGenerateCkycDownloadRequest = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateCkycDownloadRequest>>,
+        TError,
+        {data: BodyType<CkycDownloadRequestInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateCkycDownloadRequestMutationOptions(options));
     }
 

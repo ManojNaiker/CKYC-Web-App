@@ -4,6 +4,7 @@ import { after, before, describe, it } from "node:test";
 import app from "./app";
 import { pool } from "@workspace/db";
 import { createClientsCsv } from "./routes/clients";
+import ExcelJS from "exceljs";
 
 type ClientInput = {
   loanid: string;
@@ -100,6 +101,7 @@ describe("CKYC file workflow", () => {
   let server: Server;
   let baseUrl: string;
   let requestId: number | undefined;
+  let downloadRequestId: number | undefined;
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
 
@@ -119,6 +121,11 @@ describe("CKYC file workflow", () => {
     await closeServer(server);
     if (requestId !== undefined) {
       await pool.query("DELETE FROM ckyc_requests WHERE id = $1", [requestId]);
+    }
+    if (downloadRequestId !== undefined) {
+      await pool.query("DELETE FROM ckyc_download_requests WHERE id = $1", [
+        downloadRequestId,
+      ]);
     }
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
       `${loanPrefix}%`,
@@ -313,6 +320,91 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(
       updatedBharat?.ckycResponseError ?? "",
       /KYC Number does not exist/,
+    );
+
+    const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...defaults,
+        rowCount: "2",
+        clients: [
+          {
+            clientId: asha.id,
+            name: asha.ClientName,
+            dateOfBirth: "02-04-1990",
+            gender: "F",
+            searchType: "B",
+            searchValue: "ABCDE1234F",
+            sequence: 1,
+          },
+          {
+            clientId: bharat.id,
+            name: bharat.ClientName,
+            dateOfBirth: "15-08-1988",
+            gender: "M",
+            searchType: "B",
+            searchValue: "PQRSX5678K",
+            sequence: 2,
+          },
+        ],
+      }),
+    });
+    assert.equal(repeatResponse.status, 400);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("CKYC Result");
+    sheet.addRow([
+      "Applicant Name",
+      "KYC Number",
+      "ALPHANUMERIC Reference NO",
+      "Download Date",
+      "Username",
+      "User ID",
+      "",
+      "Batch Number",
+    ]);
+    sheet.addRow([
+      "Asha Rao",
+      "30064364932165",
+      "INTEST12345678",
+      "8/5/26 2:07 PM",
+      "Operator",
+      "IRA010815",
+      "",
+      "10504",
+    ]);
+    const fileContentBase64 = Buffer.from(
+      await workbook.xlsx.writeBuffer(),
+    ).toString("base64");
+    const downloaded = await requestJson<{
+      id: number;
+      requestNumber: number;
+      fileName: string;
+      recordCount: number;
+      content: string;
+    }>(baseUrl, "/ckyc/download-requests", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceFileName: "portal-response.xlsx",
+        fileContentBase64,
+        fileDate: "26022026",
+        institutionCode: "IN2884",
+        version: "V1.3",
+        iraCode: "IRA010815",
+      }),
+    });
+    downloadRequestId = downloaded.id;
+    assert.ok(downloaded.requestNumber >= 10701);
+    assert.equal(
+      downloaded.fileName,
+      `IN2884_1_26022026_V1.3_IRA010815_D${downloaded.requestNumber}.txt`,
+    );
+    assert.equal(downloaded.recordCount, 1);
+    assert.equal(
+      downloaded.content,
+      `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INTEST12345678|02-04-1990|1||\r\n`,
     );
   });
 

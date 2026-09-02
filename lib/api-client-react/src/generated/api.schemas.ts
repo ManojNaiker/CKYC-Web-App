@@ -154,6 +154,29 @@ export type CkycRequestDetail = CkycRequest & ({
   responseContent: string | null;
 });
 
+export interface CkycDownloadRequestInput {
+  sourceFileName: string;
+  fileContentBase64: string;
+  /** Date used in the filename, DDMMYYYY */
+  fileDate: string;
+  institutionCode: string;
+  version: string;
+  iraCode: string;
+}
+
+export interface CkycDownloadRequest {
+  id: number;
+  requestNumber: number;
+  fileName: string;
+  recordCount: number;
+  sourceFileName: string;
+  createdAt: string;
+}
+
+export type CkycDownloadRequestDetail = CkycDownloadRequest & {
+  content: string;
+};
+
 export interface DashboardSummary {
   totalClients: number;
   generatedRequests: number;

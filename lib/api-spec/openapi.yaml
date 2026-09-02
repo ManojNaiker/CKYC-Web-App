@@ -213,6 +213,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/download-requests:
+    get:
+      operationId: listCkycDownloadRequests
+      tags: [ckyc]
+      summary: List generated CKYC download request files
+      responses:
+        "200":
+          description: Recent CKYC download requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CkycDownloadRequest"
+    post:
+      operationId: generateCkycDownloadRequest
+      tags: [ckyc]
+      summary: Generate a CKYC download request from a portal Excel response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CkycDownloadRequestInput"
+      responses:
+        "201":
+          description: Generated CKYC download request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycDownloadRequestDetail"
+        "400":
+          description: Invalid Excel response or unmatched CKYC IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -494,6 +531,64 @@ components:
           required:
             - content
             - responseContent
+    CkycDownloadRequestInput:
+      type: object
+      properties:
+        sourceFileName:
+          type: string
+        fileContentBase64:
+          type: string
+        fileDate:
+          type: string
+          description: Date used in the filename, DDMMYYYY
+        institutionCode:
+          type: string
+          default: IN2884
+        version:
+          type: string
+          default: V1.3
+        iraCode:
+          type: string
+          default: IRA010815
+      required:
+        - sourceFileName
+        - fileContentBase64
+        - fileDate
+        - institutionCode
+        - version
+        - iraCode
+    CkycDownloadRequest:
+      type: object
+      properties:
+        id:
+          type: number
+        requestNumber:
+          type: number
+        fileName:
+          type: string
+        recordCount:
+          type: number
+        sourceFileName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - requestNumber
+        - fileName
+        - recordCount
+        - sourceFileName
+        - createdAt
+    CkycDownloadRequestDetail:
+      allOf:
+        - $ref: "#/components/schemas/CkycDownloadRequest"
+        - type: object
+          properties:
+            content:
+              type: string
+          required:
+            - content
     DashboardSummary:
       type: object
       properties:
