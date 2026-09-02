@@ -59,7 +59,8 @@ type ClientExportRow = {
 
 function escapeCsv(value: string | null) {
   const raw = value ?? "";
-  const spreadsheetSafe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  const spreadsheetSafe =
+    /^\d+$/.test(raw) || /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
   return `"${spreadsheetSafe.replaceAll('"', '""')}"`;
 }
 

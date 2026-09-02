@@ -105,6 +105,8 @@ describe("CKYC file workflow", () => {
   let downloadRequestId: number | undefined;
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
+  const downloadReference = `IN${String(process.pid).padStart(12, "0")}`;
+  const fullResponseId = `O${downloadReference}`;
 
   before(async () => {
     server = createServer(app);
@@ -267,7 +269,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const responseFileName = `${loanPrefix}-response.txt`;
     const responseContent = [
       "10|IN2884|1|5|V1.1|02-09-2026||||",
-       "20|1|E|9012|OINNWUX41835731|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
+       `20|1|E|9012|${fullResponseId}|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`,
       "20|2|B|VID-" + runId + "-1|||||||||KYC Number does not exist for this identity type and number||||",
       "20|3|B|ABCDE1234F|||||||||KYC Number does not exist for this identity type and number||||",
       "20|4|E|1098|||||||||KYC Number does not exist for this identity type and number||||",
@@ -325,7 +327,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `/clients?search=${encodeURIComponent(loanPrefix)}&status=matched&pageSize=1`,
     );
     assert.equal(updatedAsha?.ckycResponseStatus, "matched");
-    assert.equal(updatedAsha?.ckycResponseId, "OINNWUX41835731");
+    assert.equal(updatedAsha?.ckycResponseId, fullResponseId);
     assert.equal(updatedAsha?.ckycResponseError, null);
     assert.equal(updatedBharat?.ckycResponseStatus, "error");
     assert.equal(updatedBharat?.ckycResponseId, null);
@@ -336,7 +338,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.ok(noIdentifier);
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_response_error = NULL WHERE id = $2",
-      ["OINNWUX41835731", bharat.id],
+      [fullResponseId, bharat.id],
     );
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
@@ -399,7 +401,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(downloaded.recordCount, 1);
     assert.equal(
       downloaded.content,
-       `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INNWUX41835731|02-04-1990|1||\r\n`,
+       `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|${downloadReference}|02-04-1990|1||\r\n`,
     );
     assert.doesNotMatch(downloaded.content, /INWITHKYCNUMBER/);
 
@@ -413,7 +415,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     sheet.addRow([
       "Asha Rao",
       "O50009293913726",
-      "INNWUX41835731",
+      downloadReference,
     ]);
     const fileContentBase64 = Buffer.from(
       await workbook.xlsx.writeBuffer(),
@@ -466,7 +468,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         loanid: "loan,1",
         clientName: 'Asha "Ace" Rao',
         ckycResponseId: "IN123",
-        ckycNumber: null,
+        ckycNumber: "60046100000000",
         ckycResponseStatus: "matched",
         ckycResponseError: null,
       },
@@ -475,6 +477,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"'=danger"/);
     assert.match(csv, /"loan,1"/);
     assert.match(csv, /"Asha ""Ace"" Rao"/);
+    assert.match(csv, /"'60046100000000"/);
     assert.match(csv, /"Matched"/);
   });
 

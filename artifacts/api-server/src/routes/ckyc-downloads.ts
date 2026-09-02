@@ -39,6 +39,21 @@ function normalizeReference(value: string) {
   return value.trim().replace(/^'/, "").toUpperCase();
 }
 
+function normalizeKycNumber(value: string) {
+  const text = value.trim().replace(/^'/, "");
+  const scientific = text.match(/^(\d+(?:\.\d+)?)e\+(\d+)$/i);
+  if (!scientific) return text;
+
+  const [coefficient, exponentText] = scientific.slice(1);
+  const [whole, fraction = ""] = coefficient.split(".");
+  const digits = `${whole}${fraction}`;
+  const decimalPlaces = fraction.length;
+  const exponent = Number(exponentText);
+  const zeros = exponent - decimalPlaces;
+  if (!Number.isInteger(exponent) || zeros < 0) return text;
+  return `${digits}${"0".repeat(zeros)}`;
+}
+
 function downloadReference(responseId: string) {
   return normalizeReference(responseId).slice(-14);
 }
@@ -89,11 +104,9 @@ async function parseDownloadResponse(fileContentBase64: string) {
       cellText(worksheet.getRow(rowNumber).getCell(referenceColumn).value),
     );
     if (!reference) continue;
-    const kycNumber = cellText(
-      worksheet.getRow(rowNumber).getCell(kycNumberColumn).value,
-    )
-      .trim()
-      .replace(/^'/, "");
+    const kycNumber = normalizeKycNumber(
+      cellText(worksheet.getRow(rowNumber).getCell(kycNumberColumn).value),
+    );
     if (kycNumber) rows.set(reference, kycNumber);
   }
 
