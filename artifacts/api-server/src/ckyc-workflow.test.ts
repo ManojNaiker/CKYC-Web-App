@@ -267,7 +267,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const responseFileName = `${loanPrefix}-response.txt`;
     const responseContent = [
       "10|IN2884|1|5|V1.1|02-09-2026||||",
-      "20|1|E|9012|INTEST12345678|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
+       "20|1|E|9012|PREFIXINTEST12345678|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
       "20|2|B|VID-" + runId + "-1|||||||||KYC Number does not exist for this identity type and number||||",
       "20|3|B|ABCDE1234F|||||||||KYC Number does not exist for this identity type and number||||",
       "20|4|E|1098|||||||||KYC Number does not exist for this identity type and number||||",
@@ -325,7 +325,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `/clients?search=${encodeURIComponent(loanPrefix)}&status=matched&pageSize=1`,
     );
     assert.equal(updatedAsha?.ckycResponseStatus, "matched");
-    assert.equal(updatedAsha?.ckycResponseId, "INTEST12345678");
+    assert.equal(updatedAsha?.ckycResponseId, "PREFIXINTEST12345678");
     assert.equal(updatedAsha?.ckycResponseError, null);
     assert.equal(updatedBharat?.ckycResponseStatus, "error");
     assert.equal(updatedBharat?.ckycResponseId, null);
