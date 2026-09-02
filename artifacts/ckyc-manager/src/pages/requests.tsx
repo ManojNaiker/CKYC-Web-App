@@ -255,7 +255,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             {fields.map(({ label, value, setter }) => (
               <label key={label} className="block">
-                <span className="mb-1.5 block text-[10px] font-semibold text-muted-foreground">
+                <span className="classic-label mb-1.5 block">
                   {label}
                 </span>
                 <input
@@ -268,7 +268,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
               </label>
             ))}
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-semibold text-muted-foreground">
+              <span className="classic-label mb-1.5 block">
                 Row count
               </span>
               <input
@@ -435,7 +435,7 @@ export default function Requests() {
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-          <div className="hidden grid-cols-[1fr_120px_150px_160px_28px] items-center gap-4 border-b border-border bg-secondary/55 px-5 py-3 font-mono-ui text-[9px] uppercase tracking-[.13em] text-muted-foreground md:grid">
+          <div className="data-table hidden grid-cols-[1fr_120px_150px_160px_28px] items-center gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
             <span>Request file</span>
             <span>CKYC rows</span>
             <span>Created</span>
