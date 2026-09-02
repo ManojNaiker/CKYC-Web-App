@@ -9,6 +9,7 @@ import type { CkycRequestStatus } from './ckycRequestStatus';
 
 export interface CkycRequest {
   id: number;
+  /** Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt */
   fileName: string;
   recordCount: number;
   status: CkycRequestStatus;

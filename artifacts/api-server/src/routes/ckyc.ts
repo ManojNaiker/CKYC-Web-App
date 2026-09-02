@@ -101,17 +101,27 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
-  const fileName = `${data.institutionCode}_1_${data.fileDate}_${data.version}_${data.iraCode}_${data.documentSetName}.txt`;
   const content = createCkycContent(data);
-  const [created] = await db
-    .insert(ckycRequestsTable)
-    .values({
-      fileName,
-      content,
-      recordCount: data.clients.length,
-      status: "generated",
-    })
-    .returning();
+  const created = await db.transaction(async (tx) => {
+    const [pending] = await tx
+      .insert(ckycRequestsTable)
+      .values({
+        fileName: "pending.txt",
+        content,
+        recordCount: data.clients.length,
+        status: "generated",
+      })
+      .returning();
+
+    const fileName = `${data.institutionCode}_${data.fileDate}_${data.version}_S${String(pending.id).padStart(6, "0")}.txt`;
+    const [updated] = await tx
+      .update(ckycRequestsTable)
+      .set({ fileName })
+      .where(eq(ckycRequestsTable.id, pending.id))
+      .returning();
+
+    return updated;
+  });
 
   res.status(201).json(
     GenerateCkycRequestResponse.parse({

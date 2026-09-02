@@ -49,6 +49,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 - Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
 - The header uses the total generated KYC row count, not the number of selected clients; there is no branch-code field in the request builder.
+- Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNNNN.txt`, for example `IN2884_02092026_V1.3_S000001.txt`; IRA and document-set values remain part of the file content, not the filename.
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers

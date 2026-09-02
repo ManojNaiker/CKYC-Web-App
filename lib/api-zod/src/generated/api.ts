@@ -102,7 +102,7 @@ export const ImportClientsResponse = zod.object({
  */
 export const ListCkycRequestsResponseItem = zod.object({
   "id": zod.number(),
-  "fileName": zod.string(),
+  "fileName": zod.string().describe('Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt'),
   "recordCount": zod.number(),
   "status": zod.enum(['generated', 'response_uploaded']),
   "createdAt": zod.coerce.date(),
@@ -140,7 +140,7 @@ export const GenerateCkycRequestBody = zod.object({
 
 export const GenerateCkycRequestResponse = zod.object({
   "id": zod.number(),
-  "fileName": zod.string(),
+  "fileName": zod.string().describe('Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt'),
   "recordCount": zod.number(),
   "status": zod.enum(['generated', 'response_uploaded']),
   "createdAt": zod.coerce.date(),
@@ -159,7 +159,7 @@ export const GetCkycRequestParams = zod.object({
 
 export const GetCkycRequestResponse = zod.object({
   "id": zod.number(),
-  "fileName": zod.string(),
+  "fileName": zod.string().describe('Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt'),
   "recordCount": zod.number(),
   "status": zod.enum(['generated', 'response_uploaded']),
   "createdAt": zod.coerce.date(),
@@ -184,7 +184,7 @@ export const UploadCkycResponseBody = zod.object({
 
 export const UploadCkycResponseResponse = zod.object({
   "id": zod.number(),
-  "fileName": zod.string(),
+  "fileName": zod.string().describe('Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt'),
   "recordCount": zod.number(),
   "status": zod.enum(['generated', 'response_uploaded']),
   "createdAt": zod.coerce.date(),

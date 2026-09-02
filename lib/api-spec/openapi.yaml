@@ -395,6 +395,7 @@ components:
           type: number
         fileName:
           type: string
+          description: Gateway filename in the format FICODE_DATESTAMP_VERSION_SNNNNNN.txt
         recordCount:
           type: number
         status:
