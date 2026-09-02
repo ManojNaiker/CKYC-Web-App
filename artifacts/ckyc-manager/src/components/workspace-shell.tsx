@@ -10,9 +10,9 @@ import {
   FolderOpen,
   LayoutDashboard,
   Menu,
-  ShieldCheck,
   X,
 } from 'lucide-react';
+import lightFinanceLogo from '@assets/Logo_Light_1788338497887.png';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
@@ -30,12 +30,12 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-[82px] items-center justify-between border-b border-sidebar-border px-6">
           <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
-            <span className="grid size-9 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-              <ShieldCheck size={21} strokeWidth={2.4} />
-            </span>
-            <span>
-              <span className="block font-display text-[18px] font-bold tracking-[-0.03em] text-white">Kestrel</span>
-              <span className="font-mono-ui text-[9px] uppercase tracking-[0.16em] text-sidebar-foreground/55">CKYC operations</span>
+            <span className="flex h-11 w-[190px] items-center rounded-md bg-white px-2.5 shadow-sm">
+              <img
+                src={lightFinanceLogo}
+                alt="Light Finance"
+                className="h-auto max-h-9 w-full object-contain"
+              />
             </span>
           </Link>
           <button className="rounded-md p-1 text-sidebar-foreground/60 hover:bg-sidebar-accent lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-menu">
@@ -95,7 +95,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               <Menu size={18} />
             </button>
             <div>
-              <p className="font-mono-ui text-[9px] uppercase tracking-[0.16em] text-muted-foreground">Kestrel / {current?.label ?? 'Workspace'}</p>
+              <p className="font-mono-ui text-[9px] uppercase tracking-[0.16em] text-muted-foreground">Light Finance / {current?.label ?? 'Workspace'}</p>
               <h1 className="mt-0.5 font-display text-[19px] font-semibold tracking-[-0.015em] text-foreground">{current?.label ?? 'Workspace'}</h1>
             </div>
           </div>
