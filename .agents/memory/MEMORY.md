@@ -3,3 +3,4 @@
 - [Imported workflow registration](imported-workflow-registration.md) — imported artifact TOMLs may need one combined Replit workflow when managed entries are absent
 - [CKYC integration test isolation](ckyc-integration-tests.md) — use unique database prefixes and cleanup for workflow tests against shared development data
 - [CKYC import identity migration](ckyc-import-identity.md) — keep legacy duplicates intact while enforcing duplicate safety for new LMS imports
+- [Post-merge schema sync](post-merge-schema-sync.md) — post-merge hooks run without stdin, so use the exact package name and a non-interactive dev schema command
