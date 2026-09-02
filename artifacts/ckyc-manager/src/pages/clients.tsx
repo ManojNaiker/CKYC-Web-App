@@ -5,53 +5,16 @@ import { exportClients, getListClientsQueryKey, useImportClients, useListClients
 import type { ClientInput } from '@workspace/api-client-react';
 import { PageIntro, EmptyState, QueryError } from '@/components/workspace-shell';
 import { LMS_HEADERS, parseCsv, REQUIRED_LMS_VALUES } from '@/lib/csv';
+import {
+  CLIENT_STATUS_OPTIONS,
+  parseClientRegisterFilters,
+  serializeClientRegisterFilters,
+  updateClientRegisterFilters,
+  type ClientRegisterFilters,
+  type ClientStatusFilter,
+} from '@/lib/client-register-filters';
 
 const PAGE_SIZE = 12;
-const STATUS_OPTIONS = [
-  { value: '', label: 'All statuses' },
-  { value: 'matched', label: 'ID received' },
-  { value: 'error', label: 'No ID / error' },
-  { value: 'awaiting', label: 'Awaiting response' },
-] as const;
-type StatusFilter = (typeof STATUS_OPTIONS)[number]['value'];
-type ClientRegisterFilters = {
-  search: string;
-  status: StatusFilter;
-  page: number;
-};
-
-const DEFAULT_CLIENT_REGISTER_FILTERS: ClientRegisterFilters = {
-  search: '',
-  status: '',
-  page: 1,
-};
-
-function parseClientRegisterFilters(query: string): ClientRegisterFilters {
-  const params = new URLSearchParams(query);
-  const requestedStatus = params.get('status') ?? '';
-  const status = STATUS_OPTIONS.some((option) => option.value === requestedStatus)
-    ? (requestedStatus as StatusFilter)
-    : '';
-  const requestedPage = params.get('page');
-  const parsedPage = requestedPage ? Number(requestedPage) : NaN;
-  const page = Number.isSafeInteger(parsedPage) && parsedPage > 0
-    ? parsedPage
-    : DEFAULT_CLIENT_REGISTER_FILTERS.page;
-
-  return {
-    search: params.get('search') ?? DEFAULT_CLIENT_REGISTER_FILTERS.search,
-    status,
-    page,
-  };
-}
-
-function serializeClientRegisterFilters(filters: ClientRegisterFilters): string {
-  const params = new URLSearchParams();
-  if (filters.search) params.set('search', filters.search);
-  if (filters.status) params.set('status', filters.status);
-  if (filters.page > 1) params.set('page', String(filters.page));
-  return params.toString();
-}
 
 function ImportPanel({ onDone, onImported }: { onDone: () => void; onImported: () => void }) {
   const [fileName, setFileName] = useState('');
@@ -124,7 +87,7 @@ export default function Clients() {
   }, [navigate, searchQuery, serializedFilters]);
 
   const updateFilters = (updates: Partial<ClientRegisterFilters>) => {
-    const nextFilters = { ...filters, ...updates };
+    const nextFilters = updateClientRegisterFilters(filters, updates);
     const nextQuery = serializeClientRegisterFilters(nextFilters);
     navigate(`/clients${nextQuery ? `?${nextQuery}` : ''}`, { replace: true });
   };
@@ -163,7 +126,7 @@ export default function Clients() {
   return <div className="animate-fade"><PageIntro eyebrow="LMS client register" title="Know every record." description="Search the imported loan book before preparing a CKYC file. The register is the source of truth for what enters a request." action={<div className="flex flex-wrap gap-2"><button onClick={downloadReport} disabled={exporting || total === 0} className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-[12px] font-bold text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-export-clients"><Download size={15} /> {exporting ? 'Preparing…' : 'Download report'}</button><button onClick={() => setImportOpen((open) => !open)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[12px] font-bold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5" data-testid="button-toggle-import"><UploadCloud size={15} /> Import LMS rows</button></div>} />
     {exportError && <p className="mb-4 text-[11px] text-destructive" role="alert" data-testid="status-export-error">{exportError}</p>}
     {importOpen && <div className="mb-6 animate-rise"><ImportPanel onDone={() => setImportOpen(false)} onImported={() => { void query.refetch(); }} /></div>}
-     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex max-w-[680px] flex-1 flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => updateFilters({ search: event.target.value, page: 1 })} placeholder="Search by name, loan ID, PAN or Client ID" className="h-11 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-[12px] outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-search-clients" /></div><label className="relative flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-[11px] text-muted-foreground focus-within:border-primary focus-within:ring-2 focus:ring-primary/15"><SlidersHorizontal size={14} className="text-primary" /><span className="sr-only">Filter by CKYC status</span><select value={status} onChange={(event) => updateFilters({ status: event.target.value as StatusFilter, page: 1 })} className="h-full min-w-[155px] appearance-none bg-transparent pr-5 text-[11px] font-semibold text-foreground outline-none" aria-label="Filter by CKYC status" data-testid="select-status-filter">{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div><div className="flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[.11em] text-muted-foreground"><Database size={14} className="text-primary" /> {showing}</div></div>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex max-w-[680px] flex-1 flex-col gap-3 sm:flex-row"><div className="relative min-w-0 flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><input value={search} onChange={(event) => updateFilters({ search: event.target.value })} placeholder="Search by name, loan ID, PAN or Client ID" className="h-11 w-full rounded-lg border border-input bg-card pl-10 pr-4 text-[12px] outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-search-clients" /></div><label className="relative flex h-11 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-[11px] text-muted-foreground focus-within:border-primary focus-within:ring-2 focus:ring-primary/15"><SlidersHorizontal size={14} className="text-primary" /><span className="sr-only">Filter by CKYC status</span><select value={status} onChange={(event) => updateFilters({ status: event.target.value as ClientStatusFilter })} className="h-full min-w-[155px] appearance-none bg-transparent pr-5 text-[11px] font-semibold text-foreground outline-none" aria-label="Filter by CKYC status" data-testid="select-status-filter">{CLIENT_STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label></div><div className="flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[.11em] text-muted-foreground"><Database size={14} className="text-primary" /> {showing}</div></div>
       {query.isError ? <QueryError onRetry={() => query.refetch()} /> : query.isLoading ? <div className="overflow-hidden rounded-xl border border-border bg-card"><div className="space-y-3 p-5">{[1,2,3,4,5,6].map((i) => <div className="h-12 animate-pulse rounded-lg bg-muted" key={i} />)}</div></div> : clients.length === 0 ? <EmptyState icon={Database} title={hasFilters ? 'No matching clients' : 'Your client register is empty'} detail={hasFilters ? 'Try a different search or CKYC status filter.' : 'Import an LMS CSV export to create the working register.'} action={!hasFilters && <button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-[12px] font-bold text-primary-foreground" data-testid="button-empty-import"><UploadCloud size={14} /> Import rows</button>} /> : <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs"><div className="overflow-x-auto"><table className="data-table w-full min-w-[1080px] text-left"><thead className="bg-secondary/55"><tr className="border-b border-border text-muted-foreground"><th className="px-5 py-3.5 font-medium">Client</th><th className="px-4 py-3.5 font-medium">Loan ID</th><th className="px-4 py-3.5 font-medium">PAN</th><th className="px-4 py-3.5 font-medium">Contact</th><th className="px-4 py-3.5 font-medium">CKYC response</th><th className="px-4 py-3.5 font-medium">Disbursed</th><th className="px-4 py-3.5 font-medium">Added</th><th className="px-3 py-3.5" /></tr></thead><tbody className="divide-y divide-border">{clients.map((client) => <tr className="group transition-colors hover:bg-secondary/30" key={client.id} data-testid={`row-client-${client.id}`}><td className="px-5 py-4"><div className="flex items-center gap-3"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#dcefeb] font-mono-ui text-[10px] font-medium text-primary">{client.ClientName.split(' ').map((part) => part[0]).slice(0,2).join('')}</span><div><p className="text-[12px] font-semibold text-foreground">{client.ClientName}</p><p className="mt-0.5 font-mono-ui text-[10px] text-muted-foreground">{client.ClientID}</p></div></div></td><td className="px-4 font-mono-ui text-[11px] text-foreground/75">{client.loanid}</td><td className="px-4 font-mono-ui text-[11px] text-foreground/75">{client.Client_PAN || '—'}</td><td className="px-4"><p className="font-mono-ui text-[11px] text-foreground/75">{client.mobile_no || '—'}</p><p className="mt-0.5 text-[10px] text-muted-foreground">{client.Gender} · {client.date_of_birth}</p></td><td className="max-w-[280px] px-4">{client.ckycResponseId ? <div data-testid={`status-ckyc-matched-${client.id}`}><span className="inline-flex rounded-full bg-[#e2f2e9] px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-[#31734d]">ID received</span><p className="mt-1 font-mono-ui text-[11px] font-semibold text-[#245b3d]">{client.ckycResponseId}</p></div> : client.ckycResponseStatus === 'error' ? <div data-testid={`status-ckyc-error-${client.id}`}><span className="inline-flex rounded-full bg-[#fff1d6] px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-[#9b6915]">No ID</span><p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground" title={client.ckycResponseError ?? undefined}>{client.ckycResponseError}</p></div> : <span className="text-[10px] text-muted-foreground">Awaiting response</span>}</td><td className="px-4 font-mono-ui text-[10px] text-muted-foreground">{client.disbursedon_date}</td><td className="px-4 font-mono-ui text-[10px] text-muted-foreground">{new Intl.DateTimeFormat('en-IN', { day:'2-digit', month:'short' }).format(new Date(client.createdAt))}</td><td className="px-3"><Link href={`/requests?client=${client.id}`} className="grid size-8 place-items-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-secondary hover:text-primary group-hover:opacity-100" title="Use in request" data-testid={`link-use-client-${client.id}`}><ArrowRight size={15} /></Link></td></tr>)}</tbody></table></div><div className="flex items-center justify-between border-t border-border px-5 py-3"><p className="text-[11px] text-muted-foreground">Showing {showing}</p><div className="flex items-center gap-1"><button disabled={page <= 1} onClick={() => setPage((current) => current - 1)} className="grid size-8 place-items-center rounded-md border border-border text-muted-foreground disabled:opacity-30 hover:bg-secondary" aria-label="Previous page" data-testid="button-previous-page"><ChevronLeft size={15} /></button><span className="px-2 font-mono-ui text-[10px] text-muted-foreground">{page} / {pageCount}</span><button disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)} className="grid size-8 place-items-center rounded-md border border-border text-muted-foreground disabled:opacity-30 hover:bg-secondary" aria-label="Next page" data-testid="button-next-page"><ChevronRight size={15} /></button></div></div></div>}
   </div>;
 }
