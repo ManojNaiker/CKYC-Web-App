@@ -44,4 +44,14 @@ describe("LMS CSV parser", () => {
     ]);
     assert.equal(parsed.rows[0].ClientName, "Client");
   });
+
+  it("rejects an unterminated quoted value with a recovery-friendly error", () => {
+    assert.throws(
+      () =>
+        parseCsv(
+          `${header}\nloan-4,CLI-4,01-01-2026,1234,,,\"Unclosed name,9876543212,,F,04-06-1992`,
+        ),
+      /unterminated quoted value/,
+    );
+  });
 });

@@ -22,11 +22,22 @@ function ImportPanel({ onDone, onImported }: { onDone: () => void; onImported: (
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
-      const parsed = parseCsv(String(reader.result ?? ''));
-      setHeaders(parsed.headers);
-      setRows(parsed.rows);
-      setMissingHeaders(parsed.missingHeaders);
-      setMessage('');
+      try {
+        const parsed = parseCsv(String(reader.result ?? ''));
+        setHeaders(parsed.headers);
+        setRows(parsed.rows);
+        setMissingHeaders(parsed.missingHeaders);
+        setMessage('');
+      } catch (error) {
+        setHeaders([]);
+        setRows([]);
+        setMissingHeaders([...LMS_HEADERS]);
+        setMessage(
+          error instanceof Error
+            ? `Could not parse this CSV. ${error.message} Choose another file and try again.`
+            : 'Could not parse this CSV. Check that quoted values are closed, then choose another file.',
+        );
+      }
     };
     reader.readAsText(file);
   };
@@ -46,7 +57,7 @@ function ImportPanel({ onDone, onImported }: { onDone: () => void; onImported: (
 
   return <div className="rounded-xl border border-primary/25 bg-[#eff8f5] p-5 shadow-xs dark:bg-card"><div className="flex items-start justify-between gap-4"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.18em] text-primary">New import</p><h3 className="mt-1 font-display text-[19px] font-bold tracking-[-.03em]">Bring in LMS rows</h3><p className="mt-1 text-[12px] leading-5 text-muted-foreground">Upload a CSV export to add rows to the working register.</p></div><button onClick={onDone} className="rounded-md p-1 text-muted-foreground hover:bg-card" aria-label="Close import panel" data-testid="button-close-import"><X size={17} /></button></div>
     <label className="mt-5 flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-primary/35 bg-card px-4 py-3 transition-colors hover:border-primary" data-testid="input-import-file"><span className="grid size-9 place-items-center rounded-md bg-secondary text-primary"><FileSpreadsheet size={17} /></span><span className="min-w-0 flex-1"><span className="block truncate text-[12px] font-semibold">{fileName || 'Select LMS CSV export'}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{rows.length ? `${rows.length} rows ready to import` : 'CSV format · max 20 MB'}</span></span><input type="file" accept=".csv,text/csv" className="sr-only" onChange={chooseFile} data-testid="file-input-clients" /></label>
-    <div className="mt-4 flex items-center justify-between gap-3"><p className={`text-[11px] ${message.includes('could not') || message.includes('Choose') ? 'text-destructive' : 'text-[#31734d]'}`} data-testid="status-import">{message}</p><button onClick={submit} disabled={importClients.isPending || !rows.length} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[12px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-import">{importClients.isPending ? 'Importing…' : <><UploadCloud size={14} /> Import rows</>}</button></div>
+     <div className="mt-4 flex items-center justify-between gap-3"><p className={`text-[11px] ${message.toLowerCase().includes('could not') || message.includes('Choose') ? 'text-destructive' : 'text-[#31734d]'}`} data-testid="status-import">{message}</p><button onClick={submit} disabled={importClients.isPending || !rows.length} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-[12px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-import">{importClients.isPending ? 'Importing…' : <><UploadCloud size={14} /> Import rows</>}</button></div>
   </div>;
 }
 
