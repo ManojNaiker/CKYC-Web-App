@@ -116,7 +116,7 @@ export const ListCkycRequestsResponse = zod.array(ListCkycRequestsResponseItem)
  */
 export const generateCkycRequestBodyVersionDefault = `V1.1`;
 export const generateCkycRequestBodyInstitutionCodeDefault = `IN2884`;
-export const generateCkycRequestBodyIraCodeDefault = `178649`;
+export const generateCkycRequestBodyIraCodeDefault = `IRA007917`;
 export const generateCkycRequestBodyDocumentSetNameDefault = `10022`;
 
 
@@ -124,7 +124,7 @@ export const GenerateCkycRequestBody = zod.object({
   "fileDate": zod.string().describe('Date used in the filename, DDMMYYYY'),
   "version": zod.string().default(generateCkycRequestBodyVersionDefault),
   "institutionCode": zod.string().default(generateCkycRequestBodyInstitutionCodeDefault),
-  "iraCode": zod.string().default(generateCkycRequestBodyIraCodeDefault).describe('Reference written to field 4 of the type 10 header'),
+  "iraCode": zod.string().default(generateCkycRequestBodyIraCodeDefault).describe('Legacy compatibility field; the type 10 field 4 is the generated record count'),
   "documentSetName": zod.string().default(generateCkycRequestBodyDocumentSetNameDefault).describe('Legacy compatibility field; not written to the current bulk-search header'),
   "rowCount": zod.string().describe('Number of data rows written to the request file'),
   "clients": zod.array(zod.object({

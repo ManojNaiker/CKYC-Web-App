@@ -342,8 +342,8 @@ components:
           default: IN2884
         iraCode:
           type: string
-          default: "178649"
-          description: Reference written to field 4 of the type 10 header
+          default: IRA007917
+          description: Legacy compatibility field; the type 10 field 4 is the generated record count
         documentSetName:
           type: string
           default: "10022"
@@ -360,7 +360,6 @@ components:
         - fileDate
         - version
         - institutionCode
-        - iraCode
         - documentSetName
         - rowCount
         - clients

@@ -52,8 +52,8 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Use the current CKYC defaults:
   - Version: `V1.1`
   - FICODE / institution code: `IN2884`
-  - Type 10 header reference: `178649`
-  - Type 10 header: `10|IN2884|1|178649|V1.1|DD-MM-YYYY||||`
+  - Type 10 header field 4: total generated CKYC record count
+  - Type 10 header: `10|IN2884|1|<record-count>|V1.1|DD-MM-YYYY||||`
   - No branch-code field
 - Build one CKYC row for every available KYC identifier:
   - Aadhaar (`Client_UID`) → one `E` row using the last four digits, with name, date of birth, and gender.

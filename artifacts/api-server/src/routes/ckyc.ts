@@ -44,7 +44,6 @@ function toRequestResponse(
 
 export function createCkycContent(data: {
   institutionCode: string;
-  iraCode: string;
   version: string;
   fileDate: string;
   rowCount: string;
@@ -66,7 +65,7 @@ export function createCkycContent(data: {
     "10",
     data.institutionCode,
     "1",
-    data.iraCode,
+    String(data.clients.length),
     data.version,
     headerDate,
     "",
