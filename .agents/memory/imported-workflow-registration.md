@@ -8,3 +8,5 @@ Imported projects can contain valid artifact.toml service definitions without th
 **Why:** Direct managed-artifact restart fails when the import has not registered the artifact metadata, while leaving the project without a run workflow prevents the user from opening the app.
 
 **How to apply:** First check the registered artifact/workflow lists. If the existing artifact entries are absent, avoid inventing a duplicate artifact; configure a descriptive project workflow that starts the API in the background and the frontend in the foreground. Verify an API endpoint through the frontend-facing port as well as the shared proxy; receiving SPA HTML from the frontend port means an explicit development proxy is still required.
+
+When managed artifact workflows later appear, remove the temporary combined workflow before starting them. Running both leaves stale processes on the same frontend and API ports and makes the artifact-owned workflows fail with `EADDRINUSE`.
