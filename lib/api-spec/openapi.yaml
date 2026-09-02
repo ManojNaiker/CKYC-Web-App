@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: clients
+    description: Imported LMS client records
+  - name: ckyc
+    description: CKYC request and response files
+  - name: dashboard
+    description: Workspace overview
 paths:
   /healthz:
     get:
@@ -24,6 +30,171 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get workspace summary
+      responses:
+        "200":
+          description: Workspace summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /clients:
+    get:
+      operationId: listClients
+      tags: [clients]
+      summary: List imported clients
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Paginated client records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientList"
+    post:
+      operationId: importClients
+      tags: [clients]
+      summary: Import client rows from an LMS export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientImportInput"
+      responses:
+        "201":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+        "400":
+          description: Invalid import
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/requests:
+    get:
+      operationId: listCkycRequests
+      tags: [ckyc]
+      summary: List generated CKYC files
+      responses:
+        "200":
+          description: Recent CKYC requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CkycRequest"
+    post:
+      operationId: generateCkycRequest
+      tags: [ckyc]
+      summary: Generate a CKYC search request file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CkycRequestInput"
+      responses:
+        "201":
+          description: Generated request file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycFile"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/requests/{id}:
+    get:
+      operationId: getCkycRequest
+      tags: [ckyc]
+      summary: Get a generated request and its response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Request detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycRequestDetail"
+        "404":
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/requests/{id}/response:
+    post:
+      operationId: uploadCkycResponse
+      tags: [ckyc]
+      summary: Save a CKYC response file for a request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CkycResponseInput"
+      responses:
+        "200":
+          description: Saved response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycRequestDetail"
+        "400":
+          description: Invalid response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +204,269 @@ components:
           type: string
       required:
         - status
+    Client:
+      type: object
+      properties:
+        id:
+          type: number
+        loanid:
+          type: string
+        ClientID:
+          type: string
+        disbursedon_date:
+          type: string
+        Client_UID:
+          type: string
+        Client_VID:
+          type: string
+        Client_PAN:
+          type: string
+        ClientName:
+          type: string
+        mobile_no:
+          type: string
+        alternate_mobile_no:
+          type: string
+        Gender:
+          type: string
+        date_of_birth:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - loanid
+        - ClientID
+        - disbursedon_date
+        - Client_UID
+        - Client_VID
+        - Client_PAN
+        - ClientName
+        - mobile_no
+        - alternate_mobile_no
+        - Gender
+        - date_of_birth
+        - createdAt
+    ClientInput:
+      type: object
+      properties:
+        loanid:
+          type: string
+        ClientID:
+          type: string
+        disbursedon_date:
+          type: string
+        Client_UID:
+          type: string
+        Client_VID:
+          type: string
+        Client_PAN:
+          type: string
+        ClientName:
+          type: string
+        mobile_no:
+          type: string
+        alternate_mobile_no:
+          type: string
+        Gender:
+          type: string
+        date_of_birth:
+          type: string
+      required:
+        - loanid
+        - ClientID
+        - disbursedon_date
+        - Client_UID
+        - Client_VID
+        - Client_PAN
+        - ClientName
+        - mobile_no
+        - alternate_mobile_no
+        - Gender
+        - date_of_birth
+    ClientImportInput:
+      type: object
+      properties:
+        fileName:
+          type: string
+        rows:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ClientInput"
+      required:
+        - rows
+    ClientList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Client"
+        total:
+          type: number
+        page:
+          type: number
+        pageSize:
+          type: number
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+    ImportResult:
+      type: object
+      properties:
+        imported:
+          type: number
+        skipped:
+          type: number
+        fileName:
+          type: ["string", "null"]
+      required:
+        - imported
+        - skipped
+        - fileName
+    CkycRequestInput:
+      type: object
+      properties:
+        fileDate:
+          type: string
+          description: Date used in the filename, DDMMYYYY
+        version:
+          type: string
+          default: V1.3
+        institutionCode:
+          type: string
+          default: IN2884
+        iraCode:
+          type: string
+          default: IRA007917
+        documentSetName:
+          type: string
+          default: D00003
+        branchCode:
+          type: string
+          default: "422"
+        clients:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CkycClientInput"
+      required:
+        - fileDate
+        - version
+        - institutionCode
+        - iraCode
+        - documentSetName
+        - branchCode
+        - clients
+    CkycClientInput:
+      type: object
+      properties:
+        clientId:
+          type: number
+        name:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        searchType:
+          type: string
+          enum: [E, B]
+        searchValue:
+          type: string
+        sequence:
+          type: number
+      required:
+        - clientId
+        - name
+        - dateOfBirth
+        - gender
+        - searchType
+        - searchValue
+        - sequence
+    CkycRequest:
+      type: object
+      properties:
+        id:
+          type: number
+        fileName:
+          type: string
+        recordCount:
+          type: number
+        status:
+          type: string
+          enum: [generated, response_uploaded]
+        createdAt:
+          type: string
+          format: date-time
+        responseFileName:
+          type: ["string", "null"]
+      required:
+        - id
+        - fileName
+        - recordCount
+        - status
+        - createdAt
+        - responseFileName
+    CkycFile:
+      allOf:
+        - $ref: "#/components/schemas/CkycRequest"
+        - type: object
+          properties:
+            content:
+              type: string
+          required:
+            - content
+    CkycResponseInput:
+      type: object
+      properties:
+        fileName:
+          type: string
+        content:
+          type: string
+      required:
+        - fileName
+        - content
+    CkycRequestDetail:
+      allOf:
+        - $ref: "#/components/schemas/CkycRequest"
+        - type: object
+          properties:
+            content:
+              type: string
+            responseContent:
+              type: ["string", "null"]
+          required:
+            - content
+            - responseContent
+    DashboardSummary:
+      type: object
+      properties:
+        totalClients:
+          type: number
+        generatedRequests:
+          type: number
+        responsesUploaded:
+          type: number
+        lastImportFile:
+          type: ["string", "null"]
+        lastActivityAt:
+          type: ["string", "null"]
+      required:
+        - totalClients
+        - generatedRequests
+        - responsesUploaded
+        - lastImportFile
+        - lastActivityAt
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
 

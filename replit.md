@@ -1,6 +1,6 @@
-# [Project name]
+# CKYC Data Request Manager
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A CKYC operations workspace for importing LMS client records, generating document-specific search request files, and tracking returned response files.
 
 ## Run & Operate
 
@@ -22,15 +22,24 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/ckyc-manager/` — React web app with overview, client register, request builder, and request detail screens.
+- `artifacts/api-server/src/routes/` — Express routes for client imports, CKYC request generation, responses, and dashboard summary.
+- `lib/api-spec/openapi.yaml` — source of truth for the API contract and generated client hooks.
+- `lib/db/src/schema/clients.ts` and `lib/db/src/schema/ckycRequests.ts` — Drizzle schema for stored LMS rows and file trails.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- LMS rows preserve the source column names at the API boundary, while the database uses conventional snake_case columns.
+- CKYC request content is generated server-side and preserved with each request so the exact outbound file can be downloaded later.
+- The first format supports the sample pipe-delimited header and E/B record modes; the builder keeps institution, IRA, version, document set, and branch values editable.
+- Request and response files are handled as text so operators can preview and download them without needing a separate desktop utility.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Import CSV LMS exports into a searchable client register.
+- Review dashboard counts and recent CKYC activity.
+- Select client rows, configure CKYC header values, and generate a correctly named `.txt` request file.
+- Upload a gateway response to its matching request, preview both files, and download either one.
 
 ## User preferences
 
@@ -38,7 +47,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
+- After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers
 

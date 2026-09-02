@@ -1,0 +1,1 @@
+- [CKYC API schema compatibility](ckyc-api-schema.md) — use OpenAPI number fields with the current Orval/Zod toolchain

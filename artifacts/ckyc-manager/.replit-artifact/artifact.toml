@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "CKYC Data Request Manager"
+description = "A secure operations workspace for importing LMS client records, preparing CKYC search request files by document format, and downloading ready-to-submit request or response files."
+version = "1.0.0"
+id = "artifacts/ckyc-manager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21959
+
+[services.development]
+run = "pnpm --filter @workspace/ckyc-manager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ckyc-manager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ckyc-manager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21959"
+BASE_PATH = "/"
