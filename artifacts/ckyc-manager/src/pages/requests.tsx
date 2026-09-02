@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight, Check, FileCheck2, FileClock, FilePlus2, Search, SlidersHorizontal, UploadCloud, X } from 'lucide-react';
 import { getListCkycRequestsQueryKey, getListClientsQueryKey, useGenerateCkycRequest, useListCkycRequests, useListClients } from '@workspace/api-client-react';
@@ -18,8 +18,9 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
   const [institutionCode, setInstitutionCode] = useState('IN2884');
   const [iraCode, setIraCode] = useState('IRA007917');
   const [documentSetName, setDocumentSetName] = useState('D00003');
-  const [branchCode, setBranchCode] = useState('422');
+  const [rowCount, setRowCount] = useState('0');
   const [feedback, setFeedback] = useState('');
+  useEffect(() => setRowCount(String(selected.length)), [selected.length]);
   const clientsQuery = useListClients({ page: 1, pageSize: 200 }, { query: { queryKey: getListClientsQueryKey({ page: 1, pageSize: 200 }) } });
   const generate = useGenerateCkycRequest();
   const clients = clientsQuery.data?.items ?? [];
@@ -29,14 +30,14 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
     { label: 'Institution code', value: institutionCode, setter: setInstitutionCode },
     { label: 'IRA code', value: iraCode, setter: setIraCode },
     { label: 'Document set', value: documentSetName, setter: setDocumentSetName },
-    { label: 'Branch code', value: branchCode, setter: setBranchCode },
+    { label: 'Row count', value: rowCount, setter: setRowCount },
   ];
 
   const toggle = (id: number) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   const generateFile = () => {
     const chosen = clients.filter((client) => selected.includes(client.id));
     if (!chosen.length) { setFeedback('Select at least one client to generate a file.'); return; }
-    const payload: CkycRequestInput = { fileDate, version, institutionCode, iraCode, documentSetName, branchCode, clients: chosen.map((client, index): CkycClientInput => ({ clientId: client.id, name: client.ClientName, dateOfBirth: client.date_of_birth, gender: client.Gender, searchType, searchValue: searchType === 'B' ? (client.Client_VID || client.Client_UID || client.ClientID) : (client.Client_PAN || client.Client_UID || client.ClientID), sequence: index + 1 })) };
+    const payload: CkycRequestInput = { fileDate, version, institutionCode, iraCode, documentSetName, rowCount, clients: chosen.map((client, index): CkycClientInput => ({ clientId: client.id, name: client.ClientName, dateOfBirth: client.date_of_birth, gender: client.Gender, searchType, searchValue: searchType === 'B' ? (client.Client_VID || client.Client_UID || client.ClientID) : (client.Client_PAN || client.Client_UID || client.ClientID), sequence: index + 1 })) };
     generate.mutate({ data: payload }, { onSuccess: () => { setFeedback('Request file generated.'); setTimeout(onClose, 500); }, onError: () => setFeedback('The file could not be generated. Review the request details and retry.') });
   };
 

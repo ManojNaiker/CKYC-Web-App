@@ -31,7 +31,7 @@ A CKYC operations workspace for importing LMS client records, generating documen
 
 - LMS rows preserve the source column names at the API boundary, while the database uses conventional snake_case columns.
 - CKYC request content is generated server-side and preserved with each request so the exact outbound file can be downloaded later.
-- The first format supports the sample pipe-delimited header and E/B record modes; the builder keeps institution, IRA, version, document set, and branch values editable.
+- The first format supports the sample pipe-delimited header and E/B record modes; the builder keeps institution, IRA, version, document set, and row count values editable/derived.
 - Request and response files are handled as text so operators can preview and download them without needing a separate desktop utility.
 
 ## Product
@@ -48,6 +48,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Gotchas
 
 - Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
+- The header uses the selected data row count; there is no branch-code field in the request builder.
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers

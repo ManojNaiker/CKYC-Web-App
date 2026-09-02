@@ -14,7 +14,8 @@ export interface CkycRequestInput {
   institutionCode: string;
   iraCode: string;
   documentSetName: string;
-  branchCode: string;
+  /** Number of data rows written to the request file */
+  rowCount: string;
   /** @minItems 1 */
   clients: CkycClientInput[];
 }

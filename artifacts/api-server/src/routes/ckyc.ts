@@ -45,7 +45,7 @@ function formatHeaderValue(documentSetName: string) {
 function createCkycContent(data: {
   institutionCode: string;
   documentSetName: string;
-  branchCode: string;
+  rowCount: string;
   clients: Array<{
     name: string;
     dateOfBirth: string;
@@ -61,7 +61,7 @@ function createCkycContent(data: {
     data.institutionCode,
     "1",
     "1BR",
-    data.branchCode,
+    data.rowCount,
     "",
     "",
     "",

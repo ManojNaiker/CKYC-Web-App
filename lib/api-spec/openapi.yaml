@@ -346,9 +346,9 @@ components:
         documentSetName:
           type: string
           default: D00003
-        branchCode:
+        rowCount:
           type: string
-          default: "422"
+          description: Number of data rows written to the request file
         clients:
           type: array
           minItems: 1
@@ -360,7 +360,7 @@ components:
         - institutionCode
         - iraCode
         - documentSetName
-        - branchCode
+        - rowCount
         - clients
     CkycClientInput:
       type: object
