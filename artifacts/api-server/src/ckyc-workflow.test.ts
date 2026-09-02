@@ -146,9 +146,9 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
 
     const defaults = {
       fileDate: "02092026",
-      version: "V1.3",
+      version: "V1.1",
       institutionCode: "IN2884",
-      iraCode: "IRA007917",
+      iraCode: "178649",
       documentSetName: "D00003",
     };
     const generated = await requestJson<CkycFile>(baseUrl, "/ckyc/requests", {
@@ -210,12 +210,14 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
 
     assert.match(
       generated.fileName,
-      new RegExp(`^IN2884_02092026_V1\\.3_S\\d{6}\\.txt$`),
+      new RegExp(`^IN2884_02092026_V1\\.1_S\\d{5}\\.txt$`),
     );
+    const generatedSerial = Number(generated.fileName.match(/_S(\d+)\.txt$/)?.[1]);
+    assert.ok(generatedSerial >= 10001);
     assert.equal(generated.recordCount, 5);
     assert.equal(generated.status, "generated");
-    assert.deepEqual(generated.content.split("\n"), [
-      "10|00003|IN2884|1|1BR|5|||||",
+    assert.deepEqual(generated.content.trimEnd().split("\r\n"), [
+      "10|IN2884|1|178649|V1.1|02-09-2026||||",
       "20|1|E|9012|Asha Rao|02-04-1990|F|",
       "20|2|B|VID-" + runId + "-1||||",
       "20|3|B|ABCDE1234F||||",

@@ -336,17 +336,18 @@ components:
           description: Date used in the filename, DDMMYYYY
         version:
           type: string
-          default: V1.3
+          default: V1.1
         institutionCode:
           type: string
           default: IN2884
         iraCode:
           type: string
-          default: IRA007917
+          default: "178649"
+          description: Reference written to field 4 of the type 10 header
         documentSetName:
           type: string
           default: "10022"
-          description: Legacy compatibility field; the type 10 header uses the serial from the filename
+          description: Legacy compatibility field; not written to the current bulk-search header
         rowCount:
           type: string
           description: Number of data rows written to the request file

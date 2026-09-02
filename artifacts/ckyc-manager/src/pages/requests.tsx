@@ -77,9 +77,9 @@ function createRowsForClient(
 function CreateRequest({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
-  const [version, setVersion] = useState("V1.3");
+  const [version, setVersion] = useState("V1.1");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
-  const [iraCode, setIraCode] = useState("IRA007917");
+  const [iraCode, setIraCode] = useState("178649");
   const [feedback, setFeedback] = useState("");
   const clientsQuery = useListClients(
     { page: 1, pageSize: 200 },
@@ -107,7 +107,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
       value: institutionCode,
       setter: setInstitutionCode,
     },
-    { label: "IRA code", value: iraCode, setter: setIraCode },
+    { label: "Header reference", value: iraCode, setter: setIraCode },
   ];
 
   const toggle = (id: number) => {

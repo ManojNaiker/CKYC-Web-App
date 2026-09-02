@@ -50,10 +50,10 @@ A CKYC operations workspace for importing LMS client records, generating documen
 
 - Allow operators to select clients and generate a pipe-delimited CKYC text file.
 - Use the current CKYC defaults:
-  - Version: `V1.3`
+  - Version: `V1.1`
   - FICODE / institution code: `IN2884`
-  - IRA code: `IRA007917`
-  - Type 10 header field 2: the same serial number that follows `S` in the filename
+  - Type 10 header reference: `178649`
+  - Type 10 header: `10|IN2884|1|178649|V1.1|DD-MM-YYYY||||`
   - No branch-code field
 - Build one CKYC row for every available KYC identifier:
   - Aadhaar (`Client_UID`) → one `E` row using the last four digits, with name, date of birth, and gender.
@@ -62,7 +62,7 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Set the header row count to the total number of generated KYC rows, not the number of selected clients.
 - Use the gateway filename format:
   `FICODE_DATESTAMP_VERSION_SNNNNNN.txt`
-  - Example: `IN2884_02092026_V1.3_S000001.txt`
+  - Example: `IN2884_02092026_V1.1_S10001.txt`
   - The serial is six digits and is generated from the stored request sequence.
 - Preview and download the generated request file, and retain its content and metadata in PostgreSQL.
 
@@ -88,7 +88,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 - Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
 - The header uses the total generated KYC row count, not the number of selected clients; there is no branch-code field in the request builder.
-- Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNNNN.txt`, for example `IN2884_02092026_V1.3_S000001.txt`; the type 10 record must repeat the filename serial (`000001` in this example) in field 2.
+- Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNN.txt`, starting at `S10001`, for example `IN2884_02092026_V1.1_S10001.txt`.
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers

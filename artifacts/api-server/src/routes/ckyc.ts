@@ -44,8 +44,10 @@ function toRequestResponse(
 
 export function createCkycContent(data: {
   institutionCode: string;
+  iraCode: string;
+  version: string;
+  fileDate: string;
   rowCount: string;
-  fileSerial: string;
   clients: Array<{
     name: string;
     dateOfBirth: string;
@@ -55,14 +57,18 @@ export function createCkycContent(data: {
     sequence: number;
   }>;
 }) {
+  const compactDate = data.fileDate.replace(/\D/g, "");
+  const headerDate =
+    compactDate.length === 8
+      ? `${compactDate.slice(0, 2)}-${compactDate.slice(2, 4)}-${compactDate.slice(4)}`
+      : data.fileDate.trim();
   const header = [
     "10",
-    data.fileSerial,
     data.institutionCode,
     "1",
-    "1BR",
-    String(data.clients.length),
-    "",
+    data.iraCode,
+    data.version,
+    headerDate,
     "",
     "",
     "",
@@ -98,6 +104,17 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
 
   const data = parsed.data;
   const created = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(10001)`);
+    const existingFiles = await tx
+      .select({ fileName: ckycRequestsTable.fileName })
+      .from(ckycRequestsTable);
+    const highestSerial = existingFiles.reduce((highest, request) => {
+      const match = request.fileName.match(/_S(\d+)\.txt$/i);
+      const serial = match ? Number(match[1]) : 0;
+      return Number.isSafeInteger(serial) ? Math.max(highest, serial) : highest;
+    }, 10000);
+    const fileSerial = String(highestSerial + 1).padStart(5, "0");
+
     const [pending] = await tx
       .insert(ckycRequestsTable)
       .values({
@@ -108,11 +125,9 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
       })
       .returning();
 
-    const fileSerial = String(pending.id).padStart(6, "0");
     const fileName = `${data.institutionCode}_${data.fileDate}_${data.version}_S${fileSerial}.txt`;
     const content = createCkycContent({
       ...data,
-      fileSerial,
     });
     const [updated] = await tx
       .update(ckycRequestsTable)

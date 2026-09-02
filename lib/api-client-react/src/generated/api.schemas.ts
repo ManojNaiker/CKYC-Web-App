@@ -82,8 +82,9 @@ export interface CkycRequestInput {
   fileDate: string;
   version: string;
   institutionCode: string;
+  /** Reference written to field 4 of the type 10 header */
   iraCode: string;
-  /** Header code used in the CKYC type 10 search record */
+  /** Legacy compatibility field; not written to the current bulk-search header */
   documentSetName: string;
   /** Number of data rows written to the request file */
   rowCount: string;
