@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { after, before, describe, it } from "node:test";
 import app from "./app";
 import { pool } from "@workspace/db";
+import { createClientsCsv } from "./routes/clients";
 
 type ClientInput = {
   loanid: string;
@@ -313,6 +314,24 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       updatedBharat?.ckycResponseError ?? "",
       /KYC Number does not exist/,
     );
+  });
+
+  it("escapes CKYC result reports for CSV and spreadsheet safety", () => {
+    const csv = createClientsCsv([
+      {
+        clientId: "=danger",
+        loanid: "loan,1",
+        clientName: 'Asha "Ace" Rao',
+        ckycResponseId: "IN123",
+        ckycResponseStatus: "matched",
+        ckycResponseError: null,
+      },
+    ]);
+
+    assert.match(csv, /"'=danger"/);
+    assert.match(csv, /"loan,1"/);
+    assert.match(csv, /"Asha ""Ace"" Rao"/);
+    assert.match(csv, /"Matched"/);
   });
 
   it("skips every row when a required LMS header is missing", async () => {

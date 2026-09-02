@@ -36,6 +36,48 @@ const REQUIRED_LMS_VALUES = [
   "date_of_birth",
 ] as const;
 
+type ClientExportRow = {
+  clientId: string;
+  loanid: string;
+  clientName: string;
+  ckycResponseId: string | null;
+  ckycResponseStatus: string | null;
+  ckycResponseError: string | null;
+};
+
+function escapeCsv(value: string | null) {
+  const raw = value ?? "";
+  const spreadsheetSafe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${spreadsheetSafe.replaceAll('"', '""')}"`;
+}
+
+export function createClientsCsv(rows: ClientExportRow[]) {
+  const header = [
+    "LMS Client ID",
+    "Loan ID",
+    "Client Name",
+    "CKYC Response ID",
+    "Status",
+    "Error",
+  ];
+  const body = rows.map((row) => [
+    row.clientId,
+    row.loanid,
+    row.clientName,
+    row.ckycResponseId,
+    row.ckycResponseStatus === "matched"
+      ? "Matched"
+      : row.ckycResponseStatus === "error"
+        ? "Error"
+        : "Awaiting response",
+    row.ckycResponseError,
+  ]);
+
+  return `\uFEFF${[header, ...body]
+    .map((columns) => columns.map(escapeCsv).join(","))
+    .join("\r\n")}\r\n`;
+}
+
 function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
@@ -120,6 +162,41 @@ router.get("/clients", async (req, res): Promise<void> => {
       pageSize,
     }),
   );
+});
+
+router.get("/clients/export", async (req, res): Promise<void> => {
+  const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+  const filter = search
+    ? or(
+        ilike(clientsTable.loanid, `%${search}%`),
+        ilike(clientsTable.clientId, `%${search}%`),
+        ilike(clientsTable.clientName, `%${search}%`),
+        ilike(clientsTable.clientUid, `%${search}%`),
+        ilike(clientsTable.clientVid, `%${search}%`),
+        ilike(clientsTable.mobileNo, `%${search}%`),
+      )
+    : undefined;
+  const rows = await db
+    .select({
+      clientId: clientsTable.clientId,
+      loanid: clientsTable.loanid,
+      clientName: clientsTable.clientName,
+      ckycResponseId: clientsTable.ckycResponseId,
+      ckycResponseStatus: clientsTable.ckycResponseStatus,
+      ckycResponseError: clientsTable.ckycResponseError,
+    })
+    .from(clientsTable)
+    .where(filter ? and(filter) : undefined)
+    .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id));
+
+  const date = new Date().toISOString().slice(0, 10);
+  res
+    .status(200)
+    .set({
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="ckyc-client-results-${date}.csv"`,
+    })
+    .send(createClientsCsv(rows));
 });
 
 router.post("/clients", async (req, res): Promise<void> => {
