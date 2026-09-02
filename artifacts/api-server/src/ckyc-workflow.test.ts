@@ -35,6 +35,7 @@ type ClientRecord = {
   Client_VID: string;
   Client_PAN: string;
   ckycResponseId: string | null;
+  ckycNumber: string | null;
   ckycResponseStatus: "matched" | "error" | null;
   ckycResponseError: string | null;
 };
@@ -334,8 +335,8 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.ok(noIdentifier);
     await pool.query(
-      "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched' WHERE id = $2",
-      ["INWITHKYCNUMBER", noIdentifier.id],
+      "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
+      ["PREFIXINWITHKYCNUMBER", "30064364932165", noIdentifier.id],
     );
 
     const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {
@@ -368,41 +369,6 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     });
     assert.equal(repeatResponse.status, 400);
 
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("CKYC Result");
-    sheet.addRow([
-      "Applicant Name",
-      "KYC Number",
-      "ALPHANUMERIC Reference NO",
-      "Download Date",
-      "Username",
-      "User ID",
-      "",
-      "Batch Number",
-    ]);
-    sheet.addRow([
-      "Asha Rao",
-      "",
-      "INTEST12345678",
-      "8/5/26 2:07 PM",
-      "Operator",
-      "IRA010815",
-      "",
-      "10504",
-    ]);
-    sheet.addRow([
-      "Already Complete",
-      "30064364932165",
-      "INWITHKYCNUMBER",
-      "8/5/26 2:07 PM",
-      "Operator",
-      "IRA010815",
-      "",
-      "10504",
-    ]);
-    const fileContentBase64 = Buffer.from(
-      await workbook.xlsx.writeBuffer(),
-    ).toString("base64");
     const downloaded = await requestJson<{
       id: number;
       requestNumber: number;
@@ -413,8 +379,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        sourceFileName: "portal-response.xlsx",
-        fileContentBase64,
+        clientIds: [asha.id],
         fileDate: "26022026",
         institutionCode: "IN2884",
         version: "V1.3",
@@ -433,6 +398,49 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INTEST12345678|02-04-1990|1||\r\n`,
     );
     assert.doesNotMatch(downloaded.content, /INWITHKYCNUMBER/);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("CKYC Result");
+    sheet.addRow([
+      "Applicant Name",
+      "KYC Number",
+      "ALPHANUMERIC Reference NO",
+    ]);
+    sheet.addRow([
+      "Asha Rao",
+      "30064364932166",
+      "INTEST12345678",
+    ]);
+    const fileContentBase64 = Buffer.from(
+      await workbook.xlsx.writeBuffer(),
+    ).toString("base64");
+    const responseImported = await requestJson<{
+      updatedCount: number;
+      skippedCount: number;
+      missingReferences: string[];
+    }>(baseUrl, "/ckyc/download-requests/response", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceFileName: "portal-download-response.xlsx",
+        fileContentBase64,
+      }),
+    });
+    assert.deepEqual(responseImported, {
+      sourceFileName: "portal-download-response.xlsx",
+      updatedCount: 1,
+      skippedCount: 0,
+      missingReferences: [],
+    });
+
+    const finalClients = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(`${loanPrefix}-1`)}&pageSize=10`,
+    );
+    assert.equal(finalClients.items[0]?.ckycNumber, "30064364932166");
   });
 
   it("escapes CKYC result reports for CSV and spreadsheet safety", () => {
@@ -442,6 +450,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         loanid: "loan,1",
         clientName: 'Asha "Ace" Rao',
         ckycResponseId: "IN123",
+        ckycNumber: null,
         ckycResponseStatus: "matched",
         ckycResponseError: null,
       },

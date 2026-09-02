@@ -7,8 +7,8 @@
  */
 
 export interface CkycDownloadRequestInput {
-  sourceFileName: string;
-  fileContentBase64: string;
+  /** @minItems 1 */
+  clientIds: number[];
   /** Date used in the filename, DDMMYYYY */
   fileDate: string;
   institutionCode: string;

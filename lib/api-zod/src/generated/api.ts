@@ -49,6 +49,7 @@ export const listClientsQueryPageSizeDefault = 50;
 export const listClientsQueryPageSizeMax = 200;
 
 
+
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status'),
@@ -72,6 +73,7 @@ export const ListClientsResponse = zod.object({
   "date_of_birth": zod.string(),
   "createdAt": zod.coerce.date(),
   "ckycResponseId": zod.string().nullable(),
+  "ckycNumber": zod.string().nullable(),
   "ckycResponseStatus": zod.union([zod.literal('matched'),zod.literal('error'),zod.literal(null)]).nullable(),
   "ckycResponseError": zod.string().nullable(),
   "ckycResponseFileName": zod.string().nullable(),
@@ -87,6 +89,7 @@ export const ListClientsResponse = zod.object({
 /**
  * @summary Import client rows from an LMS export
  */
+
 
 
 export const ImportClientsBody = zod.object({
@@ -228,15 +231,15 @@ export const ListCkycDownloadRequestsResponse = zod.array(ListCkycDownloadReques
 
 
 /**
- * @summary Generate a CKYC download request from a portal Excel response
+ * @summary Generate a CKYC download request for clients with CKYC response IDs
  */
+
 export const generateCkycDownloadRequestBodyInstitutionCodeDefault = `IN2884`;
 export const generateCkycDownloadRequestBodyVersionDefault = `V1.3`;
 export const generateCkycDownloadRequestBodyIraCodeDefault = `IRA010815`;
 
 export const GenerateCkycDownloadRequestBody = zod.object({
-  "sourceFileName": zod.string(),
-  "fileContentBase64": zod.string(),
+  "clientIds": zod.array(zod.number()).min(1),
   "fileDate": zod.string().describe('Date used in the filename, DDMMYYYY'),
   "institutionCode": zod.string().default(generateCkycDownloadRequestBodyInstitutionCodeDefault),
   "version": zod.string().default(generateCkycDownloadRequestBodyVersionDefault),
@@ -253,4 +256,21 @@ export const GenerateCkycDownloadRequestResponse = zod.object({
 }).and(zod.object({
   "content": zod.string()
 }))
+
+
+/**
+ * @summary Save final KYC numbers from a CKYC download response Excel file
+ */
+export const UploadCkycDownloadResponseBody = zod.object({
+  "sourceFileName": zod.string(),
+  "fileContentBase64": zod.string()
+})
+
+export const UploadCkycDownloadResponseResponse = zod.object({
+  "sourceFileName": zod.string(),
+  "updatedCount": zod.number(),
+  "skippedCount": zod.number(),
+  "missingReferences": zod.array(zod.string())
+})
+
 

@@ -52,6 +52,7 @@ type ClientExportRow = {
   loanid: string;
   clientName: string;
   ckycResponseId: string | null;
+  ckycNumber: string | null;
   ckycResponseStatus: string | null;
   ckycResponseError: string | null;
 };
@@ -68,6 +69,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     "Loan ID",
     "Client Name",
     "CKYC Response ID",
+    "Final CKYC Number",
     "Status",
     "Error",
   ];
@@ -76,6 +78,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     row.loanid,
     row.clientName,
     row.ckycResponseId,
+    row.ckycNumber,
     row.ckycResponseStatus === "matched"
       ? "Matched"
       : row.ckycResponseStatus === "error"
@@ -123,6 +126,7 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     date_of_birth: client.dateOfBirth,
     createdAt: client.createdAt,
     ckycResponseId: client.ckycResponseId,
+    ckycNumber: client.ckycNumber,
     ckycResponseStatus: client.ckycResponseStatus as "matched" | "error" | null,
     ckycResponseError: client.ckycResponseError,
     ckycResponseFileName: client.ckycResponseFileName,
@@ -221,6 +225,7 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       loanid: clientsTable.loanid,
       clientName: clientsTable.clientName,
       ckycResponseId: clientsTable.ckycResponseId,
+      ckycNumber: clientsTable.ckycNumber,
       ckycResponseStatus: clientsTable.ckycResponseStatus,
       ckycResponseError: clientsTable.ckycResponseError,
     })

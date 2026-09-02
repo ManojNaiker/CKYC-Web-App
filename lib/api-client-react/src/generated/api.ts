@@ -23,6 +23,8 @@ import type {
   CkycDownloadRequest,
   CkycDownloadRequestDetail,
   CkycDownloadRequestInput,
+  CkycDownloadResponse,
+  CkycDownloadResponseInput,
   CkycFile,
   CkycRequest,
   CkycRequestDetail,
@@ -842,7 +844,7 @@ export const getGenerateCkycDownloadRequestUrl = () => {
 }
 
 /**
- * @summary Generate a CKYC download request from a portal Excel response
+ * @summary Generate a CKYC download request for clients with CKYC response IDs
  */
 export const generateCkycDownloadRequest = async (ckycDownloadRequestInput: CkycDownloadRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadRequestDetail> => {
 
@@ -891,7 +893,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type GenerateCkycDownloadRequestMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Generate a CKYC download request from a portal Excel response
+ * @summary Generate a CKYC download request for clients with CKYC response IDs
  */
 export const useGenerateCkycDownloadRequest = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -902,5 +904,76 @@ export const useGenerateCkycDownloadRequest = <TError = ErrorType<ErrorResponse>
         TContext
       > => {
       return useMutation(getGenerateCkycDownloadRequestMutationOptions(options));
+    }
+
+export const getUploadCkycDownloadResponseUrl = () => {
+
+
+
+
+  return `/api/ckyc/download-requests/response`
+}
+
+/**
+ * @summary Save final KYC numbers from a CKYC download response Excel file
+ */
+export const uploadCkycDownloadResponse = async (ckycDownloadResponseInput: CkycDownloadResponseInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponse> => {
+
+  return customFetch<CkycDownloadResponse>(getUploadCkycDownloadResponseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(ckycDownloadResponseInput)
+  }
+);}
+
+
+
+
+
+export const getUploadCkycDownloadResponseMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext> => {
+
+const mutationKey = ['uploadCkycDownloadResponse'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, {data: BodyType<CkycDownloadResponseInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadCkycDownloadResponse(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadCkycDownloadResponseMutationResult = NonNullable<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>>
+    export type UploadCkycDownloadResponseMutationBody = BodyType<CkycDownloadResponseInput>
+    export type UploadCkycDownloadResponseMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save final KYC numbers from a CKYC download response Excel file
+ */
+export const useUploadCkycDownloadResponse = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadCkycDownloadResponse>>,
+        TError,
+        {data: BodyType<CkycDownloadResponseInput>},
+        TContext
+      > => {
+      return useMutation(getUploadCkycDownloadResponseMutationOptions(options));
     }
 

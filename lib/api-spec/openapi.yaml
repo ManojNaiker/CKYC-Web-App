@@ -244,7 +244,7 @@ paths:
     post:
       operationId: generateCkycDownloadRequest
       tags: [ckyc]
-      summary: Generate a CKYC download request from a portal Excel response
+      summary: Generate a CKYC download request for clients with CKYC response IDs
       requestBody:
         required: true
         content:
@@ -259,7 +259,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/CkycDownloadRequestDetail"
         "400":
-          description: Invalid Excel response or unmatched CKYC IDs
+          description: No eligible CKYC response IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/download-requests/response:
+    post:
+      operationId: uploadCkycDownloadResponse
+      tags: [ckyc]
+      summary: Save final KYC numbers from a CKYC download response Excel file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CkycDownloadResponseInput"
+      responses:
+        "200":
+          description: Final KYC numbers saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycDownloadResponse"
+        "400":
+          description: Invalid Excel response
           content:
             application/json:
               schema:
@@ -305,6 +329,8 @@ components:
           format: date-time
         ckycResponseId:
           type: ["string", "null"]
+        ckycNumber:
+          type: ["string", "null"]
         ckycResponseStatus:
           type: ["string", "null"]
           enum: [matched, error, null]
@@ -332,6 +358,7 @@ components:
         - date_of_birth
         - createdAt
         - ckycResponseId
+        - ckycNumber
         - ckycResponseStatus
         - ckycResponseError
         - ckycResponseFileName
@@ -548,10 +575,11 @@ components:
     CkycDownloadRequestInput:
       type: object
       properties:
-        sourceFileName:
-          type: string
-        fileContentBase64:
-          type: string
+        clientIds:
+          type: array
+          minItems: 1
+          items:
+            type: number
         fileDate:
           type: string
           description: Date used in the filename, DDMMYYYY
@@ -565,12 +593,39 @@ components:
           type: string
           default: IRA010815
       required:
-        - sourceFileName
-        - fileContentBase64
+        - clientIds
         - fileDate
         - institutionCode
         - version
         - iraCode
+    CkycDownloadResponseInput:
+      type: object
+      properties:
+        sourceFileName:
+          type: string
+        fileContentBase64:
+          type: string
+      required:
+        - sourceFileName
+        - fileContentBase64
+    CkycDownloadResponse:
+      type: object
+      properties:
+        sourceFileName:
+          type: string
+        updatedCount:
+          type: number
+        skippedCount:
+          type: number
+        missingReferences:
+          type: array
+          items:
+            type: string
+      required:
+        - sourceFileName
+        - updatedCount
+        - skippedCount
+        - missingReferences
     CkycDownloadRequest:
       type: object
       properties:

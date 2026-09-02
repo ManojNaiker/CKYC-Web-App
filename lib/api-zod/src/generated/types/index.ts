@@ -11,6 +11,8 @@ export * from './ckycClientInputSearchType';
 export * from './ckycDownloadRequest';
 export * from './ckycDownloadRequestDetail';
 export * from './ckycDownloadRequestInput';
+export * from './ckycDownloadResponse';
+export * from './ckycDownloadResponseInput';
 export * from './ckycFile';
 export * from './ckycRequest';
 export * from './ckycRequestDetail';

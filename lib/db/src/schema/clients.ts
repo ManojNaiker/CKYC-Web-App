@@ -27,6 +27,7 @@ export const clientsTable = pgTable(
     sourceFileName: text("source_file_name"),
     importIdentity: text("import_identity"),
     ckycResponseId: text("ckyc_response_id"),
+    ckycNumber: text("ckyc_number"),
     ckycResponseStatus: text("ckyc_response_status"),
     ckycResponseError: text("ckyc_response_error"),
     ckycResponseFileName: text("ckyc_response_file_name"),

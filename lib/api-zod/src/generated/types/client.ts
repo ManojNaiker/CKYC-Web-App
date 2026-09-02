@@ -24,6 +24,8 @@ export interface Client {
   /** @nullable */
   ckycResponseId: string | null;
   /** @nullable */
+  ckycNumber: string | null;
+  /** @nullable */
   ckycResponseStatus: ClientCkycResponseStatus;
   /** @nullable */
   ckycResponseError: string | null;

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import ExcelJS from "exceljs";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   ckycDownloadRequestsTable,
   clientsTable,
@@ -10,6 +10,8 @@ import {
   GenerateCkycDownloadRequestBody,
   GenerateCkycDownloadRequestResponse,
   ListCkycDownloadRequestsResponse,
+  UploadCkycDownloadResponseBody,
+  UploadCkycDownloadResponseResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -37,6 +39,10 @@ function normalizeReference(value: string) {
   return value.trim().replace(/^'/, "").toUpperCase();
 }
 
+function downloadReference(responseId: string) {
+  return normalizeReference(responseId).slice(-14);
+}
+
 function normalizeDateOfBirth(value: string) {
   const text = value.trim();
   const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
@@ -44,7 +50,7 @@ function normalizeDateOfBirth(value: string) {
   return `${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}-${match[3]}`;
 }
 
-async function parsePendingReferences(fileContentBase64: string) {
+async function parseDownloadResponse(fileContentBase64: string) {
   let workbook: ExcelJS.Workbook;
   try {
     workbook = new ExcelJS.Workbook();
@@ -77,8 +83,7 @@ async function parsePendingReferences(fileContentBase64: string) {
     );
   }
 
-  const references: string[] = [];
-  const kycNumberByReference = new Map<string, string>();
+  const rows = new Map<string, string>();
   for (let rowNumber = headerRow + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
     const reference = normalizeReference(
       cellText(worksheet.getRow(rowNumber).getCell(referenceColumn).value),
@@ -86,15 +91,18 @@ async function parsePendingReferences(fileContentBase64: string) {
     if (!reference) continue;
     const kycNumber = cellText(
       worksheet.getRow(rowNumber).getCell(kycNumberColumn).value,
-    ).trim();
-    if (!kycNumberByReference.has(reference)) references.push(reference);
-    if (kycNumber) kycNumberByReference.set(reference, kycNumber);
+    )
+      .trim()
+      .replace(/^'/, "");
+    if (/^\d+$/.test(kycNumber)) rows.set(reference, kycNumber);
   }
 
-  if (!references.length) {
-    throw new Error("The Excel file does not contain any CKYC reference numbers.");
+  if (!rows.size) {
+    throw new Error(
+      "The Excel file does not contain any rows with a numeric KYC Number.",
+    );
   }
-  return references.filter((reference) => !kycNumberByReference.get(reference));
+  return rows;
 }
 
 export function createCkycDownloadContent(data: {
@@ -156,48 +164,31 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
     return;
   }
 
-  let references: string[];
-  try {
-    references = await parsePendingReferences(parsed.data.fileContentBase64);
-  } catch (error) {
-    res.status(400).json({
-      error: error instanceof Error ? error.message : "Invalid Excel file.",
-    });
-    return;
-  }
-  if (!references.length) {
-    res.status(400).json({
-      error:
-        "Every CKYC response ID in this Excel already has a numeric KYC Number. No download request is required.",
-    });
-    return;
-  }
-
   const matchedClients = await db
     .select({
       referenceNumber: clientsTable.ckycResponseId,
       dateOfBirth: clientsTable.dateOfBirth,
     })
     .from(clientsTable)
-    .where(eq(clientsTable.ckycResponseStatus, "matched"));
-  const clientsByReference = new Map(
-    matchedClients.flatMap((client) =>
-      client.referenceNumber
-        ? [[normalizeReference(client.referenceNumber), client] as const]
-        : [],
-    ),
-  );
-  const missing = references.filter((reference) => !clientsByReference.has(reference));
-  if (missing.length) {
+    .where(
+      and(
+        eq(clientsTable.ckycResponseStatus, "matched"),
+        isNotNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
+        inArray(clientsTable.id, parsed.data.clientIds),
+      ),
+    );
+  if (!matchedClients.length) {
     res.status(400).json({
-      error: `No saved client date of birth was found for ${missing.length} CKYC reference number(s): ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? "…" : ""}`,
+      error:
+        "No CKYC response IDs are waiting for a download request. Upload the CKYC search response first, or all final KYC numbers are already saved.",
     });
     return;
   }
 
-  const rows = references.map((referenceNumber) => ({
-    referenceNumber,
-    dateOfBirth: clientsByReference.get(referenceNumber)!.dateOfBirth,
+  const rows = matchedClients.map((client) => ({
+    referenceNumber: downloadReference(client.referenceNumber!),
+    dateOfBirth: client.dateOfBirth,
   }));
   const created = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(10701)`);
@@ -222,7 +213,7 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
         fileName,
         content,
         recordCount: rows.length,
-        sourceFileName: parsed.data.sourceFileName,
+        sourceFileName: "CKYC client register",
       })
       .returning();
     return saved;
@@ -231,6 +222,66 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
   res
     .status(201)
     .json(GenerateCkycDownloadRequestResponse.parse(toResponse(created, true)));
+});
+
+router.post("/ckyc/download-requests/response", async (req, res): Promise<void> => {
+  const parsed = UploadCkycDownloadResponseBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  let responseRows: Map<string, string>;
+  try {
+    responseRows = await parseDownloadResponse(parsed.data.fileContentBase64);
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : "Invalid Excel response.",
+    });
+    return;
+  }
+
+  const clients = await db
+    .select({
+      id: clientsTable.id,
+      responseId: clientsTable.ckycResponseId,
+      ckycNumber: clientsTable.ckycNumber,
+    })
+    .from(clientsTable)
+    .where(isNotNull(clientsTable.ckycResponseId));
+  const clientsByReference = new Map(
+    clients.flatMap((client) =>
+      client.responseId
+        ? [[downloadReference(client.responseId), client] as const]
+        : [],
+    ),
+  );
+
+  const missingReferences: string[] = [];
+  let updatedCount = 0;
+  await db.transaction(async (tx) => {
+    for (const [reference, kycNumber] of responseRows) {
+      const client = clientsByReference.get(downloadReference(reference));
+      if (!client) {
+        missingReferences.push(reference);
+        continue;
+      }
+      await tx
+        .update(clientsTable)
+        .set({ ckycNumber: kycNumber })
+        .where(eq(clientsTable.id, client.id));
+      updatedCount += 1;
+    }
+  });
+
+  res.json(
+    UploadCkycDownloadResponseResponse.parse({
+      sourceFileName: parsed.data.sourceFileName,
+      updatedCount,
+      skippedCount: responseRows.size - updatedCount,
+      missingReferences,
+    }),
+  );
 });
 
 export default router;

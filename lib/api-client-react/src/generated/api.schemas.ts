@@ -37,6 +37,8 @@ export interface Client {
   /** @nullable */
   ckycResponseId: string | null;
   /** @nullable */
+  ckycNumber: string | null;
+  /** @nullable */
   ckycResponseStatus: ClientCkycResponseStatus;
   /** @nullable */
   ckycResponseError: string | null;
@@ -155,13 +157,25 @@ export type CkycRequestDetail = CkycRequest & ({
 });
 
 export interface CkycDownloadRequestInput {
-  sourceFileName: string;
-  fileContentBase64: string;
+  /** @minItems 1 */
+  clientIds: number[];
   /** Date used in the filename, DDMMYYYY */
   fileDate: string;
   institutionCode: string;
   version: string;
   iraCode: string;
+}
+
+export interface CkycDownloadResponseInput {
+  sourceFileName: string;
+  fileContentBase64: string;
+}
+
+export interface CkycDownloadResponse {
+  sourceFileName: string;
+  updatedCount: number;
+  skippedCount: number;
+  missingReferences: string[];
 }
 
 export interface CkycDownloadRequest {
@@ -200,6 +214,14 @@ status?: ExportClientsStatus;
 };
 
 export type ExportClientsStatus = typeof ExportClientsStatus[keyof typeof ExportClientsStatus];
+
+
+export const ExportClientsStatus = {
+  matched: 'matched',
+  error: 'error',
+  awaiting: 'awaiting',
+} as const;
+
 export type ListClientsParams = {
 search?: string;
 /**
@@ -226,8 +248,3 @@ export const ListClientsStatus = {
   awaiting: 'awaiting',
 } as const;
 
-export const ExportClientsStatus = {
-  matched: 'matched',
-  error: 'error',
-  awaiting: 'awaiting',
-} as const;
