@@ -93,7 +93,8 @@ export const ImportClientsBody = zod.object({
 
 export const ImportClientsResponse = zod.object({
   "imported": zod.number(),
-  "skipped": zod.number(),
+  "skipped": zod.number().describe('Rows that were invalid or missing required values'),
+  "duplicates": zod.number().describe('Valid rows already present in the register or repeated in this import'),
   "fileName": zod.string().nullable()
 })
 

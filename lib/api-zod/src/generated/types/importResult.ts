@@ -8,7 +8,10 @@
 
 export interface ImportResult {
   imported: number;
+  /** Rows that were invalid or missing required values */
   skipped: number;
+  /** Valid rows already present in the register or repeated in this import */
+  duplicates: number;
   /** @nullable */
   fileName: string | null;
 }

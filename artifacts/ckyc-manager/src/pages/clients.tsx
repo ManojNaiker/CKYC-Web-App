@@ -33,7 +33,7 @@ function ImportPanel({ onDone, onImported }: { onDone: () => void; onImported: (
   const submit = () => {
     if (!rows.length) { setMessage('Choose a CSV with at least one client row.'); return; }
     importClients.mutate({ data: { fileName, headers, rows } }, { onSuccess: (result) => {
-      const countMessage = `${result.imported} rows imported${result.skipped ? `, ${result.skipped} skipped` : ''}.`;
+      const countMessage = `${result.imported} rows imported${result.duplicates ? `, ${result.duplicates} duplicate${result.duplicates === 1 ? '' : 's'} ignored` : ''}${result.skipped ? `, ${result.skipped} skipped` : ''}.`;
       const reasonMessage = missingHeaders.length
         ? ` Missing required columns: ${missingHeaders.join(', ')}.`
         : result.skipped

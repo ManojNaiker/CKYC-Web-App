@@ -328,11 +328,16 @@ components:
           type: number
         skipped:
           type: number
+          description: Rows that were invalid or missing required values
+        duplicates:
+          type: number
+          description: Valid rows already present in the register or repeated in this import
         fileName:
           type: ["string", "null"]
       required:
         - imported
         - skipped
+        - duplicates
         - fileName
     CkycRequestInput:
       type: object

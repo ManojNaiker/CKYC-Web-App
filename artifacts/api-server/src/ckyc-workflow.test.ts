@@ -21,6 +21,7 @@ type ClientInput = {
 type ImportResult = {
   imported: number;
   skipped: number;
+  duplicates: number;
   fileName: string | null;
 };
 
@@ -137,6 +138,19 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.deepEqual(imported, {
       imported: 3,
       skipped: 0,
+      duplicates: 0,
+      fileName,
+    });
+
+    const repeatedImport = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName, headers: LMS_HEADERS, rows }),
+    });
+    assert.deepEqual(repeatedImport, {
+      imported: 0,
+      skipped: 0,
+      duplicates: 3,
       fileName,
     });
 
@@ -308,6 +322,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.deepEqual(imported, {
       imported: 0,
       skipped: 1,
+      duplicates: 0,
       fileName,
     });
   });
@@ -388,6 +403,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       assert.deepEqual(imported, {
         imported: 0,
         skipped: 1,
+        duplicates: 0,
         fileName,
       });
     }
@@ -448,6 +464,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.deepEqual(imported, {
       imported: 1,
       skipped: 2,
+      duplicates: 0,
       fileName,
     });
 

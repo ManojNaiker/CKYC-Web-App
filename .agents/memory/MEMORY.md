@@ -2,3 +2,4 @@
 - [CKYC portal search format](ckyc-search-file-format.md) — use the confirmed 10-field V1.1 header and start filenames at S10001
 - [Imported workflow registration](imported-workflow-registration.md) — imported artifact TOMLs may need one combined Replit workflow when managed entries are absent
 - [CKYC integration test isolation](ckyc-integration-tests.md) — use unique database prefixes and cleanup for workflow tests against shared development data
+- [CKYC import identity migration](ckyc-import-identity.md) — keep legacy duplicates intact while enforcing duplicate safety for new LMS imports

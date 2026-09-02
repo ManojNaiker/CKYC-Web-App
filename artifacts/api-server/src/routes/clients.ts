@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, ilike, or, sql } from "drizzle-orm";
+import { and, desc, ilike, inArray, or, sql } from "drizzle-orm";
 import { db, clientsTable } from "@workspace/db";
 import {
   ImportClientsBody,
@@ -45,6 +46,12 @@ function hasValue(value: string) {
 
 function isValidClientRow(row: ClientInput) {
   return REQUIRED_LMS_VALUES.every((header) => hasValue(row[header]));
+}
+
+function getImportIdentity(loanid: string, clientId: string) {
+  return createHash("sha256")
+    .update(JSON.stringify([loanid, clientId]))
+    .digest("hex");
 }
 
 function toClientResponse(client: typeof clientsTable.$inferSelect) {
@@ -136,16 +143,44 @@ router.post("/clients", async (req, res): Promise<void> => {
     gender: row.Gender,
     dateOfBirth: row.date_of_birth,
     sourceFileName,
+    importIdentity: getImportIdentity(row.loanid, row.ClientID),
   }));
 
-  for (let index = 0; index < values.length; index += 500) {
-    await db.insert(clientsTable).values(values.slice(index, index + 500));
+  const existingIdentities = new Set<string>();
+  const loanIds = [...new Set(values.map((value) => value.loanid))];
+  for (let index = 0; index < loanIds.length; index += 500) {
+    const existingRows = await db
+      .select({
+        loanid: clientsTable.loanid,
+        clientId: clientsTable.clientId,
+      })
+      .from(clientsTable)
+      .where(inArray(clientsTable.loanid, loanIds.slice(index, index + 500)));
+    for (const row of existingRows) {
+      existingIdentities.add(getImportIdentity(row.loanid, row.clientId));
+    }
+  }
+  const newValues = values.filter(
+    (value) => !existingIdentities.has(value.importIdentity),
+  );
+
+  let imported = 0;
+  for (let index = 0; index < newValues.length; index += 500) {
+    const inserted = await db
+      .insert(clientsTable)
+      .values(newValues.slice(index, index + 500))
+      .onConflictDoNothing({
+        target: clientsTable.importIdentity,
+      })
+      .returning({ id: clientsTable.id });
+    imported += inserted.length;
   }
 
   res.status(201).json(
     ImportClientsResponse.parse({
-      imported: values.length,
+      imported,
       skipped: parsed.data.rows.length - values.length,
+      duplicates: values.length - imported,
       fileName: sourceFileName,
     }),
   );
