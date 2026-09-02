@@ -52,7 +52,7 @@ A CKYC operations workspace for importing LMS client records, generating documen
   - Version: `V1.3`
   - FICODE / institution code: `IN2884`
   - IRA code: `IRA007917`
-  - Type 10 header code: `10022`
+  - Type 10 header field 2: the same serial number that follows `S` in the filename
   - No branch-code field
 - Build one CKYC row for every available KYC identifier:
   - Aadhaar (`Client_UID`) → one `E` row using the last four digits, with name, date of birth, and gender.
@@ -87,7 +87,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 - Keep CKYC dates in the file’s required `DDMMYYYY` / `DD-MM-YYYY` text formats; they are intentionally not converted to timestamps.
 - The header uses the total generated KYC row count, not the number of selected clients; there is no branch-code field in the request builder.
-- Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNNNN.txt`, for example `IN2884_02092026_V1.3_S000001.txt`; the type 10 record uses header code `10022`.
+- Gateway request filenames must follow `FICODE_DATESTAMP_VERSION_SNNNNNN.txt`, for example `IN2884_02092026_V1.3_S000001.txt`; the type 10 record must repeat the filename serial (`000001` in this example) in field 2.
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers

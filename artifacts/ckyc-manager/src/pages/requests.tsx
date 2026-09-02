@@ -80,7 +80,6 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
   const [version, setVersion] = useState("V1.3");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
   const [iraCode, setIraCode] = useState("IRA007917");
-  const [documentSetName, setDocumentSetName] = useState("10022");
   const [feedback, setFeedback] = useState("");
   const clientsQuery = useListClients(
     { page: 1, pageSize: 200 },
@@ -109,11 +108,6 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
       setter: setInstitutionCode,
     },
     { label: "IRA code", value: iraCode, setter: setIraCode },
-    {
-      label: "Header code",
-      value: documentSetName,
-      setter: setDocumentSetName,
-    },
   ];
 
   const toggle = (id: number) => {
@@ -139,7 +133,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
       version,
       institutionCode,
       iraCode,
-      documentSetName,
+      documentSetName: "10022",
       rowCount: String(rowCount),
       clients: ckycRows,
     };

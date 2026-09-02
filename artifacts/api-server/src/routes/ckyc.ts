@@ -42,14 +42,10 @@ function toRequestResponse(
   };
 }
 
-function formatHeaderValue(documentSetName: string) {
-  return documentSetName.trim();
-}
-
 export function createCkycContent(data: {
   institutionCode: string;
-  documentSetName: string;
   rowCount: string;
+  fileSerial: string;
   clients: Array<{
     name: string;
     dateOfBirth: string;
@@ -61,7 +57,7 @@ export function createCkycContent(data: {
 }) {
   const header = [
     "10",
-    formatHeaderValue(data.documentSetName),
+    data.fileSerial,
     data.institutionCode,
     "1",
     "1BR",
@@ -101,32 +97,36 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
   }
 
   const data = parsed.data;
-  const content = createCkycContent(data);
   const created = await db.transaction(async (tx) => {
     const [pending] = await tx
       .insert(ckycRequestsTable)
       .values({
         fileName: "pending.txt",
-        content,
+        content: "pending",
         recordCount: data.clients.length,
         status: "generated",
       })
       .returning();
 
-    const fileName = `${data.institutionCode}_${data.fileDate}_${data.version}_S${String(pending.id).padStart(6, "0")}.txt`;
+    const fileSerial = String(pending.id).padStart(6, "0");
+    const fileName = `${data.institutionCode}_${data.fileDate}_${data.version}_S${fileSerial}.txt`;
+    const content = createCkycContent({
+      ...data,
+      fileSerial,
+    });
     const [updated] = await tx
       .update(ckycRequestsTable)
-      .set({ fileName })
+      .set({ fileName, content })
       .where(eq(ckycRequestsTable.id, pending.id))
       .returning();
 
-    return updated;
+    return { ...updated, content };
   });
 
   res.status(201).json(
     GenerateCkycRequestResponse.parse({
       ...toRequestResponse(created),
-      content,
+      content: created.content,
     }),
   );
 });

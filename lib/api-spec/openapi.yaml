@@ -346,7 +346,7 @@ components:
         documentSetName:
           type: string
           default: "10022"
-          description: Header code used in the CKYC type 10 search record
+          description: Legacy compatibility field; the type 10 header uses the serial from the filename
         rowCount:
           type: string
           description: Number of data rows written to the request file
