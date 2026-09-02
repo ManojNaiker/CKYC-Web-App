@@ -61,7 +61,7 @@ function createCkycContent(data: {
     data.institutionCode,
     "1",
     "1BR",
-    data.rowCount,
+    String(data.clients.length),
     "",
     "",
     "",
