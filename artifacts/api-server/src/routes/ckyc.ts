@@ -14,6 +14,10 @@ import {
 
 const router: IRouter = Router();
 
+function normalizeName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 function toRequestResponse(
   request: typeof ckycRequestsTable.$inferSelect,
   includeContent = false,
@@ -73,7 +77,7 @@ function createCkycContent(data: {
     if (client.searchType === "B") {
       return `20|${client.sequence}|B|${client.searchValue}||||`;
     }
-    return `20|${client.sequence}|E|${client.searchValue}|${client.name}|${client.dateOfBirth}|${client.gender}|`;
+    return `20|${client.sequence}|E|${client.searchValue}|${normalizeName(client.name)}|${client.dateOfBirth}|${client.gender}|`;
   });
 
   return [header, ...rows].join("\n");

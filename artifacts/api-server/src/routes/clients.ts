@@ -10,6 +10,10 @@ import {
 
 const router: IRouter = Router();
 
+function normalizeName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 function toClientResponse(client: typeof clientsTable.$inferSelect) {
   return {
     id: client.id,
@@ -87,7 +91,7 @@ router.post("/clients", async (req, res): Promise<void> => {
     clientUid: row.Client_UID,
     clientVid: row.Client_VID,
     clientPan: row.Client_PAN,
-    clientName: row.ClientName,
+    clientName: normalizeName(row.ClientName),
     mobileNo: row.mobile_no,
     alternateMobileNo: row.alternate_mobile_no,
     gender: row.Gender,
