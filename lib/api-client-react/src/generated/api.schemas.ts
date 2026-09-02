@@ -41,6 +41,8 @@ export interface ClientInput {
 
 export interface ClientImportInput {
   fileName?: string;
+  /** Original LMS CSV headers, used to detect missing required columns */
+  headers: string[];
   /** @minItems 1 */
   rows: ClientInput[];
 }

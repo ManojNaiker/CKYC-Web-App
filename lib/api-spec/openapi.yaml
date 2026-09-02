@@ -290,12 +290,18 @@ components:
       properties:
         fileName:
           type: string
+        headers:
+          type: array
+          description: Original LMS CSV headers, used to detect missing required columns
+          items:
+            type: string
         rows:
           type: array
           minItems: 1
           items:
             $ref: "#/components/schemas/ClientInput"
       required:
+        - headers
         - rows
     ClientList:
       type: object

@@ -75,6 +75,7 @@ export const ListClientsResponse = zod.object({
 
 export const ImportClientsBody = zod.object({
   "fileName": zod.string().optional(),
+  "headers": zod.array(zod.string()).describe('Original LMS CSV headers, used to detect missing required columns'),
   "rows": zod.array(zod.object({
   "loanid": zod.string(),
   "ClientID": zod.string(),

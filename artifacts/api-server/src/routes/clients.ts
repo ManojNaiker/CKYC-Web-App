@@ -7,11 +7,44 @@ import {
   ListClientsQueryParams,
   ListClientsResponse,
 } from "@workspace/api-zod";
+import type { ClientInput } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
+const LMS_HEADERS = [
+  "loanid",
+  "ClientID",
+  "disbursedon_date",
+  "Client_UID",
+  "Client_VID",
+  "Client_PAN",
+  "ClientName",
+  "mobile_no",
+  "alternate_mobile_no",
+  "Gender",
+  "date_of_birth",
+] as const;
+
+const REQUIRED_LMS_VALUES = [
+  "loanid",
+  "ClientID",
+  "disbursedon_date",
+  "ClientName",
+  "mobile_no",
+  "Gender",
+  "date_of_birth",
+] as const;
+
 function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function hasValue(value: string) {
+  return value.trim().length > 0;
+}
+
+function isValidClientRow(row: ClientInput) {
+  return REQUIRED_LMS_VALUES.every((header) => hasValue(row[header]));
 }
 
 function toClientResponse(client: typeof clientsTable.$inferSelect) {
@@ -84,7 +117,13 @@ router.post("/clients", async (req, res): Promise<void> => {
   }
 
   const sourceFileName = parsed.data.fileName ?? null;
-  const values = parsed.data.rows.map((row) => ({
+  const normalizedHeaders = parsed.data.headers?.map((header) => header.trim());
+  const missingHeaders = normalizedHeaders
+    ? LMS_HEADERS.filter((header) => !normalizedHeaders.includes(header))
+    : [];
+  const validRows =
+    missingHeaders.length > 0 ? [] : parsed.data.rows.filter(isValidClientRow);
+  const values = validRows.map((row) => ({
     loanid: row.loanid,
     clientId: row.ClientID,
     disbursedOnDate: row.disbursedon_date,
@@ -106,7 +145,7 @@ router.post("/clients", async (req, res): Promise<void> => {
   res.status(201).json(
     ImportClientsResponse.parse({
       imported: values.length,
-      skipped: 0,
+      skipped: parsed.data.rows.length - values.length,
       fileName: sourceFileName,
     }),
   );

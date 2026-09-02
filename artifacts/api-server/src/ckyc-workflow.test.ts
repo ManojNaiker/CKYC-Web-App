@@ -43,6 +43,20 @@ type CkycFile = {
   responseContent?: string | null;
 };
 
+const LMS_HEADERS = [
+  "loanid",
+  "ClientID",
+  "disbursedon_date",
+  "Client_UID",
+  "Client_VID",
+  "Client_PAN",
+  "ClientName",
+  "mobile_no",
+  "alternate_mobile_no",
+  "Gender",
+  "date_of_birth",
+];
+
 function parseLmsCsv(csv: string): ClientInput[] {
   const [headerLine, ...dataLines] = csv.trim().split(/\r?\n/);
   const headers = headerLine.split(",");
@@ -117,7 +131,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fileName, rows }),
+      body: JSON.stringify({ fileName, headers: LMS_HEADERS, rows }),
     });
 
     assert.deepEqual(imported, {
@@ -252,5 +266,196 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(detail.content, generated.content);
     assert.equal(detail.responseFileName, responseFileName);
     assert.equal(detail.responseContent, responseContent);
+  });
+
+  it("skips every row when a required LMS header is missing", async () => {
+    const fileName = `${loanPrefix}-missing-header.csv`;
+    const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileName,
+        headers: [
+          "loanid",
+          "disbursedon_date",
+          "Client_UID",
+          "Client_VID",
+          "Client_PAN",
+          "ClientName",
+          "mobile_no",
+          "alternate_mobile_no",
+          "Gender",
+          "date_of_birth",
+        ],
+        rows: [
+          {
+            loanid: `${loanPrefix}-missing-header`,
+            ClientID: "",
+            disbursedon_date: "01-01-2026",
+            Client_UID: "",
+            Client_VID: "",
+            Client_PAN: "",
+            ClientName: "Missing Client ID",
+            mobile_no: "9876543210",
+            alternate_mobile_no: "",
+            Gender: "F",
+            date_of_birth: "01-01-1990",
+          },
+        ],
+      }),
+    });
+
+    assert.deepEqual(imported, {
+      imported: 0,
+      skipped: 1,
+      fileName,
+    });
+  });
+
+  it("rejects an import when the LMS header list is omitted", async () => {
+    const response = await fetch(`${baseUrl}/clients`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileName: `${loanPrefix}-no-headers.csv`,
+        rows: [
+          {
+            loanid: `${loanPrefix}-no-headers`,
+            ClientID: `CLI-${runId}-no-headers`,
+            disbursedon_date: "01-01-2026",
+            Client_UID: "",
+            Client_VID: "",
+            Client_PAN: "",
+            ClientName: "No Headers",
+            mobile_no: "9876543210",
+            alternate_mobile_no: "",
+            Gender: "F",
+            date_of_birth: "01-01-1990",
+          },
+        ],
+      }),
+    });
+
+    assert.equal(response.status, 400);
+  });
+
+  it("requires optional-value columns to remain present in the LMS header", async () => {
+    const allHeaders = [
+      "loanid",
+      "ClientID",
+      "disbursedon_date",
+      "Client_UID",
+      "Client_VID",
+      "Client_PAN",
+      "ClientName",
+      "mobile_no",
+      "alternate_mobile_no",
+      "Gender",
+      "date_of_birth",
+    ];
+
+    for (const omittedHeader of [
+      "Client_UID",
+      "Client_VID",
+      "Client_PAN",
+      "alternate_mobile_no",
+    ]) {
+      const fileName = `${loanPrefix}-missing-${omittedHeader}.csv`;
+      const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName,
+          headers: allHeaders.filter((header) => header !== omittedHeader),
+          rows: [
+            {
+              loanid: `${loanPrefix}-missing-${omittedHeader}`,
+              ClientID: `CLI-${runId}-${omittedHeader}`,
+              disbursedon_date: "01-01-2026",
+              Client_UID: "",
+              Client_VID: "",
+              Client_PAN: "",
+              ClientName: "Complete Required Values",
+              mobile_no: "9876543210",
+              alternate_mobile_no: "",
+              Gender: "F",
+              date_of_birth: "01-01-1990",
+            },
+          ],
+        }),
+      });
+
+      assert.deepEqual(imported, {
+        imported: 0,
+        skipped: 1,
+        fileName,
+      });
+    }
+  });
+
+  it("skips blank required values while importing valid rows from the same file", async () => {
+    const fileName = `${loanPrefix}-mixed.csv`;
+    const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileName,
+        headers: LMS_HEADERS,
+        rows: [
+          {
+            loanid: `${loanPrefix}-valid`,
+            ClientID: `CLI-${runId}-valid`,
+            disbursedon_date: "01-01-2026",
+            Client_UID: "",
+            Client_VID: "",
+            Client_PAN: "",
+            ClientName: "Valid Client",
+            mobile_no: "9876543210",
+            alternate_mobile_no: "",
+            Gender: "F",
+            date_of_birth: "01-01-1990",
+          },
+          {
+            loanid: `${loanPrefix}-blank-name`,
+            ClientID: `CLI-${runId}-blank-name`,
+            disbursedon_date: "02-01-2026",
+            Client_UID: "",
+            Client_VID: "",
+            Client_PAN: "",
+            ClientName: "   ",
+            mobile_no: "9876543211",
+            alternate_mobile_no: "",
+            Gender: "M",
+            date_of_birth: "02-01-1990",
+          },
+          {
+            loanid: `${loanPrefix}-blank-mobile`,
+            ClientID: `CLI-${runId}-blank-mobile`,
+            disbursedon_date: "03-01-2026",
+            Client_UID: "",
+            Client_VID: "",
+            Client_PAN: "",
+            ClientName: "Another Invalid Client",
+            mobile_no: "",
+            alternate_mobile_no: "",
+            Gender: "F",
+            date_of_birth: "03-01-1990",
+          },
+        ],
+      }),
+    });
+
+    assert.deepEqual(imported, {
+      imported: 1,
+      skipped: 2,
+      fileName,
+    });
+
+    const clientList = await requestJson<{ items: ClientRecord[]; total: number }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(`${loanPrefix}-valid`)}&pageSize=10`,
+    );
+    assert.equal(clientList.total, 1);
+    assert.equal(clientList.items[0]?.ClientName, "Valid Client");
   });
 });
