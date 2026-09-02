@@ -4,24 +4,9 @@ import { ArrowRight, Check, ChevronLeft, ChevronRight, Database, FileSpreadsheet
 import { getListClientsQueryKey, useImportClients, useListClients } from '@workspace/api-client-react';
 import type { ClientInput } from '@workspace/api-client-react';
 import { PageIntro, EmptyState, QueryError } from '@/components/workspace-shell';
+import { LMS_HEADERS, parseCsv, REQUIRED_LMS_VALUES } from '@/lib/csv';
 
 const PAGE_SIZE = 12;
-const LMS_HEADERS = ['loanid', 'ClientID', 'disbursedon_date', 'Client_UID', 'Client_VID', 'Client_PAN', 'ClientName', 'mobile_no', 'alternate_mobile_no', 'Gender', 'date_of_birth'];
-const REQUIRED_LMS_VALUES = ['loanid', 'ClientID', 'disbursedon_date', 'ClientName', 'mobile_no', 'Gender', 'date_of_birth'];
-
-type ParsedCsv = { headers: string[]; rows: ClientInput[]; missingHeaders: string[] };
-
-function parseCsv(text: string): ParsedCsv {
-  const lines = text.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return { headers: [], rows: [], missingHeaders: LMS_HEADERS };
-  const headers = lines[0].split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
-  const rows = lines.slice(1).map((line) => {
-    const values = line.split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
-    const row = Object.fromEntries(headers.map((key, index) => [key, values[index] ?? ''])) as Record<string, string>;
-    return { loanid: row.loanid ?? '', ClientID: row.ClientID ?? '', disbursedon_date: row.disbursedon_date ?? '', Client_UID: row.Client_UID ?? '', Client_VID: row.Client_VID ?? '', Client_PAN: row.Client_PAN ?? '', ClientName: row.ClientName ?? '', mobile_no: row.mobile_no ?? '', alternate_mobile_no: row.alternate_mobile_no ?? '', Gender: row.Gender ?? '', date_of_birth: row.date_of_birth ?? '' };
-  });
-  return { headers, rows, missingHeaders: LMS_HEADERS.filter((header) => !headers.includes(header)) };
-}
 
 function ImportPanel({ onDone, onImported }: { onDone: () => void; onImported: () => void }) {
   const [fileName, setFileName] = useState('');
