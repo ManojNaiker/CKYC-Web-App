@@ -267,7 +267,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const responseFileName = `${loanPrefix}-response.txt`;
     const responseContent = [
       "10|IN2884|1|5|V1.1|02-09-2026||||",
-       "20|1|E|9012|PREFIXINTEST12345678|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
+       "20|1|E|9012|OINNWUX41835731|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
       "20|2|B|VID-" + runId + "-1|||||||||KYC Number does not exist for this identity type and number||||",
       "20|3|B|ABCDE1234F|||||||||KYC Number does not exist for this identity type and number||||",
       "20|4|E|1098|||||||||KYC Number does not exist for this identity type and number||||",
@@ -325,7 +325,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `/clients?search=${encodeURIComponent(loanPrefix)}&status=matched&pageSize=1`,
     );
     assert.equal(updatedAsha?.ckycResponseStatus, "matched");
-    assert.equal(updatedAsha?.ckycResponseId, "PREFIXINTEST12345678");
+    assert.equal(updatedAsha?.ckycResponseId, "OINNWUX41835731");
     assert.equal(updatedAsha?.ckycResponseError, null);
     assert.equal(updatedBharat?.ckycResponseStatus, "error");
     assert.equal(updatedBharat?.ckycResponseId, null);
@@ -395,7 +395,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(downloaded.recordCount, 1);
     assert.equal(
       downloaded.content,
-      `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INTEST12345678|02-04-1990|1||\r\n`,
+       `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INNWUX41835731|02-04-1990|1||\r\n`,
     );
     assert.doesNotMatch(downloaded.content, /INWITHKYCNUMBER/);
 
@@ -408,8 +408,8 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     ]);
     sheet.addRow([
       "Asha Rao",
-      "30064364932166",
-      "INTEST12345678",
+      "O50009293913726",
+      "INNWUX41835731",
     ]);
     const fileContentBase64 = Buffer.from(
       await workbook.xlsx.writeBuffer(),
@@ -440,7 +440,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       baseUrl,
       `/clients?search=${encodeURIComponent(`${loanPrefix}-1`)}&pageSize=10`,
     );
-    assert.equal(finalClients.items[0]?.ckycNumber, "30064364932166");
+    assert.equal(finalClients.items[0]?.ckycNumber, "O50009293913726");
   });
 
   it("escapes CKYC result reports for CSV and spreadsheet safety", () => {

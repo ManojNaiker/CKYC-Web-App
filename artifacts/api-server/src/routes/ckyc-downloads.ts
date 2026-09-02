@@ -94,12 +94,12 @@ async function parseDownloadResponse(fileContentBase64: string) {
     )
       .trim()
       .replace(/^'/, "");
-    if (/^\d+$/.test(kycNumber)) rows.set(reference, kycNumber);
+    if (kycNumber) rows.set(reference, kycNumber);
   }
 
   if (!rows.size) {
     throw new Error(
-      "The Excel file does not contain any rows with a numeric KYC Number.",
+      "The Excel file does not contain any rows with a non-blank KYC Number.",
     );
   }
   return rows;
