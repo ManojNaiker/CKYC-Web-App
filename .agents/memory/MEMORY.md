@@ -1,1 +1,2 @@
 - [CKYC API schema compatibility](ckyc-api-schema.md) — use OpenAPI number fields with the current Orval/Zod toolchain
+- [Imported workflow registration](imported-workflow-registration.md) — imported artifact TOMLs may need one combined Replit workflow when managed entries are absent
