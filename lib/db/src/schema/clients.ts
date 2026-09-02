@@ -1,4 +1,5 @@
 import {
+  integer,
   pgTable,
   serial,
   text,
@@ -25,6 +26,12 @@ export const clientsTable = pgTable(
     dateOfBirth: text("date_of_birth").notNull(),
     sourceFileName: text("source_file_name"),
     importIdentity: text("import_identity"),
+    ckycResponseId: text("ckyc_response_id"),
+    ckycResponseStatus: text("ckyc_response_status"),
+    ckycResponseError: text("ckyc_response_error"),
+    ckycResponseFileName: text("ckyc_response_file_name"),
+    ckycResponseRequestId: integer("ckyc_response_request_id"),
+    ckycResponseAt: timestamp("ckyc_response_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

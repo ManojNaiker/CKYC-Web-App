@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ClientCkycResponseStatus } from './clientCkycResponseStatus';
 
 export interface Client {
   id: number;
@@ -20,4 +21,16 @@ export interface Client {
   Gender: string;
   date_of_birth: string;
   createdAt: Date;
+  /** @nullable */
+  ckycResponseId: string | null;
+  /** @nullable */
+  ckycResponseStatus: ClientCkycResponseStatus;
+  /** @nullable */
+  ckycResponseError: string | null;
+  /** @nullable */
+  ckycResponseFileName: string | null;
+  /** @nullable */
+  ckycResponseRequestId: number | null;
+  /** @nullable */
+  ckycResponseAt: Date | null;
 }

@@ -59,7 +59,13 @@ export const ListClientsResponse = zod.object({
   "alternate_mobile_no": zod.string(),
   "Gender": zod.string(),
   "date_of_birth": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "ckycResponseId": zod.string().nullable(),
+  "ckycResponseStatus": zod.union([zod.literal('matched'),zod.literal('error'),zod.literal(null)]).nullable(),
+  "ckycResponseError": zod.string().nullable(),
+  "ckycResponseFileName": zod.string().nullable(),
+  "ckycResponseRequestId": zod.number().nullable(),
+  "ckycResponseAt": zod.coerce.date().nullable()
 })),
   "total": zod.number(),
   "page": zod.number(),

@@ -1,0 +1,68 @@
+10|IN2884|1|67|V1.1|02-09-2026||||
+20|1|E|7588|INCJTU13831907|SAVITA|04|03|04|04|04|04|XXXXXXXXXX9535|04|||
+20|2|B|RJ22167477175|||||||||KYC Number does not exist for this identity type and number||||
+20|3|E|5779|||||||||KYC Number does not exist for this identity type and number||||
+20|4|B|ZGA1930718|||||||||KYC Number does not exist for this identity type and number||||
+20|5|E|4445|||||||||KYC Number does not exist for this identity type and number||||
+20|6|B|ZSQ2687184|||||||||KYC Number does not exist for this identity type and number||||
+20|7|E|9044|||||||||KYC Number does not exist for this identity type and number||||
+20|8|B|ZSQ1515212|INNCSM39119819|Bhedi  Shilaben|04|04|03|04|04|04|XXXXXXXXXX8828|04|||
+20|9|E|4166|INVMZE05759118|PANADA  PREMILABEN|04|03|04|04|04|04|XXXXXXXXXX3384|04|||
+20|10|B|GJ17123147467|||||||||KYC Number does not exist for this identity type and number||||
+20|11|E|1827|||||||||KYC Number does not exist for this identity type and number||||
+20|12|B|KWV1942051|INQYBA65786076|PRAMAR DHAMINSHTHABEN|04|04|03|04|04|04|XXXXXXXXXX2648|04|||
+20|13|E|7045|INWAPV30433469|RATHOD  RENUKABEN|04|03|04|04|04|04|XXXXXXXXXX4348|04|||
+20|14|B|ZSQ1474469|INAIKL68485733|RENUKABEN NARENDRAKUMAR RATHOD|04|03|03|04|04|04|XXXXXXXXXX7586|04|||
+20|15|B|GQAPR3012P|||||||||KYC Number does not exist for this identity type and number||||
+20|16|E|1198|INRPKU30341418|BARIA  KAMLABEN|04|03|03|04|04|04|XXXXXXXXXX4276|04|||
+20|17|B|GJ17116114257|INRPKU30341418|BARIA  KAMLABEN|04|03|03|04|04|04|XXXXXXXXXX4276|04|||
+20|18|E|7179|OINNWUX41835731|Kishori Sumitraben Shankarbhai|04|03|04|04|04|04|OXXXXXXXXXX3726|04|||
+20|19|B|KWV3120862|||||||||KYC Number does not exist for this identity type and number||||
+20|20|E|9088|||||||||KYC Number does not exist for this identity type and number||||
+20|21|B|TCB1167816|||||||||KYC Number does not exist for this identity type and number||||
+20|22|E|7344|INVTPL53938604|Chaudhari Sunitaben Ranjitbhai|04|03|04|04|04|04|XXXXXXXXXX1968|04|||
+20|23|B|BMS3415379|||||||||KYC Number does not exist for this identity type and number||||
+20|24|E|0926|||||||||KYC Number does not exist for this identity type and number||||
+20|25|B|XZL1325067|INEDXT22105200|Bariya  Manjulaben|04|03|03|04|04|04|XXXXXXXXXX2307|04|||
+20|26|E|1343|OINBVYO50303306|SundharavaMinabenBabubhai|04|03|04|04|04|04|OXXXXXXXXXX8234|04|||
+20|27|B|CBW1539493|||||||||KYC Number does not exist for this identity type and number||||
+20|28|E|3873|||||||||KYC Number does not exist for this identity type and number||||
+20|29|B|RPU2522019|||||||||KYC Number does not exist for this identity type and number||||
+20|30|E|8729|INESEL19444357|GAMIT  NITABEN|04|03|03|04|04|04|XXXXXXXXXX4349|04|||
+20|31|B|BMS1448224|INESEL19444357|GAMIT  NITABEN|04|03|03|04|04|04|XXXXXXXXXX4349|04|||
+20|32|E|7650|INSQBL34472532|GAMIT VINABEN SUNILBHAI|04|03|04|04|04|04|XXXXXXXXXX9194|04|||
+20|33|B|NHA1250380|INILXX87418083|Gamit Vinaben Sunilbhai|04|04|03|04|04|04|XXXXXXXXXX5056|04|||
+20|34|E|7581|OINICJB09432491|PAGI  MADHIBEN|04|03|04|04|04|04|OXXXXXXXXXX2164|04|||
+20|35|B|GJ/18/122/294363|||||||||KYC Number does not exist for this identity type and number||||
+20|36|E|1333|||||||||KYC Number does not exist for this identity type and number||||
+20|37|B|IVK1665983|INVHSP37873907|JYOTIBEN  PAGI|04|03|03|04|04|04|XXXXXXXXXX5253|04|||
+20|38|E|7692|OINESVL90245833|Bariya Kokilaben Balvantbhai|04|03|04|04|04|04|OXXXXXXXXXX8626|04|||
+20|39|B|KWV1943711|INGIKU32157313|BARIYA  BALVANTBHAI|04|03|03|04|04|04|XXXXXXXXXX9996|04|||
+20|40|E|2361|INFFTQ11613513|Bharthari  Jajuben Sureshbhai|04|03|03|04|04|04|XXXXXXXXXX4599|04|||
+20|41|B|KNW3981180|INFFTQ11613513|Bharthari  Jajuben Sureshbhai|04|03|03|04|04|04|XXXXXXXXXX4599|04|||
+20|42|E|1744|||||||||KYC Number does not exist for this identity type and number||||
+20|43|B|MJF2033942|INGNVC02934174|JYOTSANABEN  PATEL|04|04|03|04|04|04|XXXXXXXXXX8200|04|||
+20|44|E|1704|INJKOO32824496|CHAGU  BAI|04|03|04|04|04|04|XXXXXXXXXX6558|04|||
+20|45|B|NFW1121383|||||||||KYC Number does not exist for this identity type and number||||
+20|46|E|0544|INCGYQ39506979|Rathva  Ramliben|04|03|04|04|04|04|XXXXXXXXXX2814|04|||
+20|47|B|GJ18118267354|||||||||KYC Number does not exist for this identity type and number||||
+20|48|E|7619|||||||||KYC Number does not exist for this identity type and number||||
+20|49|B|JBG1463173|||||||||KYC Number does not exist for this identity type and number||||
+20|50|E|3879|||||||||KYC Number does not exist for this identity type and number||||
+20|51|B|AEV1515030|||||||||KYC Number does not exist for this identity type and number||||
+20|52|E|1505|||||||||KYC Number does not exist for this identity type and number||||
+20|53|B|BXT1667765|INAQSE70416363|LAKHUBEN THAKARDA|04|04|03|04|04|04|XXXXXXXXXX9354|04|||
+20|54|E|2361|INFFTQ11613513|Bharthari  Jajuben Sureshbhai|04|03|03|04|04|04|XXXXXXXXXX4599|04|||
+20|55|B|KNW3981180|INFFTQ11613513|Bharthari  Jajuben Sureshbhai|04|03|03|04|04|04|XXXXXXXXXX4599|04|||
+20|56|E|1744|||||||||KYC Number does not exist for this identity type and number||||
+20|57|B|MJF2033942|INGNVC02934174|JYOTSANABEN  PATEL|04|04|03|04|04|04|XXXXXXXXXX8200|04|||
+20|58|E|1704|INJKOO32824496|CHAGU  BAI|04|03|04|04|04|04|XXXXXXXXXX6558|04|||
+20|59|B|NFW1121383|||||||||KYC Number does not exist for this identity type and number||||
+20|60|E|0544|INCGYQ39506979|Rathva  Ramliben|04|03|04|04|04|04|XXXXXXXXXX2814|04|||
+20|61|B|GJ18118267354|||||||||KYC Number does not exist for this identity type and number||||
+20|62|E|7619|||||||||KYC Number does not exist for this identity type and number||||
+20|63|B|JBG1463173|||||||||KYC Number does not exist for this identity type and number||||
+20|64|E|3879|||||||||KYC Number does not exist for this identity type and number||||
+20|65|B|AEV1515030|||||||||KYC Number does not exist for this identity type and number||||
+20|66|E|1505|||||||||KYC Number does not exist for this identity type and number||||
+20|67|B|BXT1667765|INAQSE70416363|LAKHUBEN THAKARDA|04|04|03|04|04|04|XXXXXXXXXX9354|04|||

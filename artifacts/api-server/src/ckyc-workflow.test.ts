@@ -32,6 +32,9 @@ type ClientRecord = {
   Client_UID: string;
   Client_VID: string;
   Client_PAN: string;
+  ckycResponseId: string | null;
+  ckycResponseStatus: "matched" | "error" | null;
+  ckycResponseError: string | null;
 };
 
 type CkycFile = {
@@ -253,7 +256,14 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     ]);
 
     const responseFileName = `${loanPrefix}-response.txt`;
-    const responseContent = `10|00003|IN2884|response-${runId}`;
+    const responseContent = [
+      "10|IN2884|1|5|V1.1|02-09-2026||||",
+      "20|1|E|9012|INTEST12345678|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
+      "20|2|B|VID-" + runId + "-1|||||||||KYC Number does not exist for this identity type and number||||",
+      "20|3|B|ABCDE1234F|||||||||KYC Number does not exist for this identity type and number||||",
+      "20|4|E|1098|||||||||KYC Number does not exist for this identity type and number||||",
+      "20|5|B|PQRSX5678K|||||||||KYC Number does not exist for this identity type and number||||",
+    ].join("\r\n");
     const uploaded = await requestJson<CkycFile>(
       baseUrl,
       `/ckyc/requests/${generated.id}/response`,
@@ -280,6 +290,29 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(detail.content, generated.content);
     assert.equal(detail.responseFileName, responseFileName);
     assert.equal(detail.responseContent, responseContent);
+
+    const clientsWithResponses = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&pageSize=10`,
+    );
+    const updatedAsha = clientsWithResponses.items.find((client) =>
+      client.loanid.endsWith("-1"),
+    );
+    const updatedBharat = clientsWithResponses.items.find((client) =>
+      client.loanid.endsWith("-2"),
+    );
+    assert.equal(updatedAsha?.ckycResponseStatus, "matched");
+    assert.equal(updatedAsha?.ckycResponseId, "INTEST12345678");
+    assert.equal(updatedAsha?.ckycResponseError, null);
+    assert.equal(updatedBharat?.ckycResponseStatus, "error");
+    assert.equal(updatedBharat?.ckycResponseId, null);
+    assert.match(
+      updatedBharat?.ckycResponseError ?? "",
+      /KYC Number does not exist/,
+    );
   });
 
   it("skips every row when a required LMS header is missing", async () => {

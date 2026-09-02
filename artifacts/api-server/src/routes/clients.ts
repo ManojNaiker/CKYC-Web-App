@@ -69,6 +69,12 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     Gender: client.gender,
     date_of_birth: client.dateOfBirth,
     createdAt: client.createdAt,
+    ckycResponseId: client.ckycResponseId,
+    ckycResponseStatus: client.ckycResponseStatus as "matched" | "error" | null,
+    ckycResponseError: client.ckycResponseError,
+    ckycResponseFileName: client.ckycResponseFileName,
+    ckycResponseRequestId: client.ckycResponseRequestId,
+    ckycResponseAt: client.ckycResponseAt,
   };
 }
 

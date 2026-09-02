@@ -234,6 +234,20 @@ components:
         createdAt:
           type: string
           format: date-time
+        ckycResponseId:
+          type: ["string", "null"]
+        ckycResponseStatus:
+          type: ["string", "null"]
+          enum: [matched, error, null]
+        ckycResponseError:
+          type: ["string", "null"]
+        ckycResponseFileName:
+          type: ["string", "null"]
+        ckycResponseRequestId:
+          type: ["number", "null"]
+        ckycResponseAt:
+          type: ["string", "null"]
+          format: date-time
       required:
         - id
         - loanid
@@ -248,6 +262,12 @@ components:
         - Gender
         - date_of_birth
         - createdAt
+        - ckycResponseId
+        - ckycResponseStatus
+        - ckycResponseError
+        - ckycResponseFileName
+        - ckycResponseRequestId
+        - ckycResponseAt
     ClientInput:
       type: object
       properties:

@@ -13,6 +13,7 @@ export const ckycRequestsTable = pgTable("ckyc_requests", {
     .defaultNow(),
   responseFileName: text("response_file_name"),
   responseContent: text("response_content"),
+  clientMapping: text("client_mapping"),
 });
 
 export const insertCkycRequestSchema = createInsertSchema(

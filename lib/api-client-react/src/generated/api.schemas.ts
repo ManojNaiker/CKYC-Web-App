@@ -9,6 +9,17 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * @nullable
+ */
+export type ClientCkycResponseStatus = typeof ClientCkycResponseStatus[keyof typeof ClientCkycResponseStatus] | null;
+
+
+export const ClientCkycResponseStatus = {
+  matched: 'matched',
+  error: 'error',
+} as const;
+
 export interface Client {
   id: number;
   loanid: string;
@@ -23,6 +34,18 @@ export interface Client {
   Gender: string;
   date_of_birth: string;
   createdAt: string;
+  /** @nullable */
+  ckycResponseId: string | null;
+  /** @nullable */
+  ckycResponseStatus: ClientCkycResponseStatus;
+  /** @nullable */
+  ckycResponseError: string | null;
+  /** @nullable */
+  ckycResponseFileName: string | null;
+  /** @nullable */
+  ckycResponseRequestId: number | null;
+  /** @nullable */
+  ckycResponseAt: string | null;
 }
 
 export interface ClientInput {
