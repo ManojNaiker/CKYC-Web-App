@@ -7,6 +7,7 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Replit Run button: start the `CKYC Manager` workflow, which serves the React app and API together.
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
+- `pnpm test:ckyc` — run the CKYC import, request-generation, and response-file integration checks
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
