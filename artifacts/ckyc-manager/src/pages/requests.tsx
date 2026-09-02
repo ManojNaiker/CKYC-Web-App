@@ -80,7 +80,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
   const [version, setVersion] = useState("V1.3");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
   const [iraCode, setIraCode] = useState("IRA007917");
-  const [documentSetName, setDocumentSetName] = useState("D00003");
+  const [documentSetName, setDocumentSetName] = useState("10022");
   const [feedback, setFeedback] = useState("");
   const clientsQuery = useListClients(
     { page: 1, pageSize: 200 },
@@ -110,7 +110,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
     },
     { label: "IRA code", value: iraCode, setter: setIraCode },
     {
-      label: "Document set",
+      label: "Header code",
       value: documentSetName,
       setter: setDocumentSetName,
     },

@@ -345,7 +345,8 @@ components:
           default: IRA007917
         documentSetName:
           type: string
-          default: D00003
+          default: "10022"
+          description: Header code used in the CKYC type 10 search record
         rowCount:
           type: string
           description: Number of data rows written to the request file

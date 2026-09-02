@@ -1,2 +1,3 @@
 - [CKYC API schema compatibility](ckyc-api-schema.md) — use OpenAPI number fields with the current Orval/Zod toolchain
+- [CKYC portal search format](ckyc-search-file-format.md) — generate the portal-accepted legacy 10/20 record layout with header code 10022
 - [Imported workflow registration](imported-workflow-registration.md) — imported artifact TOMLs may need one combined Replit workflow when managed entries are absent

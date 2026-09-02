@@ -13,6 +13,7 @@ export interface CkycRequestInput {
   version: string;
   institutionCode: string;
   iraCode: string;
+  /** Header code used in the CKYC type 10 search record */
   documentSetName: string;
   /** Number of data rows written to the request file */
   rowCount: string;

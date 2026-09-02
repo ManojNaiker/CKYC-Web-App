@@ -117,7 +117,7 @@ export const ListCkycRequestsResponse = zod.array(ListCkycRequestsResponseItem)
 export const generateCkycRequestBodyVersionDefault = `V1.3`;
 export const generateCkycRequestBodyInstitutionCodeDefault = `IN2884`;
 export const generateCkycRequestBodyIraCodeDefault = `IRA007917`;
-export const generateCkycRequestBodyDocumentSetNameDefault = `D00003`;
+export const generateCkycRequestBodyDocumentSetNameDefault = `10022`;
 
 
 export const GenerateCkycRequestBody = zod.object({
@@ -125,7 +125,7 @@ export const GenerateCkycRequestBody = zod.object({
   "version": zod.string().default(generateCkycRequestBodyVersionDefault),
   "institutionCode": zod.string().default(generateCkycRequestBodyInstitutionCodeDefault),
   "iraCode": zod.string().default(generateCkycRequestBodyIraCodeDefault),
-  "documentSetName": zod.string().default(generateCkycRequestBodyDocumentSetNameDefault),
+  "documentSetName": zod.string().default(generateCkycRequestBodyDocumentSetNameDefault).describe('Header code used in the CKYC type 10 search record'),
   "rowCount": zod.string().describe('Number of data rows written to the request file'),
   "clients": zod.array(zod.object({
   "clientId": zod.number(),

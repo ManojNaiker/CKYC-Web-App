@@ -43,10 +43,10 @@ function toRequestResponse(
 }
 
 function formatHeaderValue(documentSetName: string) {
-  return documentSetName.replace(/^D/i, "");
+  return documentSetName.trim();
 }
 
-function createCkycContent(data: {
+export function createCkycContent(data: {
   institutionCode: string;
   documentSetName: string;
   rowCount: string;
@@ -80,7 +80,7 @@ function createCkycContent(data: {
     return `20|${client.sequence}|E|${client.searchValue}|${normalizeName(client.name)}|${client.dateOfBirth}|${client.gender}|`;
   });
 
-  return [header, ...rows].join("\n");
+  return `${[header, ...rows].join("\r\n")}\r\n`;
 }
 
 router.get("/ckyc/requests", async (_req, res): Promise<void> => {
