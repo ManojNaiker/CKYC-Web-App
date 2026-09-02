@@ -107,7 +107,7 @@ export default function DownloadRequests() {
       <PageIntro
         eyebrow="CKYC document retrieval"
         title="Build download requests."
-        description="Upload the CKYC portal Excel response. The saved CKYC reference number is matched to the LMS client date of birth before a V1.3 download file is generated."
+        description="Upload the CKYC portal Excel response. Only rows with a blank numeric KYC Number are selected; rows that already have a KYC Number are skipped."
       />
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
@@ -150,7 +150,7 @@ export default function DownloadRequests() {
                   {sourceFileName || "Select CKYC response Excel"}
                 </span>
                 <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                  .xlsx file with ALPHANUMERIC Reference NO
+                  .xlsx file with KYC Number and ALPHANUMERIC Reference NO
                 </span>
               </span>
               <input

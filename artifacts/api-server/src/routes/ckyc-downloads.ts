@@ -14,6 +14,7 @@ import {
 
 const router: IRouter = Router();
 const REFERENCE_HEADER = "ALPHANUMERIC REFERENCE NO";
+const KYC_NUMBER_HEADER = "KYC NUMBER";
 
 function cellText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
@@ -43,7 +44,7 @@ function normalizeDateOfBirth(value: string) {
   return `${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}-${match[3]}`;
 }
 
-async function parseReferenceNumbers(fileContentBase64: string) {
+async function parsePendingReferences(fileContentBase64: string) {
   let workbook: ExcelJS.Workbook;
   try {
     workbook = new ExcelJS.Workbook();
@@ -58,37 +59,42 @@ async function parseReferenceNumbers(fileContentBase64: string) {
 
   let headerRow = 0;
   let referenceColumn = 0;
+  let kycNumberColumn = 0;
   worksheet.eachRow((row, rowNumber) => {
-    if (referenceColumn) return;
     row.eachCell((cell, columnNumber) => {
-      if (normalizeHeader(cellText(cell.value)) === REFERENCE_HEADER) {
+      const header = normalizeHeader(cellText(cell.value));
+      if (header === REFERENCE_HEADER) {
         headerRow = rowNumber;
         referenceColumn = columnNumber;
       }
+      if (header === KYC_NUMBER_HEADER) kycNumberColumn = columnNumber;
     });
   });
 
-  if (!referenceColumn) {
+  if (!referenceColumn || !kycNumberColumn) {
     throw new Error(
-      `The Excel file must contain an "${REFERENCE_HEADER}" column.`,
+      `The Excel file must contain "${REFERENCE_HEADER}" and "${KYC_NUMBER_HEADER}" columns.`,
     );
   }
 
   const references: string[] = [];
-  const seen = new Set<string>();
+  const kycNumberByReference = new Map<string, string>();
   for (let rowNumber = headerRow + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
     const reference = normalizeReference(
       cellText(worksheet.getRow(rowNumber).getCell(referenceColumn).value),
     );
-    if (!reference || seen.has(reference)) continue;
-    seen.add(reference);
-    references.push(reference);
+    if (!reference) continue;
+    const kycNumber = cellText(
+      worksheet.getRow(rowNumber).getCell(kycNumberColumn).value,
+    ).trim();
+    if (!kycNumberByReference.has(reference)) references.push(reference);
+    if (kycNumber) kycNumberByReference.set(reference, kycNumber);
   }
 
   if (!references.length) {
     throw new Error("The Excel file does not contain any CKYC reference numbers.");
   }
-  return references;
+  return references.filter((reference) => !kycNumberByReference.get(reference));
 }
 
 export function createCkycDownloadContent(data: {
@@ -152,10 +158,17 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
 
   let references: string[];
   try {
-    references = await parseReferenceNumbers(parsed.data.fileContentBase64);
+    references = await parsePendingReferences(parsed.data.fileContentBase64);
   } catch (error) {
     res.status(400).json({
       error: error instanceof Error ? error.message : "Invalid Excel file.",
+    });
+    return;
+  }
+  if (!references.length) {
+    res.status(400).json({
+      error:
+        "Every CKYC response ID in this Excel already has a numeric KYC Number. No download request is required.",
     });
     return;
   }

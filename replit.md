@@ -80,6 +80,8 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Provide a separate CKYC Download tab that accepts the portal `.xlsx` response.
 - Read CKYC IDs from the `ALPHANUMERIC Reference NO` column and match each one
   to the saved client CKYC response ID to obtain the LMS date of birth.
+- Generate download rows only when the Excel `KYC Number` value is blank; rows
+  that already have a numeric CKYC number must be excluded.
 - Reject generation when an uploaded reference number cannot be matched to a
   saved client date of birth; never silently omit it.
 - Generate type 60 rows as:

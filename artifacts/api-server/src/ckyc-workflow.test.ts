@@ -134,7 +134,7 @@ describe("CKYC file workflow", () => {
   });
 
   it("imports LMS rows, generates CKYC content, and stores a matching response", async () => {
-    const fileName = `${loanPrefix}-mixed.csv`;
+    const fileName = `${loanPrefix}.csv`;
     const rows = parseLmsCsv(`loanid,ClientID,disbursedon_date,Client_UID,Client_VID,Client_PAN,ClientName,mobile_no,alternate_mobile_no,Gender,date_of_birth
 ${loanPrefix}-1,CLI-${runId}-1,01-01-2026,1234 5678 9012,VID-${runId}-1,ABCDE1234F,  Asha   Rao  ,9876543210,9123456780,F,02-04-1990
 ${loanPrefix}-2,CLI-${runId}-2,02-01-2026,9876-5432-1098,,PQRSX5678K,Bharat Kumar,9876543211,,M,15-08-1988
@@ -143,51 +143,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        fileName,
-        headers: LMS_HEADERS,
-        rows: [
-          {
-            loanid: `${loanPrefix}-valid`,
-            ClientID: `CLI-${runId}-valid`,
-            disbursedon_date: "01-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "Valid Client",
-            mobile_no: "9876543210",
-            alternate_mobile_no: "",
-            Gender: "F",
-            date_of_birth: "01-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-name`,
-            ClientID: `CLI-${runId}-blank-name`,
-            disbursedon_date: "02-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "   ",
-            mobile_no: "9876543211",
-            alternate_mobile_no: "",
-            Gender: "M",
-            date_of_birth: "02-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-mobile`,
-            ClientID: `CLI-${runId}-blank-mobile`,
-            disbursedon_date: "03-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "Another Invalid Client",
-            mobile_no: "",
-            alternate_mobile_no: "",
-            Gender: "F",
-            date_of_birth: "03-01-1990",
-          },
-        ],
-      }),
+      body: JSON.stringify({ fileName, headers: LMS_HEADERS, rows }),
     });
 
     assert.deepEqual(imported, {
@@ -209,9 +165,12 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       fileName,
     });
 
-    const clientList = await requestJson<{ items: ClientRecord[]; total: number }>(
+    const clientList = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
       baseUrl,
-      `/clients?search=${encodeURIComponent(`${loanPrefix}-valid`)}&pageSize=10`,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&pageSize=10`,
     );
     assert.equal(clientList.total, 3);
     const asha = clientList.items.find((client) =>
@@ -353,6 +312,9 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     const updatedBharat = clientsWithResponses.items.find((client) =>
       client.loanid.endsWith("-2"),
     );
+    const noIdentifier = clientsWithResponses.items.find((client) =>
+      client.loanid.endsWith("-3"),
+    );
 
     const matchedClients = await requestJson<{
       items: ClientRecord[];
@@ -369,6 +331,11 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(
       updatedBharat?.ckycResponseError ?? "",
       /KYC Number does not exist/,
+    );
+    assert.ok(noIdentifier);
+    await pool.query(
+      "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched' WHERE id = $2",
+      ["INWITHKYCNUMBER", noIdentifier.id],
     );
 
     const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {
@@ -415,8 +382,18 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     ]);
     sheet.addRow([
       "Asha Rao",
-      "30064364932165",
+      "",
       "INTEST12345678",
+      "8/5/26 2:07 PM",
+      "Operator",
+      "IRA010815",
+      "",
+      "10504",
+    ]);
+    sheet.addRow([
+      "Already Complete",
+      "30064364932165",
+      "INWITHKYCNUMBER",
       "8/5/26 2:07 PM",
       "Operator",
       "IRA010815",
@@ -455,6 +432,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       downloaded.content,
       `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|INTEST12345678|02-04-1990|1||\r\n`,
     );
+    assert.doesNotMatch(downloaded.content, /INWITHKYCNUMBER/);
   });
 
   it("escapes CKYC result reports for CSV and spreadsheet safety", () => {
@@ -476,52 +454,37 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
   });
 
   it("skips every row when a required LMS header is missing", async () => {
-    const fileName = `${loanPrefix}-mixed.csv`;
+    const fileName = `${loanPrefix}-missing-header.csv`;
     const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         fileName,
-        headers: LMS_HEADERS,
+        headers: [
+          "loanid",
+          "disbursedon_date",
+          "Client_UID",
+          "Client_VID",
+          "Client_PAN",
+          "ClientName",
+          "mobile_no",
+          "alternate_mobile_no",
+          "Gender",
+          "date_of_birth",
+        ],
         rows: [
           {
-            loanid: `${loanPrefix}-valid`,
-            ClientID: `CLI-${runId}-valid`,
+            loanid: `${loanPrefix}-missing-header`,
+            ClientID: "",
             disbursedon_date: "01-01-2026",
             Client_UID: "",
             Client_VID: "",
             Client_PAN: "",
-            ClientName: "Valid Client",
+            ClientName: "Missing Client ID",
             mobile_no: "9876543210",
             alternate_mobile_no: "",
             Gender: "F",
             date_of_birth: "01-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-name`,
-            ClientID: `CLI-${runId}-blank-name`,
-            disbursedon_date: "02-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "   ",
-            mobile_no: "9876543211",
-            alternate_mobile_no: "",
-            Gender: "M",
-            date_of_birth: "02-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-mobile`,
-            ClientID: `CLI-${runId}-blank-mobile`,
-            disbursedon_date: "03-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "Another Invalid Client",
-            mobile_no: "",
-            alternate_mobile_no: "",
-            Gender: "F",
-            date_of_birth: "03-01-1990",
           },
         ],
       }),
@@ -583,56 +546,30 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       "Client_PAN",
       "alternate_mobile_no",
     ]) {
-    const fileName = `${loanPrefix}-mixed.csv`;
-    const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        fileName,
-        headers: LMS_HEADERS,
-        rows: [
-          {
-            loanid: `${loanPrefix}-valid`,
-            ClientID: `CLI-${runId}-valid`,
-            disbursedon_date: "01-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "Valid Client",
-            mobile_no: "9876543210",
-            alternate_mobile_no: "",
-            Gender: "F",
-            date_of_birth: "01-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-name`,
-            ClientID: `CLI-${runId}-blank-name`,
-            disbursedon_date: "02-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "   ",
-            mobile_no: "9876543211",
-            alternate_mobile_no: "",
-            Gender: "M",
-            date_of_birth: "02-01-1990",
-          },
-          {
-            loanid: `${loanPrefix}-blank-mobile`,
-            ClientID: `CLI-${runId}-blank-mobile`,
-            disbursedon_date: "03-01-2026",
-            Client_UID: "",
-            Client_VID: "",
-            Client_PAN: "",
-            ClientName: "Another Invalid Client",
-            mobile_no: "",
-            alternate_mobile_no: "",
-            Gender: "F",
-            date_of_birth: "03-01-1990",
-          },
-        ],
-      }),
-    });
+      const fileName = `${loanPrefix}-missing-${omittedHeader}.csv`;
+      const imported = await requestJson<ImportResult>(baseUrl, "/clients", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName,
+          headers: allHeaders.filter((header) => header !== omittedHeader),
+          rows: [
+            {
+              loanid: `${loanPrefix}-missing-${omittedHeader}`,
+              ClientID: `CLI-${runId}-${omittedHeader}`,
+              disbursedon_date: "01-01-2026",
+              Client_UID: "",
+              Client_VID: "",
+              Client_PAN: "",
+              ClientName: "Complete Required Values",
+              mobile_no: "9876543210",
+              alternate_mobile_no: "",
+              Gender: "F",
+              date_of_birth: "01-01-1990",
+            },
+          ],
+        }),
+      });
 
       assert.deepEqual(imported, {
         imported: 0,
@@ -710,25 +647,3 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(clientList.items[0]?.ClientName, "Valid Client");
   });
 });
-
-    const awaitingClients = await requestJson<{
-      items: ClientRecord[];
-      total: number;
-    }>(
-      baseUrl,
-      `/clients?search=${encodeURIComponent(loanPrefix)}&status=awaiting&pageSize=10`,
-    );
-
-    const errorClients = await requestJson<{
-      items: ClientRecord[];
-      total: number;
-    }>(
-      baseUrl,
-      `/clients?search=${encodeURIComponent(loanPrefix)}&status=error&pageSize=10`,
-    );
-
-    const exportCsv = await exportResponse.text();
-
-    const exportResponse = await fetch(
-      `${baseUrl}/clients/export?search=${encodeURIComponent(loanPrefix)}&status=error`,
-    );
