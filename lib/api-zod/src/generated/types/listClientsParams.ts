@@ -5,9 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListClientsStatus } from './listClientsStatus';
 
 export type ListClientsParams = {
 search?: string;
+/**
+ * Filter clients by CKYC response status
+ */
+status?: ListClientsStatus;
 /**
  * @minimum 1
  */

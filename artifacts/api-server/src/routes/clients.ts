@@ -1,8 +1,19 @@
 import { createHash } from "node:crypto";
 import { Router, type IRouter } from "express";
-import { and, desc, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  ilike,
+  inArray,
+  isNull,
+  isNotNull,
+  or,
+  sql,
+  eq,
+} from "drizzle-orm";
 import { db, clientsTable } from "@workspace/db";
 import {
+  ExportClientsQueryParams,
   ImportClientsBody,
   ImportClientsResponse,
   ListClientsQueryParams,
@@ -120,16 +131,8 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
   };
 }
 
-router.get("/clients", async (req, res): Promise<void> => {
-  const parsed = ListClientsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { search, page, pageSize } = parsed.data;
-  const offset = (page - 1) * pageSize;
-  const filter = search
+function getSearchFilter(search?: string) {
+  return search
     ? or(
         ilike(clientsTable.loanid, `%${search}%`),
         ilike(clientsTable.clientId, `%${search}%`),
@@ -139,19 +142,58 @@ router.get("/clients", async (req, res): Promise<void> => {
         ilike(clientsTable.mobileNo, `%${search}%`),
       )
     : undefined;
+}
+
+function getStatusFilter(status?: string) {
+  switch (status) {
+    case "matched":
+      return isNotNull(clientsTable.ckycResponseId);
+    case "error":
+      return and(
+        isNull(clientsTable.ckycResponseId),
+        eq(clientsTable.ckycResponseStatus, "error"),
+      );
+    case "awaiting":
+      return and(
+        isNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycResponseStatus),
+      );
+    default:
+      return undefined;
+  }
+}
+
+function getClientFilter(search?: string, status?: string) {
+  const searchFilter = getSearchFilter(search);
+  const statusFilter = getStatusFilter(status);
+  return searchFilter && statusFilter
+    ? and(searchFilter, statusFilter)
+    : searchFilter ?? statusFilter;
+}
+
+router.get("/clients", async (req, res): Promise<void> => {
+  const parsed = ListClientsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { search, status, page, pageSize } = parsed.data;
+  const offset = (page - 1) * pageSize;
+  const filter = getClientFilter(search, status);
 
   const [rows, countRows] = await Promise.all([
     db
       .select()
       .from(clientsTable)
-      .where(filter ? and(filter) : undefined)
+      .where(filter)
       .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id))
       .limit(pageSize)
       .offset(offset),
     db
       .select({ count: sql<number>`count(*)` })
       .from(clientsTable)
-      .where(filter ? and(filter) : undefined),
+      .where(filter),
   ]);
 
   res.json(
@@ -165,17 +207,14 @@ router.get("/clients", async (req, res): Promise<void> => {
 });
 
 router.get("/clients/export", async (req, res): Promise<void> => {
-  const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
-  const filter = search
-    ? or(
-        ilike(clientsTable.loanid, `%${search}%`),
-        ilike(clientsTable.clientId, `%${search}%`),
-        ilike(clientsTable.clientName, `%${search}%`),
-        ilike(clientsTable.clientUid, `%${search}%`),
-        ilike(clientsTable.clientVid, `%${search}%`),
-        ilike(clientsTable.mobileNo, `%${search}%`),
-      )
-    : undefined;
+  const parsed = ExportClientsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { search, status } = parsed.data;
+  const filter = getClientFilter(search, status);
   const rows = await db
     .select({
       clientId: clientsTable.clientId,
@@ -186,7 +225,7 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       ckycResponseError: clientsTable.ckycResponseError,
     })
     .from(clientsTable)
-    .where(filter ? and(filter) : undefined)
+    .where(filter)
     .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id));
 
   const date = new Date().toISOString().slice(0, 10);

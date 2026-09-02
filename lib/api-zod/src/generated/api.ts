@@ -33,7 +33,8 @@ export const GetDashboardSummaryResponse = zod.object({
  * @summary Export client CKYC results as CSV
  */
 export const ExportClientsQueryParams = zod.object({
-  "search": zod.coerce.string().optional()
+  "search": zod.coerce.string().optional(),
+  "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status')
 })
 
 export const ExportClientsResponse = zod.unknown()
@@ -48,9 +49,9 @@ export const listClientsQueryPageSizeDefault = 50;
 export const listClientsQueryPageSizeMax = 200;
 
 
-
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
+  "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status'),
   "page": zod.coerce.number().min(1).default(listClientsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listClientsQueryPageSizeMax).default(listClientsQueryPageSizeDefault)
 })
@@ -86,7 +87,6 @@ export const ListClientsResponse = zod.object({
 /**
  * @summary Import client rows from an LMS export
  */
-
 
 
 export const ImportClientsBody = zod.object({
@@ -253,5 +253,4 @@ export const GenerateCkycDownloadRequestResponse = zod.object({
 }).and(zod.object({
   "content": zod.string()
 }))
-
 

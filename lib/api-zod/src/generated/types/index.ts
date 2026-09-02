@@ -25,6 +25,8 @@ export * from './clientList';
 export * from './dashboardSummary';
 export * from './errorResponse';
 export * from './exportClientsParams';
+export * from './exportClientsStatus';
 export * from './healthStatus';
 export * from './importResult';
 export * from './listClientsParams';
+export * from './listClientsStatus';

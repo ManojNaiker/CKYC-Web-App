@@ -193,10 +193,19 @@ export interface ErrorResponse {
 
 export type ExportClientsParams = {
 search?: string;
+/**
+ * Filter clients by CKYC response status
+ */
+status?: ExportClientsStatus;
 };
 
+export type ExportClientsStatus = typeof ExportClientsStatus[keyof typeof ExportClientsStatus];
 export type ListClientsParams = {
 search?: string;
+/**
+ * Filter clients by CKYC response status
+ */
+status?: ListClientsStatus;
 /**
  * @minimum 1
  */
@@ -208,3 +217,17 @@ page?: number;
 pageSize?: number;
 };
 
+export type ListClientsStatus = typeof ListClientsStatus[keyof typeof ListClientsStatus];
+
+
+export const ListClientsStatus = {
+  matched: 'matched',
+  error: 'error',
+  awaiting: 'awaiting',
+} as const;
+
+export const ExportClientsStatus = {
+  matched: 'matched',
+  error: 'error',
+  awaiting: 'awaiting',
+} as const;
