@@ -42,6 +42,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+  /clients/export:
+    get:
+      operationId: exportClients
+      tags: [clients]
+      summary: Export client CKYC results as CSV
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CSV report of matching clients and their CKYC results
+          content:
+            text/csv:
+              schema:
+                type: string
   /clients:
     get:
       operationId: listClients

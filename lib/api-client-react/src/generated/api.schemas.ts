@@ -168,6 +168,10 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type ExportClientsParams = {
+search?: string;
+};
+
 export type ListClientsParams = {
 search?: string;
 /**

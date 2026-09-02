@@ -29,6 +29,7 @@ import type {
   ClientList,
   DashboardSummary,
   ErrorResponse,
+  ExportClientsParams,
   HealthStatus,
   ImportResult,
   ListClientsParams
@@ -204,6 +205,90 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportClientsUrl = (params?: ExportClientsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/clients/export?${stringifiedParams}` : `/api/clients/export`
+}
+
+/**
+ * @summary Export client CKYC results as CSV
+ */
+export const exportClients = async (params?: ExportClientsParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportClientsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportClientsQueryKey = (params?: ExportClientsParams,) => {
+    return [
+    `/api/clients/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportClientsQueryOptions = <TData = Awaited<ReturnType<typeof exportClients>>, TError = ErrorType<unknown>>(params?: ExportClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportClientsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportClients>>> = ({ signal }) => exportClients(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportClientsQueryResult = NonNullable<Awaited<ReturnType<typeof exportClients>>>
+export type ExportClientsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Export client CKYC results as CSV
+ */
+
+export function useExportClients<TData = Awaited<ReturnType<typeof exportClients>>, TError = ErrorType<unknown>>(
+ params?: ExportClientsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportClientsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

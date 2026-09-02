@@ -30,6 +30,16 @@ export const GetDashboardSummaryResponse = zod.object({
 
 
 /**
+ * @summary Export client CKYC results as CSV
+ */
+export const ExportClientsQueryParams = zod.object({
+  "search": zod.coerce.string().optional()
+})
+
+export const ExportClientsResponse = zod.unknown()
+
+
+/**
  * @summary List imported clients
  */
 export const listClientsQueryPageDefault = 1;
