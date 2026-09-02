@@ -249,28 +249,36 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
     })
     .from(clientsTable)
     .where(isNotNull(clientsTable.ckycResponseId));
-  const clientsByReference = new Map(
-    clients.flatMap((client) =>
-      client.responseId
-        ? [[downloadReference(client.responseId), client] as const]
-        : [],
-    ),
-  );
+  const clientsByReference = new Map<
+    string,
+    Array<(typeof clients)[number]>
+  >();
+  for (const client of clients) {
+    if (!client.responseId) continue;
+    const reference = downloadReference(client.responseId);
+    const matching = clientsByReference.get(reference) ?? [];
+    matching.push(client);
+    clientsByReference.set(reference, matching);
+  }
 
   const missingReferences: string[] = [];
   let updatedCount = 0;
+  let matchedReferenceCount = 0;
   await db.transaction(async (tx) => {
     for (const [reference, kycNumber] of responseRows) {
-      const client = clientsByReference.get(downloadReference(reference));
-      if (!client) {
+      const matchingClients = clientsByReference.get(downloadReference(reference));
+      if (!matchingClients?.length) {
         missingReferences.push(reference);
         continue;
       }
-      await tx
-        .update(clientsTable)
-        .set({ ckycNumber: kycNumber })
-        .where(eq(clientsTable.id, client.id));
-      updatedCount += 1;
+      matchedReferenceCount += 1;
+      for (const client of matchingClients) {
+        await tx
+          .update(clientsTable)
+          .set({ ckycNumber: kycNumber })
+          .where(eq(clientsTable.id, client.id));
+        updatedCount += 1;
+      }
     }
   });
 
@@ -278,7 +286,7 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
     UploadCkycDownloadResponseResponse.parse({
       sourceFileName: parsed.data.sourceFileName,
       updatedCount,
-      skippedCount: responseRows.size - updatedCount,
+      skippedCount: responseRows.size - matchedReferenceCount,
       missingReferences,
     }),
   );

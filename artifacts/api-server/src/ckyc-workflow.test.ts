@@ -335,6 +335,10 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.ok(noIdentifier);
     await pool.query(
+      "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_response_error = NULL WHERE id = $2",
+      ["OINNWUX41835731", bharat.id],
+    );
+    await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
       ["PREFIXINWITHKYCNUMBER", "30064364932165", noIdentifier.id],
     );
@@ -428,7 +432,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     });
     assert.deepEqual(responseImported, {
       sourceFileName: "portal-download-response.xlsx",
-      updatedCount: 1,
+      updatedCount: 2,
       skippedCount: 0,
       missingReferences: [],
     });
@@ -441,6 +445,18 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `/clients?search=${encodeURIComponent(`${loanPrefix}-1`)}&pageSize=10`,
     );
     assert.equal(finalClients.items[0]?.ckycNumber, "O50009293913726");
+    const duplicateClients = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&pageSize=10`,
+    );
+    assert.equal(
+      duplicateClients.items.find((client) => client.loanid.endsWith("-2"))
+        ?.ckycNumber,
+      "O50009293913726",
+    );
   });
 
   it("escapes CKYC result reports for CSV and spreadsheet safety", () => {
