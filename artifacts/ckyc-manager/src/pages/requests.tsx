@@ -105,21 +105,21 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
   const [version, setVersion] = useState("V1.1");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
   const [feedback, setFeedback] = useState("");
+  const clientParams = {
+    status: "awaiting" as const,
+    page: 1,
+    pageSize: MAX_CKYC_SEARCH_ROWS,
+  };
   const clientsQuery = useListClients(
-    { page: 1, pageSize: MAX_CKYC_SEARCH_ROWS },
+    clientParams,
     {
       query: {
-        queryKey: getListClientsQueryKey({
-          page: 1,
-          pageSize: MAX_CKYC_SEARCH_ROWS,
-        }),
+        queryKey: getListClientsQueryKey(clientParams),
       },
     },
   );
   const generate = useGenerateCkycRequest();
-  const clients = (clientsQuery.data?.items ?? []).filter(
-    (client) => client.ckycResponseStatus === null,
-  );
+  const clients = clientsQuery.data?.items ?? [];
   const selectedIds = useMemo(() => new Set(selected), [selected]);
   const selectedClients = clients.filter((client) => selectedIds.has(client.id));
   const clientPageCount = Math.max(

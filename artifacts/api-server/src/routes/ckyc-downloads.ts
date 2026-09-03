@@ -17,6 +17,7 @@ import {
 const router: IRouter = Router();
 const REFERENCE_HEADER = "ALPHANUMERIC REFERENCE NO";
 const KYC_NUMBER_HEADER = "KYC NUMBER";
+const KYC_NUMBER_UPDATE_BATCH_SIZE = 5_000;
 
 function cellText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
@@ -275,30 +276,48 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
   }
 
   const missingReferences: string[] = [];
-  let updatedCount = 0;
+  const updates: Array<{ id: number; kycNumber: string }> = [];
   let matchedReferenceCount = 0;
-  await db.transaction(async (tx) => {
-    for (const [reference, kycNumber] of responseRows) {
-      const matchingClients = clientsByReference.get(downloadReference(reference));
-      if (!matchingClients?.length) {
-        missingReferences.push(reference);
-        continue;
-      }
-      matchedReferenceCount += 1;
-      for (const client of matchingClients) {
-        await tx
-          .update(clientsTable)
-          .set({ ckycNumber: kycNumber })
-          .where(eq(clientsTable.id, client.id));
-        updatedCount += 1;
-      }
+  for (const [reference, kycNumber] of responseRows) {
+    const matchingClients = clientsByReference.get(downloadReference(reference));
+    if (!matchingClients?.length) {
+      missingReferences.push(reference);
+      continue;
     }
-  });
+    matchedReferenceCount += 1;
+    for (const client of matchingClients) {
+      updates.push({ id: client.id, kycNumber });
+    }
+  }
+
+  if (updates.length) {
+    await db.transaction(async (tx) => {
+      for (
+        let index = 0;
+        index < updates.length;
+        index += KYC_NUMBER_UPDATE_BATCH_SIZE
+      ) {
+        const batch = updates.slice(index, index + KYC_NUMBER_UPDATE_BATCH_SIZE);
+        const values = sql.join(
+          batch.map(
+            (update) => sql`(${update.id}::integer, ${update.kycNumber}::text)`,
+          ),
+          sql`, `,
+        );
+        await tx.execute(sql`
+          UPDATE "clients" AS client_rows
+          SET ckyc_number = update_rows.kyc_number
+          FROM (VALUES ${values}) AS update_rows(id, kyc_number)
+          WHERE client_rows.id = update_rows.id
+        `);
+      }
+    });
+  }
 
   res.json(
     UploadCkycDownloadResponseResponse.parse({
       sourceFileName: parsed.data.sourceFileName,
-      updatedCount,
+      updatedCount: updates.length,
       skippedCount: responseRows.size - matchedReferenceCount,
       missingReferences,
     }),

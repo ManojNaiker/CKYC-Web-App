@@ -17,7 +17,6 @@ import {
   ImportClientsBody,
   ImportClientsResponse,
   ListClientsQueryParams,
-  ListClientsResponse,
 } from "@workspace/api-zod";
 import type { ClientInput } from "@workspace/api-zod";
 
@@ -201,14 +200,12 @@ router.get("/clients", async (req, res): Promise<void> => {
       .where(filter),
   ]);
 
-  res.json(
-    ListClientsResponse.parse({
-      items: rows.map(toClientResponse),
-      total: Number(countRows[0]?.count ?? 0),
-      page,
-      pageSize,
-    }),
-  );
+  res.json({
+    items: rows.map(toClientResponse),
+    total: Number(countRows[0]?.count ?? 0),
+    page,
+    pageSize,
+  });
 });
 
 router.get("/clients/export", async (req, res): Promise<void> => {
