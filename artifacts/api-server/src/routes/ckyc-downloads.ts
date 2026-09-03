@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { Router, type IRouter } from "express";
 import ExcelJS from "exceljs";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
@@ -67,48 +68,59 @@ function normalizeDateOfBirth(value: string) {
 }
 
 async function parseDownloadResponse(fileContentBase64: string) {
-  let workbook: ExcelJS.Workbook;
+  const rows = new Map<string, string>();
+  let worksheetFound = false;
+  let headersFound = false;
   try {
-    workbook = new ExcelJS.Workbook();
-    const bytes = Uint8Array.from(Buffer.from(fileContentBase64, "base64"));
-    await workbook.xlsx.load(bytes.buffer);
+    const workbook = new ExcelJS.stream.xlsx.WorkbookReader(
+      Readable.from([Buffer.from(fileContentBase64, "base64")]),
+      {
+        worksheets: "emit",
+        sharedStrings: "cache",
+        hyperlinks: "ignore",
+        styles: "ignore",
+        entries: "ignore",
+      },
+    );
+
+    for await (const worksheet of workbook) {
+      worksheetFound = true;
+      let referenceColumn = 0;
+      let kycNumberColumn = 0;
+
+      for await (const row of worksheet) {
+        if (!headersFound) {
+          row.eachCell((cell, columnNumber) => {
+            const header = normalizeHeader(cellText(cell.value));
+            if (header === REFERENCE_HEADER) referenceColumn = columnNumber;
+            if (header === KYC_NUMBER_HEADER) kycNumberColumn = columnNumber;
+          });
+          headersFound = Boolean(referenceColumn && kycNumberColumn);
+          continue;
+        }
+
+        const reference = normalizeReference(
+          cellText(row.getCell(referenceColumn).value),
+        );
+        if (!reference) continue;
+        const kycNumber = normalizeKycNumber(
+          cellText(row.getCell(kycNumberColumn).value),
+        );
+        if (kycNumber) rows.set(reference, kycNumber);
+      }
+      break;
+    }
   } catch {
     throw new Error("The uploaded file is not a readable Excel workbook.");
   }
 
-  const worksheet = workbook.worksheets[0];
-  if (!worksheet) throw new Error("The Excel workbook does not contain a worksheet.");
-
-  let headerRow = 0;
-  let referenceColumn = 0;
-  let kycNumberColumn = 0;
-  worksheet.eachRow((row, rowNumber) => {
-    row.eachCell((cell, columnNumber) => {
-      const header = normalizeHeader(cellText(cell.value));
-      if (header === REFERENCE_HEADER) {
-        headerRow = rowNumber;
-        referenceColumn = columnNumber;
-      }
-      if (header === KYC_NUMBER_HEADER) kycNumberColumn = columnNumber;
-    });
-  });
-
-  if (!referenceColumn || !kycNumberColumn) {
+  if (!worksheetFound) {
+    throw new Error("The Excel workbook does not contain a worksheet.");
+  }
+  if (!headersFound) {
     throw new Error(
       `The Excel file must contain "${REFERENCE_HEADER}" and "${KYC_NUMBER_HEADER}" columns.`,
     );
-  }
-
-  const rows = new Map<string, string>();
-  for (let rowNumber = headerRow + 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
-    const reference = normalizeReference(
-      cellText(worksheet.getRow(rowNumber).getCell(referenceColumn).value),
-    );
-    if (!reference) continue;
-    const kycNumber = normalizeKycNumber(
-      cellText(worksheet.getRow(rowNumber).getCell(kycNumberColumn).value),
-    );
-    if (kycNumber) rows.set(reference, kycNumber);
   }
 
   if (!rows.size) {
