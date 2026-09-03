@@ -32,6 +32,9 @@ function todayDDMMYYYY() {
   ).padStart(2, "0")}${date.getFullYear()}`;
 }
 
+const MAX_CKYC_SEARCH_ROWS = 1_000_000;
+const CLIENT_LIST_PAGE_SIZE = 200;
+
 function cleanIdentifier(value: string) {
   return value.trim().replace(/^'/, "");
 }
@@ -76,19 +79,36 @@ function createRowsForClient(
 
 function CreateRequest({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
+  const [clientPage, setClientPage] = useState(1);
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
   const [version, setVersion] = useState("V1.1");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
   const [feedback, setFeedback] = useState("");
   const clientsQuery = useListClients(
-    { page: 1, pageSize: 200 },
-    { query: { queryKey: getListClientsQueryKey({ page: 1, pageSize: 200 }) } },
+    { page: 1, pageSize: MAX_CKYC_SEARCH_ROWS },
+    {
+      query: {
+        queryKey: getListClientsQueryKey({
+          page: 1,
+          pageSize: MAX_CKYC_SEARCH_ROWS,
+        }),
+      },
+    },
   );
   const generate = useGenerateCkycRequest();
   const clients = (clientsQuery.data?.items ?? []).filter(
     (client) => client.ckycResponseStatus === null,
   );
-  const selectedClients = clients.filter((client) => selected.includes(client.id));
+  const selectedIds = useMemo(() => new Set(selected), [selected]);
+  const selectedClients = clients.filter((client) => selectedIds.has(client.id));
+  const clientPageCount = Math.max(
+    1,
+    Math.ceil(clients.length / CLIENT_LIST_PAGE_SIZE),
+  );
+  const visibleClients = clients.slice(
+    (clientPage - 1) * CLIENT_LIST_PAGE_SIZE,
+    clientPage * CLIENT_LIST_PAGE_SIZE,
+  );
   let nextSequence = 1;
   const ckycRows = selectedClients.flatMap((client) => {
     const rows = createRowsForClient(client, nextSequence);
@@ -182,7 +202,9 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
                 Select clients
               </p>
               <p className="mt-1 text-[12px] font-semibold">
-                {selected.length} of {clients.length} selected · {rowCount} CKYC rows
+                 {selected.length.toLocaleString("en-IN")} of{" "}
+                 {clients.length.toLocaleString("en-IN")} selected ·{" "}
+                 {rowCount.toLocaleString("en-IN")} CKYC rows
               </p>
             </div>
             <button
@@ -211,8 +233,9 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
               completed error response are excluded from repeat requests.
             </p>
           ) : (
-            <div className="max-h-[320px] overflow-y-auto rounded-lg border border-border">
-              {clients.map((client) => (
+             <>
+             <div className="max-h-[320px] overflow-y-auto rounded-lg border border-border">
+               {visibleClients.map((client) => (
                 <button
                   key={client.id}
                   onClick={() => toggle(client.id)}
@@ -221,12 +244,12 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
                 >
                   <span
                     className={`grid size-5 shrink-0 place-items-center rounded border ${
-                      selected.includes(client.id)
+                       selectedIds.has(client.id)
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-input bg-card"
                     }`}
                   >
-                    {selected.includes(client.id) && <Check size={13} />}
+                     {selectedIds.has(client.id) && <Check size={13} />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] font-semibold">
@@ -240,6 +263,45 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
                 </button>
               ))}
             </div>
+             {clientPageCount > 1 && (
+               <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+                 <span>
+                   Clients{" "}
+                   {((clientPage - 1) * CLIENT_LIST_PAGE_SIZE + 1).toLocaleString(
+                     "en-IN",
+                   )}
+                   –
+                   {Math.min(
+                     clientPage * CLIENT_LIST_PAGE_SIZE,
+                     clients.length,
+                   ).toLocaleString("en-IN")}{" "}
+                   of {clients.length.toLocaleString("en-IN")}
+                 </span>
+                 <span className="flex items-center gap-2">
+                   <button
+                     type="button"
+                     disabled={clientPage === 1}
+                     onClick={() => setClientPage((page) => page - 1)}
+                     className="rounded border border-border px-2 py-1 font-semibold text-foreground disabled:opacity-40"
+                   >
+                     Previous
+                   </button>
+                   <span>
+                     Page {clientPage.toLocaleString("en-IN")} /{" "}
+                     {clientPageCount.toLocaleString("en-IN")}
+                   </span>
+                   <button
+                     type="button"
+                     disabled={clientPage === clientPageCount}
+                     onClick={() => setClientPage((page) => page + 1)}
+                     className="rounded border border-border px-2 py-1 font-semibold text-foreground disabled:opacity-40"
+                   >
+                     Next
+                   </button>
+                 </span>
+               </div>
+             )}
+             </>
           )}
         </div>
         <div className="p-5">
@@ -274,11 +336,12 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
               />
             </label>
           </div>
-          <p
-            className={`mt-4 min-h-[16px] text-[11px] ${
+             <p
+               className={`mt-4 min-h-[16px] text-[11px] ${
               feedback.includes("could") ||
               feedback.includes("Select") ||
-              feedback.includes("no Aadhaar")
+               feedback.includes("no Aadhaar") ||
+               feedback.includes("10 lakh")
                 ? "text-destructive"
                 : "text-[#31734d]"
             }`}
@@ -286,9 +349,19 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
           >
             {feedback}
           </p>
+           {rowCount > MAX_CKYC_SEARCH_ROWS && (
+             <p className="mb-2 text-[11px] text-destructive">
+               CERSAI allows a maximum of 10 lakh CKYC rows per search file.
+               Split this selection into smaller files.
+             </p>
+           )}
           <button
             onClick={generateFile}
-            disabled={generate.isPending || clientsQuery.isLoading}
+             disabled={
+               generate.isPending ||
+               clientsQuery.isLoading ||
+               rowCount > MAX_CKYC_SEARCH_ROWS
+             }
             className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[12px] font-bold text-primary-foreground disabled:opacity-50"
             data-testid="button-generate-request"
           >

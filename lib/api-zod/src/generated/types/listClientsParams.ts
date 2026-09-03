@@ -19,7 +19,7 @@ status?: ListClientsStatus;
 page?: number;
 /**
  * @minimum 1
- * @maximum 200
+ * @maximum 1000000
  */
 pageSize?: number;
 };

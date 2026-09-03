@@ -13,6 +13,7 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+const MAX_CKYC_SEARCH_ROWS = 1_000_000;
 
 type ClientMapping = {
   sequence: number;
@@ -229,6 +230,13 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
     res.status(400).json({
       error:
         "All selected clients already have a CKYC response or error and are excluded from repeat requests.",
+    });
+    return;
+  }
+  if (eligibleRows.length > MAX_CKYC_SEARCH_ROWS) {
+    res.status(400).json({
+      error:
+        "CERSAI allows a maximum of 10 lakh CKYC rows per search file. Split the selection into smaller files.",
     });
     return;
   }

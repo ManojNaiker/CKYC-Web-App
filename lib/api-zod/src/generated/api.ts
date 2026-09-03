@@ -46,7 +46,7 @@ export const ExportClientsResponse = zod.unknown()
 export const listClientsQueryPageDefault = 1;
 
 export const listClientsQueryPageSizeDefault = 50;
-export const listClientsQueryPageSizeMax = 200;
+export const listClientsQueryPageSizeMax = 1000000;
 
 
 
