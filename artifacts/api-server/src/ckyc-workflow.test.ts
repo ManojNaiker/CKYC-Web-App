@@ -202,7 +202,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
           {
             clientId: asha.id,
             name: asha.ClientName,
-            dateOfBirth: "02-04-1990",
+            dateOfBirth: "1990-04-02",
             gender: "F",
             searchType: "E",
             searchValue: "9012",
@@ -211,7 +211,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
           {
             clientId: asha.id,
             name: asha.ClientName,
-            dateOfBirth: "02-04-1990",
+            dateOfBirth: "1990-04-02",
             gender: "F",
             searchType: "B",
             searchValue: `VID-${runId}-1`,
@@ -220,7 +220,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
           {
             clientId: asha.id,
             name: asha.ClientName,
-            dateOfBirth: "02-04-1990",
+            dateOfBirth: "1990-04-02",
             gender: "F",
             searchType: "B",
             searchValue: "ABCDE1234F",
@@ -229,7 +229,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
           {
             clientId: bharat.id,
             name: "Bharat Kumar",
-            dateOfBirth: "15-08-1988",
+            dateOfBirth: "1988-08-15",
             gender: "M",
             searchType: "E",
             searchValue: "1098",
@@ -238,7 +238,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
           {
             clientId: bharat.id,
             name: "Bharat Kumar",
-            dateOfBirth: "15-08-1988",
+            dateOfBirth: "1988-08-15",
             gender: "M",
             searchType: "B",
             searchValue: "PQRSX5678K",

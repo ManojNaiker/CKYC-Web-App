@@ -34,6 +34,21 @@ function cleanIdentifier(value: string) {
   return value.trim().replace(/^'/, "");
 }
 
+function normalizeCkycDate(value: string) {
+  const date = value.trim();
+  const isoDate = date.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (isoDate) {
+    return `${isoDate[3]}-${isoDate[2]}-${isoDate[1]}`;
+  }
+
+  const slashDate = date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashDate) {
+    return `${slashDate[1]}-${slashDate[2]}-${slashDate[3]}`;
+  }
+
+  return date;
+}
+
 function parseClientMapping(value: string | null): ClientMapping[] {
   if (!value) return [];
   try {
@@ -86,7 +101,8 @@ function deriveLegacyMapping(
       return (
         aadhaarDigits.slice(-4).padStart(4, "0") === row.searchValue &&
         normalizeName(candidate.clientName).toLowerCase() === row.name &&
-        candidate.dateOfBirth.trim() === row.dateOfBirth &&
+        normalizeCkycDate(candidate.dateOfBirth) ===
+          normalizeCkycDate(row.dateOfBirth) &&
         candidate.gender.trim().toUpperCase() === row.gender
       );
     });
@@ -185,7 +201,7 @@ export function createCkycContent(data: {
     if (client.searchType === "B") {
       return `20|${client.sequence}|B|${client.searchValue}||||`;
     }
-    return `20|${client.sequence}|E|${client.searchValue}|${normalizeName(client.name)}|${client.dateOfBirth}|${client.gender}|`;
+      return `20|${client.sequence}|E|${client.searchValue}|${normalizeName(client.name)}|${normalizeCkycDate(client.dateOfBirth)}|${client.gender}|`;
   });
 
   return `${[header, ...rows].join("\r\n")}\r\n`;
