@@ -77,6 +77,27 @@ function createRowsForClient(
   return rows;
 }
 
+function splitIntoRequestBatches(clients: Client[]) {
+  const batches: CkycClientInput[][] = [];
+  let current: CkycClientInput[] = [];
+
+  for (const client of clients) {
+    let rows = createRowsForClient(client, current.length + 1);
+    if (
+      current.length > 0 &&
+      current.length + rows.length > MAX_CKYC_SEARCH_ROWS
+    ) {
+      batches.push(current);
+      current = [];
+      rows = createRowsForClient(client, 1);
+    }
+    current.push(...rows);
+  }
+
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
 function CreateRequest({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [clientPage, setClientPage] = useState(1);
@@ -109,13 +130,14 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
     (clientPage - 1) * CLIENT_LIST_PAGE_SIZE,
     clientPage * CLIENT_LIST_PAGE_SIZE,
   );
-  let nextSequence = 1;
-  const ckycRows = selectedClients.flatMap((client) => {
-    const rows = createRowsForClient(client, nextSequence);
-    nextSequence += rows.length;
-    return rows;
-  });
-  const rowCount = ckycRows.length;
+  const requestBatches = useMemo(
+    () => splitIntoRequestBatches(selectedClients),
+    [selectedClients],
+  );
+  const rowCount = requestBatches.reduce(
+    (total, batch) => total + batch.length,
+    0,
+  );
   const fields: {
     label: string;
     value: string;
@@ -143,32 +165,42 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
       setFeedback("Select at least one client to generate a file.");
       return;
     }
-    if (!ckycRows.length) {
+    if (!requestBatches.length) {
       setFeedback("Selected clients have no Aadhaar, VID, or PAN value.");
       return;
     }
 
-    const payload: CkycRequestInput = {
-      fileDate,
-      version,
-      institutionCode,
-      documentSetName: "10022",
-      rowCount: String(rowCount),
-      clients: ckycRows,
-    };
-    generate.mutate(
-      { data: payload },
-      {
-        onSuccess: () => {
-          setFeedback(`${rowCount} CKYC rows generated.`);
-          setTimeout(onClose, 500);
-        },
-        onError: () =>
-          setFeedback(
-            "The file could not be generated. Review the request details and retry.",
-          ),
-      },
-    );
+    void (async () => {
+      try {
+        for (const batch of requestBatches) {
+          const payload: CkycRequestInput = {
+            fileDate,
+            version,
+            institutionCode,
+            documentSetName: "10022",
+            rowCount: String(batch.length),
+            clients: batch,
+          };
+          await generate.mutateAsync({ data: payload });
+        }
+        setFeedback(
+          requestBatches.length === 1
+            ? `${rowCount.toLocaleString("en-IN")} CKYC rows generated.`
+            : `${requestBatches.length.toLocaleString(
+                "en-IN",
+              )} search files generated with ${rowCount.toLocaleString(
+                "en-IN",
+              )} CKYC rows.`,
+        );
+        setTimeout(onClose, 800);
+      } catch (error) {
+        setFeedback(
+          error instanceof Error && error.message
+            ? error.message
+            : "The file could not be generated. Review the request details and retry.",
+        );
+      }
+    })();
   };
 
   return (
@@ -349,10 +381,12 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
           >
             {feedback}
           </p>
-           {rowCount > MAX_CKYC_SEARCH_ROWS && (
-             <p className="mb-2 text-[11px] text-destructive">
-               CERSAI allows a maximum of 10 lakh CKYC rows per search file.
-               Split this selection into smaller files.
+           {requestBatches.length > 1 && (
+             <p className="mb-2 text-[11px] text-[#31734d]">
+               This selection will generate{" "}
+               {requestBatches.length.toLocaleString("en-IN")} search files
+               automatically. Each file stays within CERSAI&apos;s 10-lakh row
+               limit.
              </p>
            )}
           <button

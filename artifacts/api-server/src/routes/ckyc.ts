@@ -210,13 +210,20 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
 
   const data = parsed.data;
   const requestedClientIds = [...new Set(data.clients.map((client) => client.clientId))];
-  const requestedClients = await db
-    .select({
-      id: clientsTable.id,
-      responseStatus: clientsTable.ckycResponseStatus,
-    })
-    .from(clientsTable)
-    .where(inArray(clientsTable.id, requestedClientIds));
+  const requestedClients: Array<{
+    id: number;
+    responseStatus: string | null;
+  }> = [];
+  for (let index = 0; index < requestedClientIds.length; index += 500) {
+    const chunk = await db
+      .select({
+        id: clientsTable.id,
+        responseStatus: clientsTable.ckycResponseStatus,
+      })
+      .from(clientsTable)
+      .where(inArray(clientsTable.id, requestedClientIds.slice(index, index + 500)));
+    requestedClients.push(...chunk);
+  }
   const awaitingClientIds = new Set(
     requestedClients
       .filter((client) => client.responseStatus === null)
