@@ -30,6 +30,25 @@ export type ParsedCsv = {
   missingHeaders: string[];
 };
 
+export type ParsedClientSelectionCsv = {
+  header: string;
+  references: string[];
+};
+
+const CLIENT_REFERENCE_HEADERS = [
+  "LMS CLIENT ID",
+  "CLIENTID",
+  "CLIENT ID",
+  "LOANID",
+  "LOAN ID",
+  "CKYC RESPONSE ID",
+  "ALPHANUMERIC REFERENCE NO",
+];
+
+function normalizeSelectionHeader(value: string) {
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
 function parseRecords(text: string): string[][] {
   const records: string[][] = [];
   let record: string[] = [];
@@ -125,4 +144,46 @@ export function parseCsv(text: string): ParsedCsv {
     rows,
     missingHeaders: LMS_HEADERS.filter((header) => !headers.includes(header)),
   };
+}
+
+export function parseClientSelectionCsv(text: string): ParsedClientSelectionCsv {
+  const records = parseRecords(text);
+  if (!records.length) {
+    throw new Error(
+      "The client file is empty. Upload a CSV with an LMS Client ID, Loan ID, or CKYC Response ID column.",
+    );
+  }
+
+  const headers = records[0].map((header, index) =>
+    (index === 0 ? header.replace(/^\uFEFF/, "") : header).trim(),
+  );
+  const headerIndex = CLIENT_REFERENCE_HEADERS.reduce(
+    (selectedIndex, supportedHeader) => {
+      if (selectedIndex !== -1) return selectedIndex;
+      return headers.findIndex(
+        (header) => normalizeSelectionHeader(header) === supportedHeader,
+      );
+    },
+    -1,
+  );
+  if (headerIndex === -1) {
+    throw new Error(
+      "The client file must contain LMS Client ID, Loan ID, or CKYC Response ID.",
+    );
+  }
+
+  const references = [
+    ...new Set(
+      records
+        .slice(1)
+        .map((values) => values[headerIndex] ?? "")
+        .map((value) => value.trim().replace(/^'/, ""))
+        .filter(Boolean),
+    ),
+  ];
+  if (!references.length) {
+    throw new Error("The client file does not contain any client references.");
+  }
+
+  return { header: headers[headerIndex], references };
 }

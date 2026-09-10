@@ -20,7 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CkycDownloadBatchRequestInput,
   CkycDownloadRequest,
+  CkycDownloadRequestBatchResponse,
   CkycDownloadRequestDetail,
   CkycDownloadRequestInput,
   CkycDownloadResponse,
@@ -975,5 +977,76 @@ export const useUploadCkycDownloadResponse = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getUploadCkycDownloadResponseMutationOptions(options));
+    }
+
+export const getGenerateCkycDownloadRequestBatchUrl = () => {
+
+
+
+
+  return `/api/ckyc/download-requests/batch`
+}
+
+/**
+ * @summary Generate split CKYC download request files from uploaded client references
+ */
+export const generateCkycDownloadRequestBatch = async (ckycDownloadBatchRequestInput: CkycDownloadBatchRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadRequestBatchResponse> => {
+
+  return customFetch<CkycDownloadRequestBatchResponse>(getGenerateCkycDownloadRequestBatchUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(ckycDownloadBatchRequestInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateCkycDownloadRequestBatchMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, TError,{data: BodyType<CkycDownloadBatchRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, TError,{data: BodyType<CkycDownloadBatchRequestInput>}, TContext> => {
+
+const mutationKey = ['generateCkycDownloadRequestBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, {data: BodyType<CkycDownloadBatchRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateCkycDownloadRequestBatch(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateCkycDownloadRequestBatchMutationResult = NonNullable<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>>
+    export type GenerateCkycDownloadRequestBatchMutationBody = BodyType<CkycDownloadBatchRequestInput>
+    export type GenerateCkycDownloadRequestBatchMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Generate split CKYC download request files from uploaded client references
+ */
+export const useGenerateCkycDownloadRequestBatch = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, TError,{data: BodyType<CkycDownloadBatchRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>,
+        TError,
+        {data: BodyType<CkycDownloadBatchRequestInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateCkycDownloadRequestBatchMutationOptions(options));
     }
 

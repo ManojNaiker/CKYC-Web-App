@@ -103,6 +103,7 @@ describe("CKYC file workflow", () => {
   let baseUrl: string;
   let requestId: number | undefined;
   let downloadRequestId: number | undefined;
+  const batchDownloadRequestIds: number[] = [];
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
   const downloadReference = `IN${String(process.pid).padStart(12, "0")}`;
@@ -129,6 +130,12 @@ describe("CKYC file workflow", () => {
       await pool.query("DELETE FROM ckyc_download_requests WHERE id = $1", [
         downloadRequestId,
       ]);
+    }
+    if (batchDownloadRequestIds.length) {
+      await pool.query(
+        "DELETE FROM ckyc_download_requests WHERE id = ANY($1::int[])",
+        [batchDownloadRequestIds],
+      );
     }
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
       `${loanPrefix}%`,
@@ -343,6 +350,50 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
       ["PREFIXINWITHKYCNUMBER", "30064364932165", noIdentifier.id],
+    );
+
+    const batchedDownload = await requestJson<{
+      requests: Array<{
+        id: number;
+        requestNumber: number;
+        fileName: string;
+        recordCount: number;
+        content: string;
+      }>;
+      totalRecordCount: number;
+      matchedClientCount: number;
+      unmatchedReferences: string[];
+    }>(baseUrl, "/ckyc/download-requests/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        clientReferences: [asha.loanid, bharat.loanid],
+        maxRows: 1,
+        sourceFileName: "selected-clients.csv",
+        fileDate: "26022026",
+        institutionCode: "IN2884",
+        version: "V1.3",
+        iraCode: "IRA010815",
+      }),
+    });
+    batchDownloadRequestIds.push(
+      ...batchedDownload.requests.map((request) => request.id),
+    );
+    assert.equal(batchedDownload.totalRecordCount, 2);
+    assert.equal(batchedDownload.matchedClientCount, 2);
+    assert.deepEqual(batchedDownload.unmatchedReferences, []);
+    assert.equal(batchedDownload.requests.length, 2);
+    assert.deepEqual(
+      batchedDownload.requests.map((request) => request.recordCount),
+      [1, 1],
+    );
+    assert.equal(
+      batchedDownload.requests[0]?.fileName,
+      `IN2884_1_26022026_V1.3_IRA010815_D${batchedDownload.requests[0]?.requestNumber}.txt`,
+    );
+    assert.match(
+      batchedDownload.requests[0]?.content ?? "",
+      /\r\n60\|/,
     );
 
     const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {

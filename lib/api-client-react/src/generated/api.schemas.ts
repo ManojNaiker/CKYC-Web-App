@@ -166,6 +166,27 @@ export interface CkycDownloadRequestInput {
   iraCode: string;
 }
 
+export interface CkycDownloadBatchRequestInput {
+  /**
+     * LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file
+     * @minItems 1
+     */
+  clientReferences: string[];
+  /**
+     * Maximum type 60 rows allowed in each generated CERSAI file
+     * @minimum 1
+     * @maximum 1000000
+     */
+  maxRows: number;
+  /** Name of the uploaded client selection file */
+  sourceFileName?: string;
+  /** Date used in the filename, DDMMYYYY */
+  fileDate: string;
+  institutionCode: string;
+  version: string;
+  iraCode: string;
+}
+
 export interface CkycDownloadResponseInput {
   sourceFileName: string;
   fileContentBase64: string;
@@ -190,6 +211,13 @@ export interface CkycDownloadRequest {
 export type CkycDownloadRequestDetail = CkycDownloadRequest & {
   content: string;
 };
+
+export interface CkycDownloadRequestBatchResponse {
+  requests: CkycDownloadRequestDetail[];
+  totalRecordCount: number;
+  matchedClientCount: number;
+  unmatchedReferences: string[];
+}
 
 export interface DashboardSummary {
   totalClients: number;

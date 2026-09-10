@@ -274,3 +274,40 @@ export const UploadCkycDownloadResponseResponse = zod.object({
 })
 
 
+/**
+ * @summary Generate split CKYC download request files from uploaded client references
+ */
+
+export const generateCkycDownloadRequestBatchBodyMaxRowsMax = 1000000;
+
+export const generateCkycDownloadRequestBatchBodyInstitutionCodeDefault = `IN2884`;
+export const generateCkycDownloadRequestBatchBodyVersionDefault = `V1.3`;
+export const generateCkycDownloadRequestBatchBodyIraCodeDefault = `IRA010815`;
+
+export const GenerateCkycDownloadRequestBatchBody = zod.object({
+  "clientReferences": zod.array(zod.string()).min(1).describe('LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file'),
+  "maxRows": zod.number().min(1).max(generateCkycDownloadRequestBatchBodyMaxRowsMax).describe('Maximum type 60 rows allowed in each generated CERSAI file'),
+  "sourceFileName": zod.string().optional().describe('Name of the uploaded client selection file'),
+  "fileDate": zod.string().describe('Date used in the filename, DDMMYYYY'),
+  "institutionCode": zod.string().default(generateCkycDownloadRequestBatchBodyInstitutionCodeDefault),
+  "version": zod.string().default(generateCkycDownloadRequestBatchBodyVersionDefault),
+  "iraCode": zod.string().default(generateCkycDownloadRequestBatchBodyIraCodeDefault)
+})
+
+export const GenerateCkycDownloadRequestBatchResponse = zod.object({
+  "requests": zod.array(zod.object({
+  "id": zod.number(),
+  "requestNumber": zod.number(),
+  "fileName": zod.string(),
+  "recordCount": zod.number(),
+  "sourceFileName": zod.string(),
+  "createdAt": zod.coerce.date()
+}).and(zod.object({
+  "content": zod.string()
+}))),
+  "totalRecordCount": zod.number(),
+  "matchedClientCount": zod.number(),
+  "unmatchedReferences": zod.array(zod.string())
+})
+
+

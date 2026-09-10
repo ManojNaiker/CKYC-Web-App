@@ -9,13 +9,12 @@ import {
 } from "lucide-react";
 import {
   getListCkycDownloadRequestsQueryKey,
-  getListClientsQueryKey,
-  useGenerateCkycDownloadRequest,
+  useGenerateCkycDownloadRequestBatch,
   useListCkycDownloadRequests,
-  useListClients,
   useUploadCkycDownloadResponse,
 } from "@workspace/api-client-react";
 import { EmptyState, PageIntro, QueryError } from "@/components/workspace-shell";
+import { parseClientSelectionCsv } from "@/lib/csv";
 
 function todayDDMMYYYY() {
   const date = new Date();
@@ -54,21 +53,42 @@ function cleanApiError(error: unknown) {
 
 export default function DownloadRequests() {
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
+  const [maxRows, setMaxRows] = useState("200000");
+  const [clientFileName, setClientFileName] = useState("");
+  const [clientReferences, setClientReferences] = useState<string[]>([]);
+  const [clientFileFeedback, setClientFileFeedback] = useState("");
   const [generateFeedback, setGenerateFeedback] = useState("");
+  const [generatedLots, setGeneratedLots] = useState<
+    Array<{ fileName: string; content: string; recordCount: number }>
+  >([]);
   const [responseFileName, setResponseFileName] = useState("");
   const [responseContentBase64, setResponseContentBase64] = useState("");
   const [responseFeedback, setResponseFeedback] = useState("");
   const historyQuery = useListCkycDownloadRequests({
     query: { queryKey: getListCkycDownloadRequestsQueryKey() },
   });
-  const candidateParams = { status: "matched" as const, page: 1, pageSize: 200 };
-  const candidatesQuery = useListClients(candidateParams, {
-    query: { queryKey: getListClientsQueryKey(candidateParams) },
-  });
-  const generate = useGenerateCkycDownloadRequest();
+  const generateBatch = useGenerateCkycDownloadRequestBatch();
   const uploadResponse = useUploadCkycDownloadResponse();
-  const pendingClients =
-    candidatesQuery.data?.items.filter((client) => !client.ckycNumber) ?? [];
+
+  const chooseClientFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setClientFileName(file.name);
+    setClientFileFeedback("");
+    setClientReferences([]);
+    try {
+      const parsed = parseClientSelectionCsv(await file.text());
+      setClientReferences(parsed.references);
+      setClientFileFeedback(
+        `${parsed.references.length.toLocaleString("en-IN")} client references loaded from ${parsed.header}.`,
+      );
+    } catch (error) {
+      setClientFileName("");
+      setClientFileFeedback(
+        error instanceof Error ? error.message : "Could not read the client CSV.",
+      );
+    }
+  };
 
   const chooseResponseFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,10 +107,23 @@ export default function DownloadRequests() {
 
   const generateFile = () => {
     setGenerateFeedback("");
-    generate.mutate(
+    setGeneratedLots([]);
+    const rowLimit = Number(maxRows);
+    if (!Number.isInteger(rowLimit) || rowLimit < 1 || rowLimit > 1_000_000) {
+      setGenerateFeedback("Rows per file must be a whole number between 1 and 1,000,000.");
+      return;
+    }
+    if (!clientReferences.length) {
+      setGenerateFeedback("Upload a client CSV before generating download files.");
+      return;
+    }
+
+    generateBatch.mutate(
       {
         data: {
-          clientIds: pendingClients.map((client) => client.id),
+          clientReferences,
+          maxRows: rowLimit,
+          sourceFileName: clientFileName,
           fileDate,
           institutionCode: "IN2884",
           version: "V1.3",
@@ -99,9 +132,19 @@ export default function DownloadRequests() {
       },
       {
         onSuccess: (result) => {
-          saveFile(result.fileName, result.content);
+          setGeneratedLots(result.requests);
+          result.requests.forEach((request, index) => {
+            window.setTimeout(
+              () => saveFile(request.fileName, request.content),
+              index * 150,
+            );
+          });
           setGenerateFeedback(
-            `${result.recordCount} CKYC download rows generated as D${result.requestNumber}.`,
+            `${result.requests.length} file lot(s) generated with ${result.totalRecordCount.toLocaleString(
+              "en-IN",
+            )} rows. ${result.matchedClientCount.toLocaleString(
+              "en-IN",
+            )} selected clients matched.`,
           );
           void historyQuery.refetch();
         },
@@ -132,7 +175,7 @@ export default function DownloadRequests() {
           );
           setResponseFileName("");
           setResponseContentBase64("");
-          void candidatesQuery.refetch();
+           void historyQuery.refetch();
         },
         onError: (error) => setResponseFeedback(cleanApiError(error)),
       },
@@ -176,15 +219,65 @@ export default function DownloadRequests() {
                   data-testid="input-download-file-date"
                 />
               </label>
+              <label className="block">
+                <span className="classic-label mb-1.5 block">
+                  Rows per CERSAI file
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000000}
+                  step={1}
+                  value={maxRows}
+                  onChange={(event) => setMaxRows(event.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 font-mono-ui text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  data-testid="input-download-max-rows"
+                />
+                <span className="mt-1 block text-[10px] text-muted-foreground">
+                  Each TXT will contain no more than this many type 60 rows.
+                </span>
+              </label>
+              <label
+                className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-primary/35 bg-background px-3 py-3 hover:border-primary"
+                data-testid="input-download-client-file"
+              >
+                <UploadCloud size={17} className="text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[11px] font-semibold">
+                    {clientFileName || "Upload clients for download"}
+                  </span>
+                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                    CSV: LMS Client ID, Loan ID, or CKYC Response ID
+                  </span>
+                </span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="sr-only"
+                  onChange={chooseClientFile}
+                  data-testid="file-input-download-client-file"
+                />
+              </label>
+              <p
+                className={`min-h-[16px] text-[10px] ${
+                  clientFileFeedback && !clientFileFeedback.includes("loaded")
+                    ? "text-destructive"
+                    : "text-muted-foreground"
+                }`}
+                data-testid="status-download-client-file"
+              >
+                {clientFileFeedback ||
+                  "Use the client register export to select exactly which clients should be included."}
+              </p>
               <div className="rounded-lg border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-semibold">Ready for download</span>
+                  <span className="text-[11px] font-semibold">Selected clients</span>
                   <span className="rounded-full bg-[#e2f2e9] px-2.5 py-1 font-mono-ui text-[10px] font-bold text-[#31734d]">
-                    {candidatesQuery.isLoading ? "…" : pendingClients.length}
+                    {clientReferences.length.toLocaleString("en-IN")}
                   </span>
                 </div>
                 <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-                  Each type 60 row uses the last 14 characters of the CKYC response ID and the LMS date of birth.
+                  Only uploaded clients with a matched CKYC response ID and no final KYC number are included.
                 </p>
               </div>
               <div className="rounded-lg bg-secondary/65 p-3">
@@ -209,16 +302,38 @@ export default function DownloadRequests() {
               <button
                 onClick={generateFile}
                 disabled={
-                  generate.isPending ||
-                  candidatesQuery.isLoading ||
-                  pendingClients.length === 0
+                  generateBatch.isPending || clientReferences.length === 0
                 }
                 className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[12px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
                 data-testid="button-generate-download-request"
               >
                 <FileDown size={15} />
-                {generate.isPending ? "Generating…" : "Generate & download TXT"}
+                {generateBatch.isPending
+                  ? "Generating lots…"
+                  : "Generate & download TXT lots"}
               </button>
+              {generatedLots.length > 0 && (
+                <div className="space-y-2 rounded-lg border border-primary/20 bg-secondary/35 p-3">
+                  <p className="text-[10px] font-semibold text-primary">
+                    Generated lots
+                  </p>
+                  {generatedLots.map((lot) => (
+                    <button
+                      key={lot.fileName}
+                      type="button"
+                      onClick={() => saveFile(lot.fileName, lot.content)}
+                      className="flex w-full items-center justify-between gap-3 rounded-md bg-background px-2.5 py-2 text-left hover:bg-card"
+                    >
+                      <span className="min-w-0 truncate font-mono-ui text-[10px]">
+                        {lot.fileName}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {lot.recordCount.toLocaleString("en-IN")} rows
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 

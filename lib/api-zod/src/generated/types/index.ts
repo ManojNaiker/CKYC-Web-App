@@ -8,7 +8,9 @@
 
 export * from './ckycClientInput';
 export * from './ckycClientInputSearchType';
+export * from './ckycDownloadBatchRequestInput';
 export * from './ckycDownloadRequest';
+export * from './ckycDownloadRequestBatchResponse';
 export * from './ckycDownloadRequestDetail';
 export * from './ckycDownloadRequestInput';
 export * from './ckycDownloadResponse';

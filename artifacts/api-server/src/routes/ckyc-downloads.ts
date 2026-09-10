@@ -1,13 +1,24 @@
 import { Readable } from "node:stream";
 import { Router, type IRouter } from "express";
 import ExcelJS from "exceljs";
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   ckycDownloadRequestsTable,
   clientsTable,
   db,
 } from "@workspace/db";
 import {
+  GenerateCkycDownloadRequestBatchBody,
+  GenerateCkycDownloadRequestBatchResponse,
   GenerateCkycDownloadRequestBody,
   GenerateCkycDownloadRequestResponse,
   ListCkycDownloadRequestsResponse,
@@ -39,6 +50,10 @@ function normalizeHeader(value: string) {
 
 function normalizeReference(value: string) {
   return value.trim().replace(/^'/, "").toUpperCase();
+}
+
+function normalizeClientReference(value: string) {
+  return value.trim().replace(/^'/, "");
 }
 
 function normalizeKycNumber(value: string) {
@@ -249,6 +264,173 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
     .status(201)
     .json(GenerateCkycDownloadRequestResponse.parse(toResponse(created, true)));
 });
+
+router.post(
+  "/ckyc/download-requests/batch",
+  async (req, res): Promise<void> => {
+    const parsed = GenerateCkycDownloadRequestBatchBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    if (!Number.isInteger(parsed.data.maxRows)) {
+      res.status(400).json({ error: "The rows-per-file limit must be a whole number." });
+      return;
+    }
+
+    const requestedReferences = [
+      ...new Set(
+        parsed.data.clientReferences
+          .map(normalizeClientReference)
+          .filter(Boolean),
+      ),
+    ];
+    const requestedReferenceKeys = new Set(
+      requestedReferences.map(normalizeReference),
+    );
+    const matchedById = new Map<
+      number,
+      {
+        id: number;
+        clientId: string;
+        loanid: string;
+        responseId: string | null;
+        dateOfBirth: string;
+      }
+    >();
+    const lookupChunkSize = 500;
+
+    for (
+      let index = 0;
+      index < requestedReferences.length;
+      index += lookupChunkSize
+    ) {
+      const chunk = requestedReferences.slice(index, index + lookupChunkSize);
+      const numericIds = chunk
+        .filter((reference) => /^\d+$/.test(reference))
+        .map(Number);
+      const referenceFilters = [
+        inArray(clientsTable.clientId, chunk),
+        inArray(clientsTable.loanid, chunk),
+        inArray(clientsTable.ckycResponseId, chunk),
+      ];
+      if (numericIds.length) {
+        referenceFilters.push(inArray(clientsTable.id, numericIds));
+      }
+
+      const rows = await db
+        .select({
+          id: clientsTable.id,
+          clientId: clientsTable.clientId,
+          loanid: clientsTable.loanid,
+          responseId: clientsTable.ckycResponseId,
+          dateOfBirth: clientsTable.dateOfBirth,
+        })
+        .from(clientsTable)
+        .where(
+          and(
+            eq(clientsTable.ckycResponseStatus, "matched"),
+            isNotNull(clientsTable.ckycResponseId),
+            isNull(clientsTable.ckycNumber),
+            or(...referenceFilters),
+          ),
+        );
+      for (const row of rows) matchedById.set(row.id, row);
+    }
+
+    const matchesByReference = new Map<
+      string,
+      Array<(typeof matchedById extends Map<number, infer Row> ? Row : never)>
+    >();
+    for (const row of matchedById.values()) {
+      for (const value of [row.clientId, row.loanid, row.responseId ?? ""]) {
+        const key = normalizeReference(value);
+        if (!key || !requestedReferenceKeys.has(key)) continue;
+        const matches = matchesByReference.get(key) ?? [];
+        matches.push(row);
+        matchesByReference.set(key, matches);
+      }
+    }
+
+    const orderedMatches: Array<
+      (typeof matchedById extends Map<number, infer Row> ? Row : never)
+    > = [];
+    const orderedIds = new Set<number>();
+    const unmatchedReferences: string[] = [];
+    for (const reference of requestedReferences) {
+      const key = normalizeReference(reference);
+      const matches = matchesByReference.get(key) ?? [];
+      if (!matches.length) {
+        unmatchedReferences.push(reference);
+        continue;
+      }
+      for (const row of matches) {
+        if (orderedIds.has(row.id)) continue;
+        orderedIds.add(row.id);
+        orderedMatches.push(row);
+      }
+    }
+
+    if (!orderedMatches.length) {
+      res.status(400).json({
+        error:
+          "No selected clients have matched CKYC response IDs waiting for download.",
+      });
+      return;
+    }
+
+    const sourceFileName =
+      parsed.data.sourceFileName?.trim() || "Uploaded client selection";
+    const lots: Array<
+      Array<{ referenceNumber: string; dateOfBirth: string }>
+    > = [];
+    for (let index = 0; index < orderedMatches.length; index += parsed.data.maxRows) {
+      lots.push(
+        orderedMatches.slice(index, index + parsed.data.maxRows).map((client) => ({
+          referenceNumber: downloadReference(client.responseId!),
+          dateOfBirth: client.dateOfBirth,
+        })),
+      );
+    }
+
+    const savedRequests = await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(10701)`);
+      const existing = await tx
+        .select({ requestNumber: ckycDownloadRequestsTable.requestNumber })
+        .from(ckycDownloadRequestsTable);
+      const highest = existing.reduce(
+        (value, row) => Math.max(value, row.requestNumber),
+        10700,
+      );
+      const values = lots.map((rows, index) => {
+        const requestNumber = highest + index + 1;
+        return {
+          requestNumber,
+          fileName: `${parsed.data.institutionCode}_1_${parsed.data.fileDate}_${parsed.data.version}_${parsed.data.iraCode}_D${requestNumber}.txt`,
+          content: createCkycDownloadContent({
+            requestNumber,
+            institutionCode: parsed.data.institutionCode,
+            rows,
+          }),
+          recordCount: rows.length,
+          sourceFileName,
+        };
+      });
+      return tx.insert(ckycDownloadRequestsTable).values(values).returning();
+    });
+
+    res.status(201).json(
+      GenerateCkycDownloadRequestBatchResponse.parse({
+        requests: savedRequests
+          .sort((left, right) => left.requestNumber - right.requestNumber)
+          .map((request) => toResponse(request, true)),
+        totalRecordCount: orderedMatches.length,
+        matchedClientCount: orderedMatches.length,
+        unmatchedReferences,
+      }),
+    );
+  },
+);
 
 router.post("/ckyc/download-requests/response", async (req, res): Promise<void> => {
   const parsed = UploadCkycDownloadResponseBody.safeParse(req.body);
