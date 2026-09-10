@@ -347,6 +347,10 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_response_error = NULL WHERE id = $2",
       [fullResponseId, bharat.id],
     );
+    await pool.query("UPDATE clients SET date_of_birth = $1 WHERE id = $2", [
+      "1988-08-15",
+      bharat.id,
+    ]);
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
       ["PREFIXINWITHKYCNUMBER", "30064364932165", noIdentifier.id],
@@ -394,6 +398,10 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(
       batchedDownload.requests[0]?.content ?? "",
       /\r\n60\|/,
+    );
+    assert.match(
+      batchedDownload.requests[1]?.content ?? "",
+      /\r\n60\|[^|]+\|15-08-1988\|1\|\|/,
     );
 
     const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {

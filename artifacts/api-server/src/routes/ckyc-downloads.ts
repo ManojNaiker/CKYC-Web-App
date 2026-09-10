@@ -77,9 +77,20 @@ function downloadReference(responseId: string) {
 
 function normalizeDateOfBirth(value: string) {
   const text = value.trim();
-  const match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-  if (!match) return text;
-  return `${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}-${match[3]}`;
+  const isoMatch = text.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (isoMatch) {
+    return `${isoMatch[3].padStart(2, "0")}-${isoMatch[2].padStart(
+      2,
+      "0",
+    )}-${isoMatch[1]}`;
+  }
+
+  const dayFirstMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (!dayFirstMatch) return text;
+  return `${dayFirstMatch[1].padStart(2, "0")}-${dayFirstMatch[2].padStart(
+    2,
+    "0",
+  )}-${dayFirstMatch[3]}`;
 }
 
 async function parseDownloadResponse(fileContentBase64: string) {
