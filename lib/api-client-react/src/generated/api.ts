@@ -917,7 +917,7 @@ export const getUploadCkycDownloadResponseUrl = () => {
 }
 
 /**
- * @summary Save final KYC numbers from a CKYC download response Excel file
+ * @summary Save a CKYC download response Excel or TXT file
  */
 export const uploadCkycDownloadResponse = async (ckycDownloadResponseInput: CkycDownloadResponseInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponse> => {
 
@@ -966,7 +966,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadCkycDownloadResponseMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Save final KYC numbers from a CKYC download response Excel file
+ * @summary Save a CKYC download response Excel or TXT file
  */
 export const useUploadCkycDownloadResponse = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

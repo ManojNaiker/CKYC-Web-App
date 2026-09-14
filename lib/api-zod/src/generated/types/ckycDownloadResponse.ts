@@ -8,6 +8,11 @@
 
 export interface CkycDownloadResponse {
   sourceFileName: string;
+  storedRecordId: number;
+  /** @nullable */
+  requestNumber: number | null;
+  storedRecordCount: number;
+  requestMatched: boolean;
   updatedCount: number;
   skippedCount: number;
   missingReferences: string[];

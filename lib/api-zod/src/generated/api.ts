@@ -225,6 +225,8 @@ export const ListCkycDownloadRequestsResponseItem = zod.object({
   "fileName": zod.string(),
   "recordCount": zod.number(),
   "sourceFileName": zod.string(),
+  "responseFileName": zod.string().nullable(),
+  "responseAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListCkycDownloadRequestsResponse = zod.array(ListCkycDownloadRequestsResponseItem)
@@ -252,6 +254,8 @@ export const GenerateCkycDownloadRequestResponse = zod.object({
   "fileName": zod.string(),
   "recordCount": zod.number(),
   "sourceFileName": zod.string(),
+  "responseFileName": zod.string().nullable(),
+  "responseAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 }).and(zod.object({
   "content": zod.string()
@@ -259,7 +263,7 @@ export const GenerateCkycDownloadRequestResponse = zod.object({
 
 
 /**
- * @summary Save final KYC numbers from a CKYC download response Excel file
+ * @summary Save a CKYC download response Excel or TXT file
  */
 export const UploadCkycDownloadResponseBody = zod.object({
   "sourceFileName": zod.string(),
@@ -268,6 +272,10 @@ export const UploadCkycDownloadResponseBody = zod.object({
 
 export const UploadCkycDownloadResponseResponse = zod.object({
   "sourceFileName": zod.string(),
+  "storedRecordId": zod.number(),
+  "requestNumber": zod.number().nullable(),
+  "storedRecordCount": zod.number(),
+  "requestMatched": zod.boolean(),
   "updatedCount": zod.number(),
   "skippedCount": zod.number(),
   "missingReferences": zod.array(zod.string())
@@ -301,6 +309,8 @@ export const GenerateCkycDownloadRequestBatchResponse = zod.object({
   "fileName": zod.string(),
   "recordCount": zod.number(),
   "sourceFileName": zod.string(),
+  "responseFileName": zod.string().nullable(),
+  "responseAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 }).and(zod.object({
   "content": zod.string()

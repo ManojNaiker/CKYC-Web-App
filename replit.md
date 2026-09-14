@@ -81,9 +81,12 @@ A CKYC operations workspace for importing LMS client records, generating documen
   clients with a saved CKYC response ID but no final CKYC number.
 - Use the last 14 characters of each saved CKYC response ID and the matching
   LMS date of birth in the download request; never generate a row without DOB.
-- After the download request is processed on the portal, accept the response
-  `.xlsx`, match `ALPHANUMERIC Reference NO` back to the saved response ID, and
-  save its numeric `KYC Number` as the client's final CKYC number.
+- After the download request is processed on the portal, accept either the
+  response `.xlsx` or final CKYC `.txt`. Match Excel
+  `ALPHANUMERIC Reference NO` values back to saved response IDs and save their
+  `KYC Number` values as the client's final CKYC numbers. Retain every uploaded
+  response record and, when a TXT response arrives before its D request exists,
+  attach it automatically once the matching request number is generated.
 - Exclude clients that already have a final CKYC number from later download
   request files.
 - Generate type 60 rows as:

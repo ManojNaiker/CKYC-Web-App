@@ -14,6 +14,9 @@ export const ckycDownloadRequestsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    responseFileName: text("response_file_name"),
+    responseContent: text("response_content"),
+    responseAt: timestamp("response_at", { withTimezone: true }),
   },
   (table) => [
     unique("ckyc_download_requests_request_number_unique").on(table.requestNumber),

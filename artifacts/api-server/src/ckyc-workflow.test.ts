@@ -104,6 +104,7 @@ describe("CKYC file workflow", () => {
   let requestId: number | undefined;
   let downloadRequestId: number | undefined;
   const batchDownloadRequestIds: number[] = [];
+  const downloadResponseRecordIds: number[] = [];
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
   const downloadReference = `IN${String(process.pid).padStart(12, "0")}`;
@@ -135,6 +136,12 @@ describe("CKYC file workflow", () => {
       await pool.query(
         "DELETE FROM ckyc_download_requests WHERE id = ANY($1::int[])",
         [batchDownloadRequestIds],
+      );
+    }
+    if (downloadResponseRecordIds.length) {
+      await pool.query(
+        "DELETE FROM ckyc_download_response_records WHERE id = ANY($1::int[])",
+        [downloadResponseRecordIds],
       );
     }
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
@@ -404,6 +411,32 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       /\r\n60\|[^|]+\|15-08-1988\|1\|\|/,
     );
 
+    const pendingRequestNumber =
+      Math.max(
+        ...batchedDownload.requests.map((request) => request.requestNumber),
+      ) + 1;
+    const pendingResponse = await requestJson<{
+      storedRecordId: number;
+      requestNumber: number | null;
+      storedRecordCount: number;
+      requestMatched: boolean;
+      updatedCount: number;
+    }>(baseUrl, "/ckyc/download-requests/response", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceFileName: `Pasted-10-${pendingRequestNumber}-final.txt`,
+        fileContentBase64: Buffer.from(
+          `10|${pendingRequestNumber}|IN2884|1|1|10-09-2026|V1.3|||||\r\n20|1|E|REFERENCE||||\r\n`,
+        ).toString("base64"),
+      }),
+    });
+    downloadResponseRecordIds.push(pendingResponse.storedRecordId);
+    assert.equal(pendingResponse.requestNumber, pendingRequestNumber);
+    assert.equal(pendingResponse.storedRecordCount, 1);
+    assert.equal(pendingResponse.requestMatched, false);
+    assert.equal(pendingResponse.updatedCount, 0);
+
     const repeatResponse = await fetch(`${baseUrl}/ckyc/requests`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -440,6 +473,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       fileName: string;
       recordCount: number;
       content: string;
+      responseFileName: string | null;
     }>(baseUrl, "/ckyc/download-requests", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -458,6 +492,10 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       `IN2884_1_26022026_V1.3_IRA010815_D${downloaded.requestNumber}.txt`,
     );
     assert.equal(downloaded.recordCount, 1);
+    assert.equal(
+      downloaded.responseFileName,
+      `Pasted-10-${pendingRequestNumber}-final.txt`,
+    );
     assert.equal(
       downloaded.content,
        `10|${downloaded.requestNumber}|IN2884|1|1BR|1|||||\r\n60|${downloadReference}|02-04-1990|1||\r\n`,
@@ -480,6 +518,11 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       await workbook.xlsx.writeBuffer(),
     ).toString("base64");
     const responseImported = await requestJson<{
+      sourceFileName: string;
+      storedRecordId: number;
+      requestNumber: number | null;
+      storedRecordCount: number;
+      requestMatched: boolean;
       updatedCount: number;
       skippedCount: number;
       missingReferences: string[];
@@ -491,12 +534,14 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         fileContentBase64,
       }),
     });
-    assert.deepEqual(responseImported, {
-      sourceFileName: "portal-download-response.xlsx",
-      updatedCount: 2,
-      skippedCount: 0,
-      missingReferences: [],
-    });
+    downloadResponseRecordIds.push(responseImported.storedRecordId);
+    assert.equal(responseImported.sourceFileName, "portal-download-response.xlsx");
+    assert.equal(responseImported.requestNumber, null);
+    assert.equal(responseImported.storedRecordCount, 1);
+    assert.equal(responseImported.requestMatched, false);
+    assert.equal(responseImported.updatedCount, 2);
+    assert.equal(responseImported.skippedCount, 0);
+    assert.deepEqual(responseImported.missingReferences, []);
 
     const finalClients = await requestJson<{
       items: ClientRecord[];

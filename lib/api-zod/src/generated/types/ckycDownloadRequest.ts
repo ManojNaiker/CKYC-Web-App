@@ -12,5 +12,9 @@ export interface CkycDownloadRequest {
   fileName: string;
   recordCount: number;
   sourceFileName: string;
+  /** @nullable */
+  responseFileName: string | null;
+  /** @nullable */
+  responseAt: Date | null;
   createdAt: Date;
 }

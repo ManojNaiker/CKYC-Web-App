@@ -268,7 +268,7 @@ paths:
     post:
       operationId: uploadCkycDownloadResponse
       tags: [ckyc]
-      summary: Save final KYC numbers from a CKYC download response Excel file
+      summary: Save a CKYC download response Excel or TXT file
       requestBody:
         required: true
         content:
@@ -673,6 +673,14 @@ components:
       properties:
         sourceFileName:
           type: string
+        storedRecordId:
+          type: number
+        requestNumber:
+          type: ["number", "null"]
+        storedRecordCount:
+          type: number
+        requestMatched:
+          type: boolean
         updatedCount:
           type: number
         skippedCount:
@@ -683,6 +691,10 @@ components:
             type: string
       required:
         - sourceFileName
+        - storedRecordId
+        - requestNumber
+        - storedRecordCount
+        - requestMatched
         - updatedCount
         - skippedCount
         - missingReferences
@@ -699,6 +711,11 @@ components:
           type: number
         sourceFileName:
           type: string
+        responseFileName:
+          type: ["string", "null"]
+        responseAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -708,6 +725,8 @@ components:
         - fileName
         - recordCount
         - sourceFileName
+        - responseFileName
+        - responseAt
         - createdAt
     CkycDownloadRequestDetail:
       allOf:

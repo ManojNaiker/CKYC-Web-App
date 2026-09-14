@@ -155,7 +155,7 @@ export default function DownloadRequests() {
 
   const importResponse = () => {
     if (!responseContentBase64 || !responseFileName) {
-      setResponseFeedback("Choose the CKYC portal Excel response first.");
+      setResponseFeedback("Choose the CKYC portal Excel or final CKYC TXT response first.");
       return;
     }
     uploadResponse.mutate(
@@ -171,11 +171,21 @@ export default function DownloadRequests() {
             ? ` ${result.missingReferences.length} unmatched reference(s) skipped.`
             : "";
           setResponseFeedback(
-            `${result.updatedCount} final CKYC number${result.updatedCount === 1 ? "" : "s"} saved.${missing}`,
+            result.updatedCount
+              ? `${result.updatedCount} final CKYC number${result.updatedCount === 1 ? "" : "s"} saved. ${result.storedRecordCount} response row(s) stored.${missing}`
+              : `${result.storedRecordCount} final CKYC response row(s) stored${
+                  result.requestNumber === null
+                    ? ""
+                    : ` for D${result.requestNumber}`
+                }. ${
+                  result.requestMatched
+                    ? "The matching request was updated."
+                    : "The response is saved and will link when the matching request is generated."
+                }${missing}`,
           );
           setResponseFileName("");
           setResponseContentBase64("");
-           void historyQuery.refetch();
+            void historyQuery.refetch();
         },
         onError: (error) => setResponseFeedback(cleanApiError(error)),
       },
@@ -187,7 +197,7 @@ export default function DownloadRequests() {
       <PageIntro
         eyebrow="CKYC document retrieval"
         title="Build download requests."
-        description="Generate the portal TXT from saved CKYC response IDs and LMS dates of birth. After processing, upload the portal Excel to save each final CKYC number."
+        description="Generate the portal TXT from saved CKYC response IDs and LMS dates of birth. After processing, upload the portal Excel or final CKYC TXT response; both files are retained and matched to their D request when available."
       />
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
@@ -363,15 +373,15 @@ export default function DownloadRequests() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[12px] font-semibold">
-                    {responseFileName || "Select portal response Excel"}
+                    {responseFileName || "Select final CKYC response file"}
                   </span>
                   <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    Requires KYC Number and ALPHANUMERIC Reference NO
+                    Accepts portal Excel or CERSAI TXT response
                   </span>
                 </span>
                 <input
                   type="file"
-                  accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  accept=".xlsx,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
                   className="sr-only"
                   onChange={chooseResponseFile}
                   data-testid="file-input-download-response-excel"
@@ -395,7 +405,9 @@ export default function DownloadRequests() {
                 data-testid="button-upload-download-response"
               >
                 <CheckCircle2 size={15} />
-                {uploadResponse.isPending ? "Saving…" : "Import final KYC numbers"}
+                {uploadResponse.isPending
+                  ? "Saving response…"
+                  : "Save final CKYC response"}
               </button>
             </div>
           </section>
@@ -444,6 +456,9 @@ export default function DownloadRequests() {
                         </span>
                         <span className="mt-1 block truncate text-[10px] text-muted-foreground">
                           From {request.sourceFileName}
+                          {request.responseFileName
+                            ? ` · Response saved: ${request.responseFileName}`
+                            : " · Response pending"}
                         </span>
                       </span>
                     </span>

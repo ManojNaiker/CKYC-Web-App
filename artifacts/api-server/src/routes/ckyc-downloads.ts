@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm";
 import {
   ckycDownloadRequestsTable,
+  ckycDownloadResponseRecordsTable,
   clientsTable,
   db,
 } from "@workspace/db";
@@ -93,13 +94,63 @@ function normalizeDateOfBirth(value: string) {
   )}-${dayFirstMatch[3]}`;
 }
 
-async function parseDownloadResponse(fileContentBase64: string) {
+type ParsedDownloadResponse = {
+  requestNumber: number | null;
+  recordCount: number;
+  rows: Map<string, string>;
+  storedContent: string;
+};
+
+function requestNumberFromFileName(sourceFileName: string) {
+  const match = sourceFileName.match(/(?:^|[-_])D?(\d{5,})(?=[-_.]|$)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function parseTextDownloadResponse(
+  content: string,
+  sourceFileName: string,
+): ParsedDownloadResponse {
+  const lines = content
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+  const header = lines[0]?.split("|") ?? [];
+  if (header[0] !== "10") {
+    throw new Error("The uploaded TXT file does not have a valid type 10 header.");
+  }
+
+  const responseRows = lines.slice(1).filter((line) => line.split("|")[0] === "20");
+  if (!responseRows.length) {
+    throw new Error("The uploaded TXT file does not contain any type 20 response rows.");
+  }
+
+  const headerRequestNumber = /^\d+$/.test(header[1]?.trim() ?? "")
+    ? Number(header[1].trim())
+    : null;
+  return {
+    requestNumber: headerRequestNumber ?? requestNumberFromFileName(sourceFileName),
+    recordCount: responseRows.length,
+    rows: new Map(),
+    storedContent: content,
+  };
+}
+
+async function parseDownloadResponse(
+  fileContentBase64: string,
+  sourceFileName: string,
+): Promise<ParsedDownloadResponse> {
+  const buffer = Buffer.from(fileContentBase64, "base64");
+  const textPreview = buffer.toString("utf8", 0, 32).replace(/^\uFEFF/, "");
+  if (sourceFileName.toLowerCase().endsWith(".txt") || textPreview.trimStart().startsWith("10|")) {
+    return parseTextDownloadResponse(buffer.toString("utf8"), sourceFileName);
+  }
+
   const rows = new Map<string, string>();
   let worksheetFound = false;
   let headersFound = false;
   try {
     const workbook = new ExcelJS.stream.xlsx.WorkbookReader(
-      Readable.from([Buffer.from(fileContentBase64, "base64")]),
+      Readable.from([buffer]),
       {
         worksheets: "emit",
         sharedStrings: "cache",
@@ -154,7 +205,12 @@ async function parseDownloadResponse(fileContentBase64: string) {
       "The Excel file does not contain any rows with a non-blank KYC Number.",
     );
   }
-  return rows;
+  return {
+    requestNumber: requestNumberFromFileName(sourceFileName),
+    recordCount: rows.size,
+    rows,
+    storedContent: fileContentBase64,
+  };
 }
 
 export function createCkycDownloadContent(data: {
@@ -192,9 +248,63 @@ function toResponse(
     fileName: request.fileName,
     recordCount: request.recordCount,
     sourceFileName: request.sourceFileName,
+    responseFileName: request.responseFileName,
+    responseAt: request.responseAt,
     createdAt: request.createdAt,
     ...(includeContent ? { content: request.content } : {}),
   };
+}
+
+async function attachStoredResponseToRequest(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  response: typeof ckycDownloadResponseRecordsTable.$inferSelect,
+) {
+  if (response.requestNumber === null) return null;
+  const [request] = await tx
+    .select()
+    .from(ckycDownloadRequestsTable)
+    .where(eq(ckycDownloadRequestsTable.requestNumber, response.requestNumber))
+    .limit(1);
+  if (!request) return null;
+
+  const [updatedRequest] = await tx
+    .update(ckycDownloadRequestsTable)
+    .set({
+      responseFileName: response.sourceFileName,
+      responseContent: response.content,
+      responseAt: response.createdAt,
+    })
+    .where(eq(ckycDownloadRequestsTable.id, request.id))
+    .returning();
+  await tx
+    .update(ckycDownloadResponseRecordsTable)
+    .set({ matchedRequestId: request.id, matchedAt: new Date() })
+    .where(eq(ckycDownloadResponseRecordsTable.id, response.id));
+  return updatedRequest;
+}
+
+async function attachPendingResponseToRequest(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  request: typeof ckycDownloadRequestsTable.$inferSelect,
+) {
+  const [pendingResponse] = await tx
+    .select()
+    .from(ckycDownloadResponseRecordsTable)
+    .where(
+      and(
+        eq(ckycDownloadResponseRecordsTable.requestNumber, request.requestNumber),
+        isNull(ckycDownloadResponseRecordsTable.matchedRequestId),
+      ),
+    )
+    .orderBy(
+      desc(ckycDownloadResponseRecordsTable.createdAt),
+      desc(ckycDownloadResponseRecordsTable.id),
+    )
+    .limit(1);
+  if (!pendingResponse) return request;
+  return (
+    (await attachStoredResponseToRequest(tx, pendingResponse)) ?? request
+  );
 }
 
 router.get("/ckyc/download-requests", async (_req, res): Promise<void> => {
@@ -268,7 +378,7 @@ router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
         sourceFileName: "CKYC client register",
       })
       .returning();
-    return saved;
+    return attachPendingResponseToRequest(tx, saved);
   });
 
   res
@@ -427,7 +537,15 @@ router.post(
           sourceFileName,
         };
       });
-      return tx.insert(ckycDownloadRequestsTable).values(values).returning();
+      const savedRequests = await tx
+        .insert(ckycDownloadRequestsTable)
+        .values(values)
+        .returning();
+      return Promise.all(
+        savedRequests.map((request) =>
+          attachPendingResponseToRequest(tx, request),
+        ),
+      );
     });
 
     res.status(201).json(
@@ -450,12 +568,16 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
     return;
   }
 
-  let responseRows: Map<string, string>;
+  let parsedResponse: ParsedDownloadResponse;
   try {
-    responseRows = await parseDownloadResponse(parsed.data.fileContentBase64);
+    parsedResponse = await parseDownloadResponse(
+      parsed.data.fileContentBase64,
+      parsed.data.sourceFileName,
+    );
   } catch (error) {
     res.status(400).json({
-      error: error instanceof Error ? error.message : "Invalid Excel response.",
+      error:
+        error instanceof Error ? error.message : "Invalid CKYC response file.",
     });
     return;
   }
@@ -464,10 +586,14 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
     .select({
       id: clientsTable.id,
       responseId: clientsTable.ckycResponseId,
-      ckycNumber: clientsTable.ckycNumber,
     })
     .from(clientsTable)
-    .where(isNotNull(clientsTable.ckycResponseId));
+    .where(
+      and(
+        isNotNull(clientsTable.ckycResponseId),
+        parsedResponse.rows.size ? sql`true` : sql`false`,
+      ),
+    );
   const clientsByReference = new Map<
     string,
     Array<(typeof clients)[number]>
@@ -483,7 +609,7 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
   const missingReferences: string[] = [];
   const updates: Array<{ id: number; kycNumber: string }> = [];
   let matchedReferenceCount = 0;
-  for (const [reference, kycNumber] of responseRows) {
+  for (const [reference, kycNumber] of parsedResponse.rows) {
     const matchingClients = clientsByReference.get(downloadReference(reference));
     if (!matchingClients?.length) {
       missingReferences.push(reference);
@@ -495,8 +621,18 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
     }
   }
 
-  if (updates.length) {
-    await db.transaction(async (tx) => {
+  const storedResponse = await db.transaction(async (tx) => {
+    const [stored] = await tx
+      .insert(ckycDownloadResponseRecordsTable)
+      .values({
+        requestNumber: parsedResponse.requestNumber,
+        sourceFileName: parsed.data.sourceFileName,
+        content: parsedResponse.storedContent,
+        recordCount: parsedResponse.recordCount,
+      })
+      .returning();
+
+    if (updates.length) {
       for (
         let index = 0;
         index < updates.length;
@@ -516,14 +652,21 @@ router.post("/ckyc/download-requests/response", async (req, res): Promise<void> 
           WHERE client_rows.id = update_rows.id
         `);
       }
-    });
-  }
+    }
+
+    const matchedRequest = await attachStoredResponseToRequest(tx, stored);
+    return { stored, matchedRequest };
+  });
 
   res.json(
     UploadCkycDownloadResponseResponse.parse({
       sourceFileName: parsed.data.sourceFileName,
+      storedRecordId: storedResponse.stored.id,
+      requestNumber: parsedResponse.requestNumber,
+      storedRecordCount: parsedResponse.recordCount,
+      requestMatched: Boolean(storedResponse.matchedRequest),
       updatedCount: updates.length,
-      skippedCount: responseRows.size - matchedReferenceCount,
+      skippedCount: parsedResponse.rows.size - matchedReferenceCount,
       missingReferences,
     }),
   );
