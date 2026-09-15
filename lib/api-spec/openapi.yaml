@@ -364,6 +364,8 @@ components:
           type: ["string", "null"]
         ckycResponseRequestLine:
           type: ["string", "null"]
+        ckycResponseMatchedRow:
+          type: ["string", "null"]
         ckycResponseFileName:
           type: ["string", "null"]
         ckycResponseRequestId:
@@ -391,6 +393,7 @@ components:
         - ckycResponseError
         - ckycResponseMatchedBy
         - ckycResponseRequestLine
+        - ckycResponseMatchedRow
         - ckycResponseFileName
         - ckycResponseRequestId
         - ckycResponseAt

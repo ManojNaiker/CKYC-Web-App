@@ -78,6 +78,7 @@ export const ListClientsResponse = zod.object({
   "ckycResponseError": zod.string().nullable(),
   "ckycResponseMatchedBy": zod.string().nullable(),
   "ckycResponseRequestLine": zod.string().nullable(),
+  "ckycResponseMatchedRow": zod.string().nullable(),
   "ckycResponseFileName": zod.string().nullable(),
   "ckycResponseRequestId": zod.number().nullable(),
   "ckycResponseAt": zod.coerce.date().nullable()

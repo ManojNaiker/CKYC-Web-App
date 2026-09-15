@@ -40,6 +40,7 @@ type ClientRecord = {
   ckycResponseError: string | null;
   ckycResponseMatchedBy: string | null;
   ckycResponseRequestLine: string | null;
+  ckycResponseMatchedRow: string | null;
 };
 
 type CkycFile = {
@@ -350,12 +351,20 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       updatedAsha?.ckycResponseRequestLine,
       "20|1|E|9012|Asha Rao|02-04-1990|F|",
     );
+    assert.equal(
+      updatedAsha?.ckycResponseMatchedRow,
+      `20|1|E|9012|${fullResponseId}|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`,
+    );
     assert.equal(updatedBharat?.ckycResponseStatus, "error");
     assert.equal(updatedBharat?.ckycResponseId, null);
     assert.equal(updatedBharat?.ckycResponseMatchedBy, "Matched by UID");
     assert.equal(
       updatedBharat?.ckycResponseRequestLine,
       "20|4|E|1098|Bharat Kumar|15-08-1988|M|",
+    );
+    assert.equal(
+      updatedBharat?.ckycResponseMatchedRow,
+      "20|4|E|1098|||||||||KYC Number does not exist for this identity type and number||||",
     );
     assert.match(
       updatedBharat?.ckycResponseError ?? "",
@@ -397,10 +406,18 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       sourceCheckedAsha?.ckycResponseRequestLine,
       `20|2|B|VID-${runId}-1||||`,
     );
+    assert.equal(
+      sourceCheckedAsha?.ckycResponseMatchedRow,
+      `20|2|B|VID-${runId}-1|${fullResponseId}|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`,
+    );
     assert.equal(sourceCheckedBharat?.ckycResponseMatchedBy, "Matched by PAN");
     assert.equal(
       sourceCheckedBharat?.ckycResponseRequestLine,
       "20|5|B|PQRSX5678K||||",
+    );
+    assert.equal(
+      sourceCheckedBharat?.ckycResponseMatchedRow,
+      `20|5|B|PQRSX5678K|${fullResponseId}|BHARAT KUMAR|04|03|04|04|04|04|XXXXXXXXXX3211|04|||`,
     );
 
     await pool.query(
@@ -632,6 +649,8 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         ckycResponseError: null,
         ckycResponseMatchedBy: "Matched by UID",
         ckycResponseRequestLine: "20|1|E|1234|Asha|02-01-2026|F|",
+        ckycResponseMatchedRow:
+          "20|1|E|1234|IN123|ASHA|04|03|04|04|04|04|XXXXXXXXXX3210|04|||",
       },
     ]);
 
@@ -644,6 +663,10 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"Matched"/);
     assert.match(csv, /"Matched by UID"/);
     assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);
+    assert.match(
+      csv,
+      /"20\|1\|E\|1234\|IN123\|ASHA\|04\|03\|04\|04\|04\|04\|XXXXXXXXXX3210\|04\|\|\|"/,
+    );
   });
 
   it("skips every row when a required LMS header is missing", async () => {

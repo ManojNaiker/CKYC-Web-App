@@ -34,6 +34,7 @@ type ResponseRecord = {
   sequence: number;
   responseId: string | null;
   error: string | null;
+  line: string;
 };
 
 function normalizeName(value: string) {
@@ -161,7 +162,7 @@ function parseResponseRecords(content: string): ResponseRecord[] {
         ? fields.slice(5).find((field) => field.trim().length > 0)?.trim() ??
           "CKYC did not return a response ID."
         : null;
-    return [{ sequence, responseId, error }];
+    return [{ sequence, responseId, error, line }];
   });
 
   if (!records.length) {
@@ -431,6 +432,7 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
             sequence: mapping.sequence,
             responseId: null,
             error: "No response record was found in the uploaded file.",
+              line: "",
           },
         requestRow: requestRowsBySequence.get(mapping.sequence),
       },
@@ -451,6 +453,7 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
         clientsById.get(clientId),
       );
       const requestLine = sourceResult?.requestRow?.line ?? null;
+      const responseLine = sourceResult?.record.line || null;
 
       if (matched?.record.responseId) {
         await tx
@@ -461,6 +464,7 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
             ckycResponseError: null,
             ckycResponseMatchedBy: matchedBy,
             ckycResponseRequestLine: requestLine,
+            ckycResponseMatchedRow: responseLine,
             ckycResponseFileName: parsed.data.fileName,
             ckycResponseRequestId: request.id,
             ckycResponseAt: now,
@@ -487,6 +491,7 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
           ckycResponseError: errors.join(" · ") || "CKYC did not return a response ID.",
           ckycResponseMatchedBy: matchedBy,
           ckycResponseRequestLine: requestLine,
+          ckycResponseMatchedRow: responseLine,
           ckycResponseFileName: parsed.data.fileName,
           ckycResponseRequestId: request.id,
           ckycResponseAt: now,

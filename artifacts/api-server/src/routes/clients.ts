@@ -58,6 +58,7 @@ type ClientExportRow = {
   ckycResponseError: string | null;
   ckycResponseMatchedBy: string | null;
   ckycResponseRequestLine: string | null;
+  ckycResponseMatchedRow: string | null;
 };
 
 function formatReportDate(value: string) {
@@ -91,6 +92,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     "Error",
     "CKYC Response Matched BY",
     "CKYC Request Matched Row",
+    "CKYC Response Matched Row",
   ];
   const body = rows.map((row) => [
     row.clientId,
@@ -108,6 +110,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     row.ckycResponseError,
     row.ckycResponseMatchedBy,
     row.ckycResponseRequestLine,
+    row.ckycResponseMatchedRow,
   ]);
 
   return `\uFEFF${[header, ...body]
@@ -154,6 +157,7 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     ckycResponseError: client.ckycResponseError,
     ckycResponseMatchedBy: client.ckycResponseMatchedBy,
     ckycResponseRequestLine: client.ckycResponseRequestLine,
+    ckycResponseMatchedRow: client.ckycResponseMatchedRow,
     ckycResponseFileName: client.ckycResponseFileName,
     ckycResponseRequestId: client.ckycResponseRequestId,
     ckycResponseAt: client.ckycResponseAt,
@@ -255,6 +259,7 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       ckycResponseError: clientsTable.ckycResponseError,
       ckycResponseMatchedBy: clientsTable.ckycResponseMatchedBy,
       ckycResponseRequestLine: clientsTable.ckycResponseRequestLine,
+      ckycResponseMatchedRow: clientsTable.ckycResponseMatchedRow,
     })
     .from(clientsTable)
     .where(filter)
