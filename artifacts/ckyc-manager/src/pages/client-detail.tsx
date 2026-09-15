@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, FileText, UserRound } from 'lucide-react';
 import { Link, useParams } from 'wouter';
-import { useListClients } from '@workspace/api-client-react';
+import { getListClientsQueryKey, useListClients } from '@workspace/api-client-react';
 import { PageIntro, QueryError } from '@/components/workspace-shell';
 
 function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
@@ -15,11 +15,13 @@ function DetailItem({ label, value }: { label: string; value: string | null | un
 export default function ClientDetail() {
   const params = useParams<{ clientId: string }>();
   const clientId = decodeURIComponent(params.clientId ?? '');
+  const numericClientId = Number(clientId);
+  const clientQuery = { clientId: Number.isInteger(numericClientId) && numericClientId > 0 ? numericClientId : undefined, page: 1, pageSize: 1 };
   const query = useListClients(
-    { search: clientId, page: 1, pageSize: 10 },
-    { query: { enabled: Boolean(clientId) } },
+    clientQuery,
+    { query: { enabled: Boolean(clientQuery.clientId), queryKey: getListClientsQueryKey(clientQuery) } },
   );
-  const client = query.data?.items.find((item) => item.ClientID === clientId) ?? query.data?.items[0];
+  const client = query.data?.items[0];
 
   if (query.isLoading) {
     return <div className="animate-pulse"><div className="h-5 w-36 rounded bg-muted" /><div className="mt-6 h-12 w-2/3 rounded bg-muted" /><div className="mt-8 h-56 rounded-xl bg-card" /></div>;

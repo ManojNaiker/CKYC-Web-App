@@ -43,6 +43,7 @@ export const ExportClientsResponse = zod.unknown()
 /**
  * @summary List imported clients
  */
+
 export const listClientsQueryPageDefault = 1;
 
 export const listClientsQueryPageSizeDefault = 50;
@@ -52,6 +53,7 @@ export const listClientsQueryPageSizeMax = 1000000;
 
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
+  "clientId": zod.coerce.number().min(1).optional().describe('Filter to one stored client record by database ID'),
   "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status'),
   "page": zod.coerce.number().min(1).default(listClientsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listClientsQueryPageSizeMax).default(listClientsQueryPageSizeDefault)

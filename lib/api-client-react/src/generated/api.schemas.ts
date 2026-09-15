@@ -268,6 +268,11 @@ export const ExportClientsStatus = {
 export type ListClientsParams = {
 search?: string;
 /**
+ * Filter to one stored client record by database ID
+ * @minimum 1
+ */
+clientId?: number;
+/**
  * Filter clients by CKYC response status
  */
 status?: ListClientsStatus;

@@ -86,6 +86,18 @@ export default function Clients() {
     }
   }, [navigate, searchQuery, serializedFilters]);
 
+  useEffect(() => {
+    const handleClientClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || target.closest('a,button,input,select')) return;
+      const row = target.closest<HTMLElement>('[data-testid^="row-client-"]');
+      const id = row?.dataset.testid?.replace('row-client-', '');
+      if (id) navigate(`/clients/${id}`);
+    };
+    document.addEventListener('click', handleClientClick);
+    return () => document.removeEventListener('click', handleClientClick);
+  }, [navigate]);
+
   const updateFilters = (updates: Partial<ClientRegisterFilters>) => {
     const nextFilters = updateClientRegisterFilters(filters, updates);
     const nextQuery = serializeClientRegisterFilters(nextFilters);

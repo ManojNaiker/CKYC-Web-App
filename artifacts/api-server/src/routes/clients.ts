@@ -196,12 +196,11 @@ function getStatusFilter(status?: string) {
   }
 }
 
-function getClientFilter(search?: string, status?: string) {
+function getClientFilter(search?: string, status?: string, clientId?: number) {
   const searchFilter = getSearchFilter(search);
   const statusFilter = getStatusFilter(status);
-  return searchFilter && statusFilter
-    ? and(searchFilter, statusFilter)
-    : searchFilter ?? statusFilter;
+  const clientIdFilter = clientId ? eq(clientsTable.id, clientId) : undefined;
+  return and(searchFilter, statusFilter, clientIdFilter);
 }
 
 router.get("/clients", async (req, res): Promise<void> => {
@@ -211,9 +210,9 @@ router.get("/clients", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, status, page, pageSize } = parsed.data;
+  const { search, status, clientId, page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
-  const filter = getClientFilter(search, status);
+  const filter = getClientFilter(search, status, clientId);
 
   const [rows, countRows] = await Promise.all([
     db

@@ -78,6 +78,13 @@ paths:
           required: false
           schema:
             type: string
+        - name: clientId
+          in: query
+          required: false
+          description: Filter to one stored client record by database ID
+          schema:
+            type: number
+            minimum: 1
         - name: status
           in: query
           required: false
