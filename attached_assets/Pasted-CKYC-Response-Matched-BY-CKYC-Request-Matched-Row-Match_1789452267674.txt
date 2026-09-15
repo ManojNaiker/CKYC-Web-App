@@ -1,0 +1,7 @@
+CKYC Response Matched BY	CKYC Request Matched Row
+Matched by UID	20|1|E|7281|Palas Rajeshbhai|01-01-1991|M|
+Matched by UID	20|3|E|2085|Asok Yadav|01-01-1988|M|
+Matched by UID	20|5|E|2955|Mavi Jagatbhai Rameshbhai|08-04-2003|M|
+Match by VID	20|8|B|XQR2415586||||
+Matched by UID	20|9|E|2827|Ravi Singh|01-07-1994|M|
+Matched by UID	20|11|E|0233|Devmuni Yadav|01-01-1998|M|
