@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Overview from '@/pages/overview';
 import Clients from '@/pages/clients';
+import ClientDetail from '@/pages/client-detail';
 import Requests from '@/pages/requests';
 import RequestDetail from '@/pages/request-detail';
 import DownloadRequests from '@/pages/download-requests';
@@ -27,6 +28,7 @@ function Router() {
       <WorkspaceShell>
         <Switch>
           <Route path="/" component={Overview} />
+          <Route path="/clients/:clientId" component={ClientDetail} />
           <Route path="/clients" component={Clients} />
           <Route path="/requests/:id" component={RequestDetail} />
           <Route path="/requests" component={Requests} />
