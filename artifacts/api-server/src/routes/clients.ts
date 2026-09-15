@@ -50,11 +50,26 @@ type ClientExportRow = {
   clientId: string;
   loanid: string;
   clientName: string;
+  gender: string;
+  disbursedOnDate: string;
   ckycResponseId: string | null;
   ckycNumber: string | null;
   ckycResponseStatus: string | null;
   ckycResponseError: string | null;
+  ckycResponseMatchedBy: string | null;
+  ckycResponseRequestLine: string | null;
 };
+
+function formatReportDate(value: string) {
+  const normalized = value.trim();
+  const isoDate = normalized.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (isoDate) return `${isoDate[3]}-${isoDate[2]}-${isoDate[1]}`;
+
+  const slashDate = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (slashDate) return `${slashDate[1]}-${slashDate[2]}-${slashDate[3]}`;
+
+  return normalized;
+}
 
 function escapeCsv(value: string | null) {
   const raw = value ?? "";
@@ -68,15 +83,21 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     "LMS Client ID",
     "Loan ID",
     "Client Name",
+    "Gender",
+    "Disbursement Date",
     "CKYC Response ID",
     "Final CKYC Number",
     "Status",
     "Error",
+    "CKYC Response Matched BY",
+    "CKYC Request Matched Row",
   ];
   const body = rows.map((row) => [
     row.clientId,
     row.loanid,
     row.clientName,
+    row.gender,
+    formatReportDate(row.disbursedOnDate),
     row.ckycResponseId,
     row.ckycNumber,
     row.ckycResponseStatus === "matched"
@@ -85,6 +106,8 @@ export function createClientsCsv(rows: ClientExportRow[]) {
         ? "Error"
         : "Awaiting response",
     row.ckycResponseError,
+    row.ckycResponseMatchedBy,
+    row.ckycResponseRequestLine,
   ]);
 
   return `\uFEFF${[header, ...body]
@@ -129,6 +152,8 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     ckycNumber: client.ckycNumber,
     ckycResponseStatus: client.ckycResponseStatus as "matched" | "error" | null,
     ckycResponseError: client.ckycResponseError,
+    ckycResponseMatchedBy: client.ckycResponseMatchedBy,
+    ckycResponseRequestLine: client.ckycResponseRequestLine,
     ckycResponseFileName: client.ckycResponseFileName,
     ckycResponseRequestId: client.ckycResponseRequestId,
     ckycResponseAt: client.ckycResponseAt,
@@ -222,10 +247,14 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       clientId: clientsTable.clientId,
       loanid: clientsTable.loanid,
       clientName: clientsTable.clientName,
+      gender: clientsTable.gender,
+      disbursedOnDate: clientsTable.disbursedOnDate,
       ckycResponseId: clientsTable.ckycResponseId,
       ckycNumber: clientsTable.ckycNumber,
       ckycResponseStatus: clientsTable.ckycResponseStatus,
       ckycResponseError: clientsTable.ckycResponseError,
+      ckycResponseMatchedBy: clientsTable.ckycResponseMatchedBy,
+      ckycResponseRequestLine: clientsTable.ckycResponseRequestLine,
     })
     .from(clientsTable)
     .where(filter)

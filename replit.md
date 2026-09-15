@@ -45,6 +45,9 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Store imported rows in PostgreSQL and show them in a searchable, paginated client register.
 - Preserve the source file name and report imported/skipped row counts.
 - Collapse repeated whitespace in `ClientName` to a single space during import and CKYC file generation.
+- Include Gender, DD-MM-YYYY Disbursement Date, CKYC response match source
+  (UID, VID, or PAN), and the exact matched CKYC request row in the client
+  register download report.
 
 ### CKYC search request generation
 

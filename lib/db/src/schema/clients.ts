@@ -30,6 +30,8 @@ export const clientsTable = pgTable(
     ckycNumber: text("ckyc_number"),
     ckycResponseStatus: text("ckyc_response_status"),
     ckycResponseError: text("ckyc_response_error"),
+    ckycResponseMatchedBy: text("ckyc_response_matched_by"),
+    ckycResponseRequestLine: text("ckyc_response_request_line"),
     ckycResponseFileName: text("ckyc_response_file_name"),
     ckycResponseRequestId: integer("ckyc_response_request_id"),
     ckycResponseAt: timestamp("ckyc_response_at", { withTimezone: true }),

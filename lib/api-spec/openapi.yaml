@@ -360,6 +360,10 @@ components:
           enum: [matched, error, null]
         ckycResponseError:
           type: ["string", "null"]
+        ckycResponseMatchedBy:
+          type: ["string", "null"]
+        ckycResponseRequestLine:
+          type: ["string", "null"]
         ckycResponseFileName:
           type: ["string", "null"]
         ckycResponseRequestId:
@@ -385,6 +389,8 @@ components:
         - ckycNumber
         - ckycResponseStatus
         - ckycResponseError
+        - ckycResponseMatchedBy
+        - ckycResponseRequestLine
         - ckycResponseFileName
         - ckycResponseRequestId
         - ckycResponseAt

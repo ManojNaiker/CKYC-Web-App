@@ -30,6 +30,10 @@ export interface Client {
   /** @nullable */
   ckycResponseError: string | null;
   /** @nullable */
+  ckycResponseMatchedBy: string | null;
+  /** @nullable */
+  ckycResponseRequestLine: string | null;
+  /** @nullable */
   ckycResponseFileName: string | null;
   /** @nullable */
   ckycResponseRequestId: number | null;

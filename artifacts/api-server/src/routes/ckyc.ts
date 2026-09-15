@@ -20,6 +20,16 @@ type ClientMapping = {
   clientId: number;
 };
 
+type RequestRow = {
+  sequence: number;
+  searchType: string;
+  searchValue: string;
+  name: string;
+  dateOfBirth: string;
+  gender: string;
+  line: string;
+};
+
 type ResponseRecord = {
   sequence: number;
   responseId: string | null;
@@ -67,20 +77,39 @@ function parseClientMapping(value: string | null): ClientMapping[] {
 }
 
 function parseRequestRows(content: string) {
-  return content
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => line.split("|"))
-    .filter((fields) => fields[0] === "20")
-    .map((fields) => ({
+  const lines = content.split(/\r?\n/).filter(Boolean);
+  return lines
+    .slice(1)
+    .map((line) => ({ line, fields: line.split("|") }))
+    .filter(({ fields }) => fields[0] === "20")
+    .map(({ line, fields }) => ({
       sequence: Number(fields[1]),
       searchType: fields[2],
       searchValue: fields[3]?.trim() ?? "",
       name: normalizeName(fields[4] ?? "").toLowerCase(),
       dateOfBirth: fields[5]?.trim() ?? "",
       gender: fields[6]?.trim().toUpperCase() ?? "",
+      line,
     }))
     .filter((row) => Number.isInteger(row.sequence));
+}
+
+function getMatchedBy(
+  row: RequestRow | undefined,
+  client: typeof clientsTable.$inferSelect | undefined,
+) {
+  if (!row || !client) return null;
+  if (row.searchType === "E") return "Matched by UID";
+  if (row.searchType !== "B") return null;
+
+  const searchValue = cleanIdentifier(row.searchValue);
+  if (searchValue && searchValue === cleanIdentifier(client.clientVid)) {
+    return "Match by VID";
+  }
+  if (searchValue && searchValue === cleanIdentifier(client.clientPan)) {
+    return "Matched by PAN";
+  }
+  return null;
 }
 
 function deriveLegacyMapping(
@@ -373,17 +402,37 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
     clientMapping = deriveLegacyMapping(request.content, clients);
   }
 
+  const requestRowsBySequence = new Map(
+    parseRequestRows(request.content).map((row) => [row.sequence, row]),
+  );
+  const clientsById = new Map<number, typeof clientsTable.$inferSelect>();
+  const mappedClientIds = [...new Set(clientMapping.map((mapping) => mapping.clientId))];
+  for (let index = 0; index < mappedClientIds.length; index += 500) {
+    const rows = await db
+      .select()
+      .from(clientsTable)
+      .where(inArray(clientsTable.id, mappedClientIds.slice(index, index + 500)));
+    for (const client of rows) clientsById.set(client.id, client);
+  }
+
   const recordsBySequence = new Map(
     responseRecords.map((record) => [record.sequence, record]),
   );
-  const resultsByClient = new Map<number, ResponseRecord[]>();
+  const resultsByClient = new Map<
+    number,
+    Array<{ record: ResponseRecord; requestRow: RequestRow | undefined }>
+  >();
   for (const mapping of clientMapping) {
     const existing = resultsByClient.get(mapping.clientId) ?? [];
     existing.push(
-      recordsBySequence.get(mapping.sequence) ?? {
-        sequence: mapping.sequence,
-        responseId: null,
-        error: "No response record was found in the uploaded file.",
+      {
+        record:
+          recordsBySequence.get(mapping.sequence) ?? {
+            sequence: mapping.sequence,
+            responseId: null,
+            error: "No response record was found in the uploaded file.",
+          },
+        requestRow: requestRowsBySequence.get(mapping.sequence),
       },
     );
     resultsByClient.set(mapping.clientId, existing);
@@ -391,17 +440,27 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
 
   const updated = await db.transaction(async (tx) => {
     const now = new Date();
-    for (const [clientId, records] of resultsByClient) {
-      const ordered = [...records].sort((left, right) => left.sequence - right.sequence);
-      const matched = ordered.find((record) => record.responseId !== null);
+    for (const [clientId, results] of resultsByClient) {
+      const ordered = [...results].sort(
+        (left, right) => left.record.sequence - right.record.sequence,
+      );
+      const matched = ordered.find((result) => result.record.responseId !== null);
+      const sourceResult = matched ?? ordered[0];
+      const matchedBy = getMatchedBy(
+        sourceResult?.requestRow,
+        clientsById.get(clientId),
+      );
+      const requestLine = sourceResult?.requestRow?.line ?? null;
 
-      if (matched?.responseId) {
+      if (matched?.record.responseId) {
         await tx
           .update(clientsTable)
           .set({
-            ckycResponseId: matched.responseId,
+            ckycResponseId: matched.record.responseId,
             ckycResponseStatus: "matched",
             ckycResponseError: null,
+            ckycResponseMatchedBy: matchedBy,
+            ckycResponseRequestLine: requestLine,
             ckycResponseFileName: parsed.data.fileName,
             ckycResponseRequestId: request.id,
             ckycResponseAt: now,
@@ -417,13 +476,17 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
       if (client?.responseId) continue;
 
       const errors = [
-        ...new Set(ordered.map((record) => record.error).filter(Boolean)),
+        ...new Set(
+          ordered.map((result) => result.record.error).filter(Boolean),
+        ),
       ];
       await tx
         .update(clientsTable)
         .set({
           ckycResponseStatus: "error",
           ckycResponseError: errors.join(" · ") || "CKYC did not return a response ID.",
+          ckycResponseMatchedBy: matchedBy,
+          ckycResponseRequestLine: requestLine,
           ckycResponseFileName: parsed.data.fileName,
           ckycResponseRequestId: request.id,
           ckycResponseAt: now,

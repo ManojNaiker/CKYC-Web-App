@@ -38,6 +38,8 @@ type ClientRecord = {
   ckycNumber: string | null;
   ckycResponseStatus: "matched" | "error" | null;
   ckycResponseError: string | null;
+  ckycResponseMatchedBy: string | null;
+  ckycResponseRequestLine: string | null;
 };
 
 type CkycFile = {
@@ -343,13 +345,64 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(updatedAsha?.ckycResponseStatus, "matched");
     assert.equal(updatedAsha?.ckycResponseId, fullResponseId);
     assert.equal(updatedAsha?.ckycResponseError, null);
+    assert.equal(updatedAsha?.ckycResponseMatchedBy, "Matched by UID");
+    assert.equal(
+      updatedAsha?.ckycResponseRequestLine,
+      "20|1|E|9012|Asha Rao|02-04-1990|F|",
+    );
     assert.equal(updatedBharat?.ckycResponseStatus, "error");
     assert.equal(updatedBharat?.ckycResponseId, null);
+    assert.equal(updatedBharat?.ckycResponseMatchedBy, "Matched by UID");
+    assert.equal(
+      updatedBharat?.ckycResponseRequestLine,
+      "20|4|E|1098|Bharat Kumar|15-08-1988|M|",
+    );
     assert.match(
       updatedBharat?.ckycResponseError ?? "",
       /KYC Number does not exist/,
     );
     assert.ok(noIdentifier);
+
+    await requestJson<CkycFile>(
+      baseUrl,
+      `/ckyc/requests/${generated.id}/response`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName: `${loanPrefix}-source-check.txt`,
+          content: [
+            "10|IN2884|1|2|V1.1|02-09-2026||||",
+            `20|2|B|VID-${runId}-1|${fullResponseId}|ASHA RAO|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`,
+            `20|5|B|PQRSX5678K|${fullResponseId}|BHARAT KUMAR|04|03|04|04|04|04|XXXXXXXXXX3211|04|||`,
+          ].join("\r\n"),
+        }),
+      },
+    );
+    const sourceCheckedClients = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&pageSize=10`,
+    );
+    const sourceCheckedAsha = sourceCheckedClients.items.find((client) =>
+      client.loanid.endsWith("-1"),
+    );
+    const sourceCheckedBharat = sourceCheckedClients.items.find((client) =>
+      client.loanid.endsWith("-2"),
+    );
+    assert.equal(sourceCheckedAsha?.ckycResponseMatchedBy, "Match by VID");
+    assert.equal(
+      sourceCheckedAsha?.ckycResponseRequestLine,
+      `20|2|B|VID-${runId}-1||||`,
+    );
+    assert.equal(sourceCheckedBharat?.ckycResponseMatchedBy, "Matched by PAN");
+    assert.equal(
+      sourceCheckedBharat?.ckycResponseRequestLine,
+      "20|5|B|PQRSX5678K||||",
+    );
+
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_response_error = NULL WHERE id = $2",
       [fullResponseId, bharat.id],
@@ -571,18 +624,26 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         clientId: "=danger",
         loanid: "loan,1",
         clientName: 'Asha "Ace" Rao',
+        gender: "F",
+        disbursedOnDate: "2026-01-02",
         ckycResponseId: "IN123",
         ckycNumber: "60046100000000",
         ckycResponseStatus: "matched",
         ckycResponseError: null,
+        ckycResponseMatchedBy: "Matched by UID",
+        ckycResponseRequestLine: "20|1|E|1234|Asha|02-01-2026|F|",
       },
     ]);
 
     assert.match(csv, /"'=danger"/);
     assert.match(csv, /"loan,1"/);
     assert.match(csv, /"Asha ""Ace"" Rao"/);
+    assert.match(csv, /"F"/);
+    assert.match(csv, /"02-01-2026"/);
     assert.match(csv, /"'60046100000000"/);
     assert.match(csv, /"Matched"/);
+    assert.match(csv, /"Matched by UID"/);
+    assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);
   });
 
   it("skips every row when a required LMS header is missing", async () => {
