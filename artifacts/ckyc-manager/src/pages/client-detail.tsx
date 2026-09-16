@@ -93,6 +93,7 @@ export default function ClientDetail() {
             </div>
             <div className="mt-5 space-y-3 border-t border-border pt-4">
               <DetailItem label="CKYC response ID" value={client.ckycResponseId} />
+              <DetailItem label="Response match status" value={client.ckycResponseMatchStatus} />
               <DetailItem label="Final CKYC number" value={client.ckycNumber} />
               <DetailItem label="Response file" value={client.ckycResponseFileName} />
               {client.ckycResponseError && <DetailItem label="Response message" value={client.ckycResponseError} />}

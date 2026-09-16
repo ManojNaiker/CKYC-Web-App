@@ -20,6 +20,18 @@ export const ClientCkycResponseStatus = {
   error: 'error',
 } as const;
 
+/**
+ * @nullable
+ */
+export type ClientCkycResponseMatchStatus = typeof ClientCkycResponseMatchStatus[keyof typeof ClientCkycResponseMatchStatus] | null;
+
+
+export const ClientCkycResponseMatchStatus = {
+  Properly_Match: 'Properly Match',
+  Match: 'Match',
+  Not_Match: 'Not Match',
+} as const;
+
 export interface Client {
   id: number;
   loanid: string;
@@ -44,6 +56,8 @@ export interface Client {
   ckycResponseError: string | null;
   /** @nullable */
   ckycResponseMatchedBy: string | null;
+  /** @nullable */
+  ckycResponseMatchStatus: ClientCkycResponseMatchStatus;
   /** @nullable */
   ckycResponseRequestLine: string | null;
   /** @nullable */

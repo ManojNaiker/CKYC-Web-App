@@ -22,6 +22,7 @@ export * from './ckycRequestInput';
 export * from './ckycRequestStatus';
 export * from './ckycResponseInput';
 export * from './client';
+export * from './clientCkycResponseMatchStatus';
 export * from './clientCkycResponseStatus';
 export * from './clientImportInput';
 export * from './clientInput';

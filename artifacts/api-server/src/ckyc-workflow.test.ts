@@ -641,6 +641,9 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         clientId: "=danger",
         loanid: "loan,1",
         clientName: 'Asha "Ace" Rao',
+         clientUid: "123456789012",
+         clientVid: "VID-123",
+         clientPan: "ABCDE1234F",
         gender: "F",
         disbursedOnDate: "2026-01-02",
         ckycResponseId: "IN123",
@@ -658,15 +661,79 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"loan,1"/);
     assert.match(csv, /"Asha ""Ace"" Rao"/);
     assert.match(csv, /"F"/);
+    assert.match(csv, /"'123456789012"/);
+    assert.match(csv, /"VID-123"/);
+    assert.match(csv, /"ABCDE1234F"/);
     assert.match(csv, /"02-01-2026"/);
     assert.match(csv, /"'60046100000000"/);
     assert.match(csv, /"Matched"/);
     assert.match(csv, /"Matched by UID"/);
+    assert.match(csv, /"Match"/);
     assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);
     assert.match(
       csv,
       /"20\|1\|E\|1234\|IN123\|ASHA\|04\|03\|04\|04\|04\|04\|XXXXXXXXXX3210\|04\|\|\|"/,
     );
+  });
+
+  it("derives report match status from the CKYC response customer name", () => {
+    const csv = createClientsCsv([
+      {
+        clientId: "1",
+        loanid: "loan-1",
+        clientName: "Asha Rao",
+        clientUid: "1111",
+        clientVid: "VID-1",
+        clientPan: "PAN-1",
+        gender: "F",
+        disbursedOnDate: "2026-01-02",
+        ckycResponseId: "ID-1",
+        ckycNumber: null,
+        ckycResponseStatus: "matched",
+        ckycResponseError: null,
+        ckycResponseMatchedBy: "Match by VID",
+        ckycResponseRequestLine: null,
+        ckycResponseMatchedRow: "20|1|B|VID-1|ID-1|ASHA RAO||||",
+      },
+      {
+        clientId: "2",
+        loanid: "loan-2",
+        clientName: "Bharat Kumar",
+        clientUid: "2222",
+        clientVid: "VID-2",
+        clientPan: "PAN-2",
+        gender: "M",
+        disbursedOnDate: "2026-01-02",
+        ckycResponseId: "ID-2",
+        ckycNumber: null,
+        ckycResponseStatus: "matched",
+        ckycResponseError: null,
+        ckycResponseMatchedBy: "Matched by PAN",
+        ckycResponseRequestLine: null,
+        ckycResponseMatchedRow: "20|2|B|PAN-2|ID-2|BHARAT||||",
+      },
+      {
+        clientId: "3",
+        loanid: "loan-3",
+        clientName: "Chetan Shah",
+        clientUid: "3333",
+        clientVid: "VID-3",
+        clientPan: "PAN-3",
+        gender: "M",
+        disbursedOnDate: "2026-01-02",
+        ckycResponseId: "ID-3",
+        ckycNumber: null,
+        ckycResponseStatus: "matched",
+        ckycResponseError: null,
+        ckycResponseMatchedBy: "Matched by UID",
+        ckycResponseRequestLine: null,
+        ckycResponseMatchedRow: "20|3|E|3333|ID-3|RAMESH PATEL||||",
+      },
+    ]);
+
+    assert.match(csv, /"Properly Match"/);
+    assert.match(csv, /"Match"/);
+    assert.match(csv, /"Not Match"/);
   });
 
   it("skips every row when a required LMS header is missing", async () => {

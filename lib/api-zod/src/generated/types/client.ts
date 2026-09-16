@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ClientCkycResponseMatchStatus } from './clientCkycResponseMatchStatus';
 import type { ClientCkycResponseStatus } from './clientCkycResponseStatus';
 
 export interface Client {
@@ -31,6 +32,8 @@ export interface Client {
   ckycResponseError: string | null;
   /** @nullable */
   ckycResponseMatchedBy: string | null;
+  /** @nullable */
+  ckycResponseMatchStatus: ClientCkycResponseMatchStatus;
   /** @nullable */
   ckycResponseRequestLine: string | null;
   /** @nullable */

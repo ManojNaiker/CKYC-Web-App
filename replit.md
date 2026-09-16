@@ -46,8 +46,10 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Preserve the source file name and report imported/skipped row counts.
 - Collapse repeated whitespace in `ClientName` to a single space during import and CKYC file generation.
 - Include Gender, DD-MM-YYYY Disbursement Date, CKYC response match source
-  (UID, VID, or PAN), the exact matched CKYC request row, and the exact
-  matched CKYC response row in the client register download report.
+  (UID, VID, or PAN), UID, VID, PAN, the derived response name match status
+  (`Properly Match`, `Match`, or `Not Match`), the exact matched CKYC request
+  row, and the exact matched CKYC response row in the client register download
+  report.
 
 ### CKYC search request generation
 

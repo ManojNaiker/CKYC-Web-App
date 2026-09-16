@@ -50,6 +50,9 @@ type ClientExportRow = {
   clientId: string;
   loanid: string;
   clientName: string;
+  clientUid: string;
+  clientVid: string;
+  clientPan: string;
   gender: string;
   disbursedOnDate: string;
   ckycResponseId: string | null;
@@ -60,6 +63,11 @@ type ClientExportRow = {
   ckycResponseRequestLine: string | null;
   ckycResponseMatchedRow: string | null;
 };
+
+export type CkycResponseMatchStatus =
+  | "Properly Match"
+  | "Match"
+  | "Not Match";
 
 function formatReportDate(value: string) {
   const normalized = value.trim();
@@ -79,11 +87,53 @@ function escapeCsv(value: string | null) {
   return `"${spreadsheetSafe.replaceAll('"', '""')}"`;
 }
 
+function normalizeNameForMatch(value: string) {
+  return value
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function responseCustomerName(responseRow: string | null) {
+  return responseRow?.split("|")[5]?.trim() ?? "";
+}
+
+function responseHasId(responseRow: string | null) {
+  return Boolean(responseRow?.split("|")[4]?.trim());
+}
+
+export function getCkycResponseMatchStatus(
+  clientName: string,
+  responseRow: string | null,
+  responseId: string | null,
+): CkycResponseMatchStatus | null {
+  if (!responseRow && !responseId) return null;
+  if (!responseRow) return responseId ? "Match" : "Not Match";
+  if (!responseHasId(responseRow)) return "Not Match";
+
+  const responseName = normalizeNameForMatch(responseCustomerName(responseRow));
+  if (!responseName) return "Match";
+
+  const lmsName = normalizeNameForMatch(clientName);
+  if (lmsName === responseName) return "Properly Match";
+
+  const lmsTokens = new Set(lmsName.split(" ").filter(Boolean));
+  const responseTokens = new Set(responseName.split(" ").filter(Boolean));
+  const allTokensOverlap =
+    [...lmsTokens].every((token) => responseTokens.has(token)) ||
+    [...responseTokens].every((token) => lmsTokens.has(token));
+  return allTokensOverlap ? "Match" : "Not Match";
+}
+
 export function createClientsCsv(rows: ClientExportRow[]) {
   const header = [
     "LMS Client ID",
     "Loan ID",
     "Client Name",
+    "UID",
+    "VID",
+    "PAN",
     "Gender",
     "Disbursement Date",
     "CKYC Response ID",
@@ -91,6 +141,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     "Status",
     "Error",
     "CKYC Response Matched BY",
+    "CKYC Response Match Status",
     "CKYC Request Matched Row",
     "CKYC Response Matched Row",
   ];
@@ -98,6 +149,9 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     row.clientId,
     row.loanid,
     row.clientName,
+    row.clientUid,
+    row.clientVid,
+    row.clientPan,
     row.gender,
     formatReportDate(row.disbursedOnDate),
     row.ckycResponseId,
@@ -109,6 +163,11 @@ export function createClientsCsv(rows: ClientExportRow[]) {
         : "Awaiting response",
     row.ckycResponseError,
     row.ckycResponseMatchedBy,
+    getCkycResponseMatchStatus(
+      row.clientName,
+      row.ckycResponseMatchedRow,
+      row.ckycResponseId,
+    ),
     row.ckycResponseRequestLine,
     row.ckycResponseMatchedRow,
   ]);
@@ -146,6 +205,11 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     Client_VID: client.clientVid,
     Client_PAN: client.clientPan,
     ClientName: client.clientName,
+    ckycResponseMatchStatus: getCkycResponseMatchStatus(
+      client.clientName,
+      client.ckycResponseMatchedRow,
+      client.ckycResponseId,
+    ),
     mobile_no: client.mobileNo,
     alternate_mobile_no: client.alternateMobileNo,
     Gender: client.gender,
@@ -250,6 +314,9 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       clientId: clientsTable.clientId,
       loanid: clientsTable.loanid,
       clientName: clientsTable.clientName,
+      clientUid: clientsTable.clientUid,
+      clientVid: clientsTable.clientVid,
+      clientPan: clientsTable.clientPan,
       gender: clientsTable.gender,
       disbursedOnDate: clientsTable.disbursedOnDate,
       ckycResponseId: clientsTable.ckycResponseId,

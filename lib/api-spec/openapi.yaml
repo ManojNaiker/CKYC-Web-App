@@ -369,6 +369,9 @@ components:
           type: ["string", "null"]
         ckycResponseMatchedBy:
           type: ["string", "null"]
+        ckycResponseMatchStatus:
+          type: ["string", "null"]
+          enum: ["Properly Match", "Match", "Not Match", null]
         ckycResponseRequestLine:
           type: ["string", "null"]
         ckycResponseMatchedRow:
@@ -399,6 +402,7 @@ components:
         - ckycResponseStatus
         - ckycResponseError
         - ckycResponseMatchedBy
+        - ckycResponseMatchStatus
         - ckycResponseRequestLine
         - ckycResponseMatchedRow
         - ckycResponseFileName

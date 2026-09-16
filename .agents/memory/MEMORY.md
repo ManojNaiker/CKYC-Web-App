@@ -5,3 +5,4 @@
 - [CKYC import identity migration](ckyc-import-identity.md) — keep legacy duplicates intact while enforcing duplicate safety for new LMS imports
 - [Post-merge schema sync](post-merge-schema-sync.md) — post-merge hooks run without stdin, so use the exact package name and a non-interactive dev schema command
 - [CKYC large-operation performance](ckyc-large-operation-performance.md) — avoid synchronous full-dataset validation and per-record writes for large CKYC workflows
+- [CKYC response name status](ckyc-response-name-status.md) — derive report match status from the saved response row so legacy responses are covered without migration
