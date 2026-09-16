@@ -107,6 +107,10 @@ function nameTokens(value: string) {
   return normalizeNameForMatch(value).split(" ").filter(Boolean);
 }
 
+function isUnknownNameToken(value: string) {
+  return ["na", "n", "a", "unknown", "notavailable"].includes(value);
+}
+
 function editDistance(left: string, right: string) {
   const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
   for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
@@ -131,9 +135,27 @@ function editDistance(left: string, right: string) {
 function similarNameToken(left: string, right: string) {
   if (left === right) return true;
   if (left.length < 4 || right.length < 4) return false;
+  const minimumLength = Math.min(left.length, right.length);
   if (
-    Math.min(left.length, right.length) >= 5 &&
+    minimumLength >= 5 &&
     (left.includes(right) || right.includes(left))
+  ) {
+    return true;
+  }
+  const commonPrefixLength = left
+    .split("")
+    .findIndex((character, index) => character !== right[index]);
+  const prefixLength =
+    commonPrefixLength === -1 ? minimumLength : commonPrefixLength;
+  if (
+    prefixLength >= 3 &&
+    prefixLength / minimumLength >= 0.6
+  ) {
+    return true;
+  }
+  if (
+    minimumLength >= 4 &&
+    (left.endsWith(right) || right.endsWith(left))
   ) {
     return true;
   }
@@ -155,8 +177,34 @@ export function getCkycResponseMatchStatus(
 
   const lmsTokens = nameTokens(clientName);
   const responseTokens = nameTokens(responseCustomerName(responseRow));
+  const meaningfulResponseTokens = responseTokens.filter(
+    (token) => !isUnknownNameToken(token),
+  );
   const lmsCompact = lmsTokens.join("");
   const responseCompact = responseTokens.join("");
+  const hasOnlyUnknownLmsSuffix =
+    lmsTokens.length > 1 &&
+    lmsTokens.slice(1).every(isUnknownNameToken);
+
+  if (
+    hasOnlyUnknownLmsSuffix &&
+    meaningfulResponseTokens.length > 0
+  ) {
+    if (lmsTokens[0] === meaningfulResponseTokens[0]) {
+      return "Properly Match";
+    }
+    return similarNameToken(lmsTokens[0], meaningfulResponseTokens[0])
+      ? "Match"
+      : "Not Match";
+  }
+
+  if (
+    lmsTokens.length > 0 &&
+    meaningfulResponseTokens.length === 1 &&
+    similarNameToken(lmsTokens[0], meaningfulResponseTokens[0])
+  ) {
+    return "Match";
+  }
 
   if (lmsCompact === responseCompact) return "Properly Match";
 

@@ -3,7 +3,7 @@ name: CKYC response name status
 description: How the LMS report classifies CKYC response names against the imported client
 ---
 
-The LMS report derives response-name status from the saved CKYC response row instead of requiring a backfill column. Compact-equivalent or exact token-set names are `Properly Match`; names with strong token coverage, minor spelling differences, or extra response-side names are `Match`; a missing response ID or weak name coverage is `Not Match`.
+The LMS report derives response-name status from the saved CKYC response row instead of requiring a backfill column. Compact-equivalent or exact token-set names are `Properly Match`; names with strong token coverage, order changes, compound/prefix/suffix variants, minor spelling differences, or a first-name-only response are `Match`; an LMS `NA` suffix with a matching first name is `Properly Match`; a missing response ID or weak name coverage is `Not Match`.
 
 **Why:** The client register already contains a large history of response rows. Dynamic derivation updates old and new report exports consistently without a risky full-table migration.
 

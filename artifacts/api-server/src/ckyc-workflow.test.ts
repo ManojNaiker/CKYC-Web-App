@@ -671,7 +671,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"'60046100000000"/);
     assert.match(csv, /"Matched"/);
     assert.match(csv, /"Matched by UID"/);
-    assert.match(csv, /"Not Match"/);
+    assert.match(csv, /"Match"/);
     assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);
     assert.match(
       csv,
@@ -771,6 +771,64 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       getCkycResponseMatchStatus(
         "Rathod Somji Bhai",
         response("SOMSINH RAJVIBHAI RATHOD"),
+        "IN123",
+      ),
+      "Match",
+    );
+  });
+
+  it("checks the first name when the remaining name is NA or unavailable", () => {
+    const response = (name: string) =>
+      `20|1|B|VALUE|IN123|${name}|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`;
+
+    assert.equal(
+      getCkycResponseMatchStatus("Jagdish Na", response("JAGDISH"), "IN123"),
+      "Properly Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Kailash Bauri",
+        response("KAILASH"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Deepak Na",
+        response("DEEPAK NA"),
+        "IN123",
+      ),
+      "Properly Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Basant Na",
+        response("BASANT KUMAR"),
+        "IN123",
+      ),
+      "Properly Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Sanju Na",
+        response("MAYAVATEE"),
+        "IN123",
+      ),
+      "Not Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Rathod Somji Bhai",
+        response("SOMSINH RAJVIBHAI RATHOD"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Jagdish Bairagi",
+        response("MISHRI BAI BAIRAGI"),
         "IN123",
       ),
       "Not Match",
