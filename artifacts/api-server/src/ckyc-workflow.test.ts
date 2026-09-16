@@ -833,6 +833,86 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       ),
       "Not Match",
     );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Khant Sayababhai Pujabhai",
+        response("SAYBAJI PUNJAJI KHANT"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Udybhan Yadav",
+        response("UDAYBHAN SINGH"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Durgaprashad Manjhi",
+        response("DURGAPRASAD BADRIPRASAD"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Bariya Chhatrasinh Bachubhai",
+        response("CHHATRASINH"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Ritesh Sharma",
+        response("RITESH S O BANSHILAL"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Bhuriya Shankarbhai Manabhai",
+        response("SHANKARBHAI"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Harijan Poonambhai",
+        response("PUNAMBHAI NATUBHAI HARIJAN"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Bhupat Bhai Harijan",
+        response("HARIJAN BHURIBEN"),
+        "IN123",
+      ),
+      "Not Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Makwana Pravinbhai Jodhabhai",
+        response("MAKVANA PRAVINBHAI"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Hursing Bhuriya",
+        response("HURA SINGH"),
+        "IN123",
+      ),
+      "Match",
+    );
   });
 
   it("skips every row when a required LMS header is missing", async () => {

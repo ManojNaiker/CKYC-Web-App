@@ -148,8 +148,10 @@ function similarNameToken(left: string, right: string) {
   const prefixLength =
     commonPrefixLength === -1 ? minimumLength : commonPrefixLength;
   if (
-    prefixLength >= 3 &&
-    prefixLength / minimumLength >= 0.6
+    (prefixLength >= 4 && prefixLength / minimumLength >= 0.5) ||
+    (prefixLength >= 3 &&
+      minimumLength <= 5 &&
+      prefixLength / minimumLength >= 0.6)
   ) {
     return true;
   }
@@ -201,7 +203,11 @@ export function getCkycResponseMatchStatus(
   if (
     lmsTokens.length > 0 &&
     meaningfulResponseTokens.length === 1 &&
-    similarNameToken(lmsTokens[0], meaningfulResponseTokens[0])
+    lmsTokens.some(
+      (token, index) =>
+        index < lmsTokens.length - 1 &&
+        similarNameToken(token, meaningfulResponseTokens[0]),
+    )
   ) {
     return "Match";
   }
@@ -214,13 +220,26 @@ export function getCkycResponseMatchStatus(
   if (exactTokenSetsMatch) return "Properly Match";
 
   const responseJoinedTokens = responseTokens.join("");
-  const matchedLmsTokens = lmsTokens.filter((token) =>
-    responseTokens.some((responseToken) => similarNameToken(token, responseToken)) ||
-    (token.length >= 5 && responseJoinedTokens.includes(token)),
-  ).length;
+  const matchedLmsTokenIndexes = lmsTokens.flatMap((token, index) => {
+    const tokenMatches = responseTokens.some((responseToken) =>
+      similarNameToken(token, responseToken),
+    );
+    const joinedTokenMatches =
+      token.length >= 5 && responseJoinedTokens.includes(token);
+    return tokenMatches || joinedTokenMatches ? [index] : [];
+  });
+  const matchedLmsTokens = matchedLmsTokenIndexes.length;
   const coverage = lmsTokens.length ? matchedLmsTokens / lmsTokens.length : 0;
+  const hasPrimaryNameEvidence =
+    lmsTokens.length > 0 &&
+    (matchedLmsTokenIndexes.includes(0) ||
+      matchedLmsTokenIndexes.some((index) => index < lmsTokens.length - 1));
 
-  if (coverage >= 1 || (lmsTokens.length > 1 && coverage >= 0.66)) {
+  if (
+    coverage >= 1 ||
+    (lmsTokens.length > 1 && coverage >= 0.66) ||
+    hasPrimaryNameEvidence
+  ) {
     return "Match";
   }
   return "Not Match";
