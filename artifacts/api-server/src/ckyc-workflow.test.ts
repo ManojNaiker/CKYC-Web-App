@@ -3,7 +3,10 @@ import { createServer, type Server } from "node:http";
 import { after, before, describe, it } from "node:test";
 import app from "./app";
 import { pool } from "@workspace/db";
-import { createClientsCsv } from "./routes/clients";
+import {
+  createClientsCsv,
+  getCkycResponseMatchStatus,
+} from "./routes/clients";
 import ExcelJS from "exceljs";
 
 type ClientInput = {
@@ -668,7 +671,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"'60046100000000"/);
     assert.match(csv, /"Matched"/);
     assert.match(csv, /"Matched by UID"/);
-    assert.match(csv, /"Match"/);
+    assert.match(csv, /"Not Match"/);
     assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);
     assert.match(
       csv,
@@ -710,7 +713,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         ckycResponseError: null,
         ckycResponseMatchedBy: "Matched by PAN",
         ckycResponseRequestLine: null,
-        ckycResponseMatchedRow: "20|2|B|PAN-2|ID-2|BHARAT||||",
+        ckycResponseMatchedRow: "20|2|B|PAN-2|ID-2|BHARAT KUMAR SHARMA||||",
       },
       {
         clientId: "3",
@@ -734,6 +737,44 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"Properly Match"/);
     assert.match(csv, /"Match"/);
     assert.match(csv, /"Not Match"/);
+  });
+
+  it("handles CKYC name spacing, ordering, and minor spelling variations", () => {
+    const response = (name: string) =>
+      `20|1|E|4293|IN123|${name}|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`;
+
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Bhabhor Kanti bhai",
+        response("BHABHOR  KANTIBHAI"),
+        "IN123",
+      ),
+      "Properly Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Baria Zaverchnad",
+        response("ZAVERCHAND BARIA"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Padariya Girishbhai",
+        response("GIRISHBHAI BHIKHABHAI PADHARIYA"),
+        "IN123",
+      ),
+      "Match",
+    );
+    assert.equal(
+      getCkycResponseMatchStatus(
+        "Rathod Somji Bhai",
+        response("SOMSINH RAJVIBHAI RATHOD"),
+        "IN123",
+      ),
+      "Not Match",
+    );
   });
 
   it("skips every row when a required LMS header is missing", async () => {

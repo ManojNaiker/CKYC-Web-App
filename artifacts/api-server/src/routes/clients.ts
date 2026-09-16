@@ -103,6 +103,44 @@ function responseHasId(responseRow: string | null) {
   return Boolean(responseRow?.split("|")[4]?.trim());
 }
 
+function nameTokens(value: string) {
+  return normalizeNameForMatch(value).split(" ").filter(Boolean);
+}
+
+function editDistance(left: string, right: string) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] =
+        left[leftIndex - 1] === right[rightIndex - 1]
+          ? previous[rightIndex - 1]
+          : Math.min(
+              previous[rightIndex - 1] + 1,
+              previous[rightIndex] + 1,
+              current[rightIndex - 1] + 1,
+            );
+    }
+    for (let index = 0; index < current.length; index += 1) {
+      previous[index] = current[index];
+    }
+  }
+  return previous[right.length];
+}
+
+function similarNameToken(left: string, right: string) {
+  if (left === right) return true;
+  if (left.length < 4 || right.length < 4) return false;
+  if (
+    Math.min(left.length, right.length) >= 5 &&
+    (left.includes(right) || right.includes(left))
+  ) {
+    return true;
+  }
+  const distance = editDistance(left, right);
+  return distance <= Math.max(1, Math.floor(Math.min(left.length, right.length) * 0.2));
+}
+
 export function getCkycResponseMatchStatus(
   clientName: string,
   responseRow: string | null,
@@ -115,15 +153,29 @@ export function getCkycResponseMatchStatus(
   const responseName = normalizeNameForMatch(responseCustomerName(responseRow));
   if (!responseName) return "Match";
 
-  const lmsName = normalizeNameForMatch(clientName);
-  if (lmsName === responseName) return "Properly Match";
+  const lmsTokens = nameTokens(clientName);
+  const responseTokens = nameTokens(responseCustomerName(responseRow));
+  const lmsCompact = lmsTokens.join("");
+  const responseCompact = responseTokens.join("");
 
-  const lmsTokens = new Set(lmsName.split(" ").filter(Boolean));
-  const responseTokens = new Set(responseName.split(" ").filter(Boolean));
-  const allTokensOverlap =
-    [...lmsTokens].every((token) => responseTokens.has(token)) ||
-    [...responseTokens].every((token) => lmsTokens.has(token));
-  return allTokensOverlap ? "Match" : "Not Match";
+  if (lmsCompact === responseCompact) return "Properly Match";
+
+  const exactTokenSetsMatch =
+    lmsTokens.length === responseTokens.length &&
+    [...lmsTokens].sort().join("|") === [...responseTokens].sort().join("|");
+  if (exactTokenSetsMatch) return "Properly Match";
+
+  const responseJoinedTokens = responseTokens.join("");
+  const matchedLmsTokens = lmsTokens.filter((token) =>
+    responseTokens.some((responseToken) => similarNameToken(token, responseToken)) ||
+    (token.length >= 5 && responseJoinedTokens.includes(token)),
+  ).length;
+  const coverage = lmsTokens.length ? matchedLmsTokens / lmsTokens.length : 0;
+
+  if (coverage >= 1 || (lmsTokens.length > 1 && coverage >= 0.66)) {
+    return "Match";
+  }
+  return "Not Match";
 }
 
 export function createClientsCsv(rows: ClientExportRow[]) {
