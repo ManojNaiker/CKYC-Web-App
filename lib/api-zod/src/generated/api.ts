@@ -394,6 +394,8 @@ export const GenerateCkycDownloadRequestBatchBody = zod.object({
   "maxRows": zod.number().min(1).max(generateCkycDownloadRequestBatchBodyMaxRowsMax).describe('Maximum type 60 rows allowed in each generated CERSAI file'),
   "sourceFileName": zod.string().optional().describe('Name of the uploaded client selection file'),
   "fileDate": zod.string().describe('Date used in the filename, DDMMYYYY'),
+  "disbursementFrom": zod.coerce.date().optional().describe('Include LMS rows disbursed on or after this date'),
+  "disbursementTo": zod.coerce.date().optional().describe('Include LMS rows disbursed on or before this date'),
   "institutionCode": zod.string().default(generateCkycDownloadRequestBatchBodyInstitutionCodeDefault),
   "version": zod.string().default(generateCkycDownloadRequestBatchBodyVersionDefault),
   "iraCode": zod.string().default(generateCkycDownloadRequestBatchBodyIraCodeDefault)

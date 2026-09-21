@@ -3,6 +3,7 @@ import { Router, type IRouter } from "express";
 import ExcelJS from "exceljs";
 import {
   and,
+  asc,
   desc,
   eq,
   inArray,
@@ -92,6 +93,37 @@ function normalizeDateOfBirth(value: string) {
     2,
     "0",
   )}-${dayFirstMatch[3]}`;
+}
+
+function normalizeDisbursementDate(value: string | Date) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  const text = value.trim();
+  const isoMatch = text.match(
+    /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[T\s].*)?$/,
+  );
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+  }
+
+  const dayFirstMatch = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (dayFirstMatch) {
+    return `${dayFirstMatch[3]}-${dayFirstMatch[2].padStart(2, "0")}-${dayFirstMatch[1].padStart(2, "0")}`;
+  }
+
+  return null;
+}
+
+function isValidDateKey(value: string | null): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 type ParsedDownloadResponse = {
@@ -417,6 +449,7 @@ router.post(
         loanid: string;
         responseId: string | null;
         dateOfBirth: string;
+        disbursedOnDate: string;
       }
     >();
     const lookupChunkSize = 500;
@@ -446,6 +479,7 @@ router.post(
           loanid: clientsTable.loanid,
           responseId: clientsTable.ckycResponseId,
           dateOfBirth: clientsTable.dateOfBirth,
+          disbursedOnDate: clientsTable.disbursedOnDate,
         })
         .from(clientsTable)
         .where(
@@ -455,15 +489,52 @@ router.post(
             isNull(clientsTable.ckycNumber),
             or(...referenceFilters),
           ),
-        );
+        )
+        .orderBy(asc(clientsTable.id));
       for (const row of rows) matchedById.set(row.id, row);
     }
+
+    const disbursementFrom = parsed.data.disbursementFrom
+      ? normalizeDisbursementDate(parsed.data.disbursementFrom)
+      : null;
+    const disbursementTo = parsed.data.disbursementTo
+      ? normalizeDisbursementDate(parsed.data.disbursementTo)
+      : null;
+    if (
+      (parsed.data.disbursementFrom && !isValidDateKey(disbursementFrom)) ||
+      (parsed.data.disbursementTo && !isValidDateKey(disbursementTo))
+    ) {
+      res.status(400).json({
+        error: "Disbursement dates must be valid calendar dates.",
+      });
+      return;
+    }
+    if (
+      disbursementFrom &&
+      disbursementTo &&
+      disbursementFrom > disbursementTo
+    ) {
+      res.status(400).json({
+        error: "Disbursement From date cannot be after the To date.",
+      });
+      return;
+    }
+
+    const dateFilteredMatches = [...matchedById.values()].filter((row) => {
+      if (!disbursementFrom && !disbursementTo) return true;
+      const disbursedDate = normalizeDisbursementDate(row.disbursedOnDate);
+      if (!isValidDateKey(disbursedDate)) return false;
+      return (
+        (!disbursementFrom || disbursedDate >= disbursementFrom) &&
+        (!disbursementTo || disbursedDate <= disbursementTo)
+      );
+    });
 
     const matchesByReference = new Map<
       string,
       Array<(typeof matchedById extends Map<number, infer Row> ? Row : never)>
     >();
-    for (const row of matchedById.values()) {
+    for (const row of dateFilteredMatches) {
       for (const value of [row.clientId, row.loanid, row.responseId ?? ""]) {
         const key = normalizeReference(value);
         if (!key || !requestedReferenceKeys.has(key)) continue;
@@ -476,7 +547,7 @@ router.post(
     const orderedMatches: Array<
       (typeof matchedById extends Map<number, infer Row> ? Row : never)
     > = [];
-    const orderedIds = new Set<number>();
+    const orderedClientIds = new Set<string>();
     const unmatchedReferences: string[] = [];
     for (const reference of requestedReferences) {
       const key = normalizeReference(reference);
@@ -486,8 +557,8 @@ router.post(
         continue;
       }
       for (const row of matches) {
-        if (orderedIds.has(row.id)) continue;
-        orderedIds.add(row.id);
+        if (orderedClientIds.has(row.clientId)) continue;
+        orderedClientIds.add(row.clientId);
         orderedMatches.push(row);
       }
     }

@@ -277,6 +277,10 @@ export interface CkycDownloadBatchRequestInput {
   sourceFileName?: string;
   /** Date used in the filename, DDMMYYYY */
   fileDate: string;
+  /** Include LMS rows disbursed on or after this date */
+  disbursementFrom?: string;
+  /** Include LMS rows disbursed on or before this date */
+  disbursementTo?: string;
   institutionCode: string;
   version: string;
   iraCode: string;
