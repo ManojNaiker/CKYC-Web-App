@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "6gYer3tWIFWPDGKKq61Ff"
+uri = "file://exports/ckyc-manager-db-export.tar.gz"
+type = "unspecified"
+title = "CKYC Manager database export"
+description = "Compressed data-only PostgreSQL export with README import instructions. Includes current LMS, CKYC request, create-data, download-request, and response-record data."
+logical_id = "9d655044-565f-4388-97ec-cbd62bfc4631"
+content_hash = "sha256:a29b3f93e857471f2049630b5d656606484d613bfd42861e010692623dae4a63"
+size = 22639466
+mtime_ms = 1789992147692
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/9d655044-565f-4388-97ec-cbd62bfc4631/0df365e6-6540-4e25-9852-698b37d1c0c0"
+storage_version_token = "1789992157996873"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "2m4nPta8zptRj5iSpp9xm"
+uri = "file://exports/ckyc-manager-db-data.sql.gz"
+type = "unspecified"
+title = "CKYC Manager compressed SQL data dump"
+description = "Compressed data-only PostgreSQL dump. Import with: gzip -dc ckyc-manager-db-data.sql.gz | psql \"$DATABASE_URL\". Create the local schema first."
+logical_id = "d09c0396-4603-4c0f-badd-5ffef9c52890"
+content_hash = "sha256:1ffa301ee311bc6e01c7d88d119fc4cbae79aa4c73de800a944ff9f8824d67e4"
+size = 22278358
+mtime_ms = 1789992183972
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/d09c0396-4603-4c0f-badd-5ffef9c52890/df2488c2-d179-4aed-b054-5d14856cbbc6"
+storage_version_token = "1789992191290764"
+content_type = "application/octet-stream"
