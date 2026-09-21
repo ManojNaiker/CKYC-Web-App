@@ -192,6 +192,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: importId
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
         - name: page
           in: query
           required: false
@@ -233,6 +239,45 @@ paths:
                 $ref: "#/components/schemas/CkycCreateDataImportResult"
         "400":
           description: Invalid CKYC Create file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/create-data/batches:
+    get:
+      operationId: listCkycCreateDataBatches
+      tags: [ckyc-create-data]
+      summary: List CKYC Create import batches
+      responses:
+        "200":
+          description: Batch summaries with match counts and report status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CkycCreateDataBatch"
+  /ckyc/create-data/export:
+    get:
+      operationId: exportCkycCreateData
+      tags: [ckyc-create-data]
+      summary: Export one CKYC Create batch report
+      parameters:
+        - name: importId
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      responses:
+        "200":
+          description: CSV report for one import batch
+          content:
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: Import batch not found
           content:
             application/json:
               schema:
@@ -631,6 +676,42 @@ components:
         - total
         - page
         - pageSize
+    CkycCreateDataBatch:
+      type: object
+      properties:
+        id:
+          type: number
+        sourceFileName:
+          type: string
+        uploadedCount:
+          type: number
+        matchedCount:
+          type: number
+        unmatchedCount:
+          type: number
+        successCount:
+          type: number
+        probableMatchCount:
+          type: number
+        rejectCount:
+          type: number
+        reportStatus:
+          type: string
+          enum: [matched, partially_matched, unmatched]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sourceFileName
+        - uploadedCount
+        - matchedCount
+        - unmatchedCount
+        - successCount
+        - probableMatchCount
+        - rejectCount
+        - reportStatus
+        - createdAt
     CkycCreateDataImportInput:
       type: object
       properties:
