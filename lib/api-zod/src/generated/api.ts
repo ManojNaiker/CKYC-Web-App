@@ -178,6 +178,64 @@ export const GenerateCkycRequestResponse = zod.object({
 
 
 /**
+ * @summary List imported CKYC Create results
+ */
+export const listCkycCreateDataQueryPageDefault = 1;
+
+export const listCkycCreateDataQueryPageSizeDefault = 50;
+export const listCkycCreateDataQueryPageSizeMax = 1000;
+
+
+
+export const ListCkycCreateDataQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "page": zod.coerce.number().min(1).default(listCkycCreateDataQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(listCkycCreateDataQueryPageSizeMax).default(listCkycCreateDataQueryPageSizeDefault)
+})
+
+export const ListCkycCreateDataResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "importId": zod.number(),
+  "sourceFileName": zod.string(),
+  "refId": zod.string(),
+  "clientId": zod.string(),
+  "transactionDate": zod.string().nullable(),
+  "uploadedCkycNumber": zod.string().nullable(),
+  "referenceNumber": zod.string().nullable(),
+  "status": zod.string(),
+  "reason": zod.string().nullable(),
+  "clientName": zod.string().nullable(),
+  "finalCkycNumber": zod.string().nullable(),
+  "clientRecordId": zod.number().nullable(),
+  "matchStatus": zod.enum(['matched', 'unmatched']),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Import CKYC Create portal results
+ */
+export const ImportCkycCreateDataBody = zod.object({
+  "sourceFileName": zod.string(),
+  "fileContentBase64": zod.string()
+})
+
+export const ImportCkycCreateDataResponse = zod.object({
+  "importId": zod.number(),
+  "sourceFileName": zod.string(),
+  "imported": zod.number(),
+  "skipped": zod.number(),
+  "unmatchedClientIds": zod.array(zod.string())
+})
+
+
+/**
  * @summary Get a generated request and its response
  */
 export const GetCkycRequestParams = zod.object({

@@ -109,6 +109,59 @@ export interface ImportResult {
   fileName: string | null;
 }
 
+export type CkycCreateDataRowMatchStatus = typeof CkycCreateDataRowMatchStatus[keyof typeof CkycCreateDataRowMatchStatus];
+
+
+export const CkycCreateDataRowMatchStatus = {
+  matched: 'matched',
+  unmatched: 'unmatched',
+} as const;
+
+export interface CkycCreateDataRow {
+  id: number;
+  importId: number;
+  sourceFileName: string;
+  refId: string;
+  clientId: string;
+  /** @nullable */
+  transactionDate: string | null;
+  /** @nullable */
+  uploadedCkycNumber: string | null;
+  /** @nullable */
+  referenceNumber: string | null;
+  status: string;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  clientName: string | null;
+  /** @nullable */
+  finalCkycNumber: string | null;
+  /** @nullable */
+  clientRecordId: number | null;
+  matchStatus: CkycCreateDataRowMatchStatus;
+  createdAt: string;
+}
+
+export interface CkycCreateDataList {
+  items: CkycCreateDataRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CkycCreateDataImportInput {
+  sourceFileName: string;
+  fileContentBase64: string;
+}
+
+export interface CkycCreateDataImportResult {
+  importId: number;
+  sourceFileName: string;
+  imported: number;
+  skipped: number;
+  unmatchedClientIds: string[];
+}
+
 export type CkycClientInputSearchType = typeof CkycClientInputSearchType[keyof typeof CkycClientInputSearchType];
 
 
@@ -309,4 +362,18 @@ export const ListClientsStatus = {
   error: 'error',
   awaiting: 'awaiting',
 } as const;
+
+export type ListCkycCreateDataParams = {
+search?: string;
+status?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 1000
+ */
+pageSize?: number;
+};
 

@@ -8,6 +8,11 @@
 
 export * from './ckycClientInput';
 export * from './ckycClientInputSearchType';
+export * from './ckycCreateDataImportInput';
+export * from './ckycCreateDataImportResult';
+export * from './ckycCreateDataList';
+export * from './ckycCreateDataRow';
+export * from './ckycCreateDataRowMatchStatus';
 export * from './ckycDownloadBatchRequestInput';
 export * from './ckycDownloadRequest';
 export * from './ckycDownloadRequestBatchResponse';
@@ -33,5 +38,6 @@ export * from './exportClientsParams';
 export * from './exportClientsStatus';
 export * from './healthStatus';
 export * from './importResult';
+export * from './listCkycCreateDataParams';
 export * from './listClientsParams';
 export * from './listClientsStatus';

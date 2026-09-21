@@ -10,6 +10,7 @@ import ClientDetail from '@/pages/client-detail';
 import Requests from '@/pages/requests';
 import RequestDetail from '@/pages/request-detail';
 import DownloadRequests from '@/pages/download-requests';
+import CkycCreateData from '@/pages/ckyc-create-data';
 import { WorkspaceShell } from '@/components/workspace-shell';
 import {
   Route,
@@ -33,6 +34,7 @@ function Router() {
           <Route path="/requests/:id" component={RequestDetail} />
           <Route path="/requests" component={Requests} />
           <Route path="/download-requests" component={DownloadRequests} />
+          <Route path="/ckyc-create-data" component={CkycCreateData} />
           <Route component={NotFound} />
         </Switch>
       </WorkspaceShell>

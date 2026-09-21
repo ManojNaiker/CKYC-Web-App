@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CkycCreateDataImportInput,
+  CkycCreateDataImportResult,
+  CkycCreateDataList,
   CkycDownloadBatchRequestInput,
   CkycDownloadRequest,
   CkycDownloadRequestBatchResponse,
@@ -39,6 +42,7 @@ import type {
   ExportClientsParams,
   HealthStatus,
   ImportResult,
+  ListCkycCreateDataParams,
   ListClientsParams
 } from './api.schemas';
 
@@ -609,6 +613,161 @@ export const useGenerateCkycRequest = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getGenerateCkycRequestMutationOptions(options));
+    }
+
+export const getListCkycCreateDataUrl = (params?: ListCkycCreateDataParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/ckyc/create-data?${stringifiedParams}` : `/api/ckyc/create-data`
+}
+
+/**
+ * @summary List imported CKYC Create results
+ */
+export const listCkycCreateData = async (params?: ListCkycCreateDataParams, options?: Parameters<typeof customFetch>[1]): Promise<CkycCreateDataList> => {
+
+  return customFetch<CkycCreateDataList>(getListCkycCreateDataUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCkycCreateDataQueryKey = (params?: ListCkycCreateDataParams,) => {
+    return [
+    `/api/ckyc/create-data`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCkycCreateDataQueryOptions = <TData = Awaited<ReturnType<typeof listCkycCreateData>>, TError = ErrorType<unknown>>(params?: ListCkycCreateDataParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCkycCreateDataQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycCreateData>>> = ({ signal }) => listCkycCreateData(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateData>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCkycCreateDataQueryResult = NonNullable<Awaited<ReturnType<typeof listCkycCreateData>>>
+export type ListCkycCreateDataQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List imported CKYC Create results
+ */
+
+export function useListCkycCreateData<TData = Awaited<ReturnType<typeof listCkycCreateData>>, TError = ErrorType<unknown>>(
+ params?: ListCkycCreateDataParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCkycCreateDataQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getImportCkycCreateDataUrl = () => {
+
+
+
+
+  return `/api/ckyc/create-data`
+}
+
+/**
+ * @summary Import CKYC Create portal results
+ */
+export const importCkycCreateData = async (ckycCreateDataImportInput: CkycCreateDataImportInput, options?: Parameters<typeof customFetch>[1]): Promise<CkycCreateDataImportResult> => {
+
+  return customFetch<CkycCreateDataImportResult>(getImportCkycCreateDataUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(ckycCreateDataImportInput)
+  }
+);}
+
+
+
+
+
+export const getImportCkycCreateDataMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCkycCreateData>>, TError,{data: BodyType<CkycCreateDataImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importCkycCreateData>>, TError,{data: BodyType<CkycCreateDataImportInput>}, TContext> => {
+
+const mutationKey = ['importCkycCreateData'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importCkycCreateData>>, {data: BodyType<CkycCreateDataImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importCkycCreateData(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportCkycCreateDataMutationResult = NonNullable<Awaited<ReturnType<typeof importCkycCreateData>>>
+    export type ImportCkycCreateDataMutationBody = BodyType<CkycCreateDataImportInput>
+    export type ImportCkycCreateDataMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Import CKYC Create portal results
+ */
+export const useImportCkycCreateData = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCkycCreateData>>, TError,{data: BodyType<CkycCreateDataImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importCkycCreateData>>,
+        TError,
+        {data: BodyType<CkycCreateDataImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportCkycCreateDataMutationOptions(options));
     }
 
 export const getGetCkycRequestUrl = (id: number,) => {

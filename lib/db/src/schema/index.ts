@@ -21,3 +21,4 @@ export * from "./clients";
 export * from "./ckycRequests";
 export * from "./ckycDownloadRequests";
 export * from "./ckycDownloadResponseRecords";
+export * from "./ckycCreateData";

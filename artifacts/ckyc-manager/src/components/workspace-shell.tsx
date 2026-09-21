@@ -7,6 +7,7 @@ import {
   Database,
   FileClock,
   FileDown,
+  FileSpreadsheet,
   FileUp,
   FolderOpen,
   LayoutDashboard,
@@ -20,6 +21,7 @@ const navItems = [
   { href: '/clients', label: 'LMS clients', icon: Database },
   { href: '/requests', label: 'CKYC requests', icon: FileClock },
   { href: '/download-requests', label: 'CKYC download', icon: FileDown },
+  { href: '/ckyc-create-data', label: 'CKYC Create data', icon: FileSpreadsheet },
 ];
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
