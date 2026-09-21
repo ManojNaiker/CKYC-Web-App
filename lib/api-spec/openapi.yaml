@@ -871,6 +871,14 @@ components:
         fileDate:
           type: string
           description: Date used in the filename, DDMMYYYY
+        disbursementFrom:
+          type: string
+          format: date
+          description: Include LMS rows disbursed on or after this date
+        disbursementTo:
+          type: string
+          format: date
+          description: Include LMS rows disbursed on or before this date
         institutionCode:
           type: string
           default: IN2884

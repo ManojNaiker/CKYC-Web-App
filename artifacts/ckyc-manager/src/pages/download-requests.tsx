@@ -53,6 +53,8 @@ function cleanApiError(error: unknown) {
 
 export default function DownloadRequests() {
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
+  const [disbursementFrom, setDisbursementFrom] = useState("");
+  const [disbursementTo, setDisbursementTo] = useState("");
   const [maxRows, setMaxRows] = useState("200000");
   const [clientFileName, setClientFileName] = useState("");
   const [clientReferences, setClientReferences] = useState<string[]>([]);
@@ -117,6 +119,14 @@ export default function DownloadRequests() {
       setGenerateFeedback("Upload a client CSV before generating download files.");
       return;
     }
+    if (
+      disbursementFrom &&
+      disbursementTo &&
+      disbursementFrom > disbursementTo
+    ) {
+      setGenerateFeedback("Disbursement From date cannot be after the To date.");
+      return;
+    }
 
     generateBatch.mutate(
       {
@@ -125,6 +135,8 @@ export default function DownloadRequests() {
           maxRows: rowLimit,
           sourceFileName: clientFileName,
           fileDate,
+          disbursementFrom: disbursementFrom || undefined,
+          disbursementTo: disbursementTo || undefined,
           institutionCode: "IN2884",
           version: "V1.3",
           iraCode: "IRA010815",
@@ -229,6 +241,37 @@ export default function DownloadRequests() {
                   data-testid="input-download-file-date"
                 />
               </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="classic-label mb-1.5 block">
+                    Disbursement From
+                  </span>
+                  <input
+                    type="date"
+                    value={disbursementFrom}
+                    onChange={(event) => setDisbursementFrom(event.target.value)}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 font-mono-ui text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                    data-testid="input-download-disbursement-from"
+                  />
+                </label>
+                <label className="block">
+                  <span className="classic-label mb-1.5 block">
+                    Disbursement To
+                  </span>
+                  <input
+                    type="date"
+                    value={disbursementTo}
+                    onChange={(event) => setDisbursementTo(event.target.value)}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 font-mono-ui text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                    data-testid="input-download-disbursement-to"
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] leading-4 text-muted-foreground">
+                Only LMS loans in this range are considered. If one Client ID
+                has multiple loans, it is added only once because its CKYC is
+                the same.
+              </p>
               <label className="block">
                 <span className="classic-label mb-1.5 block">
                   Rows per CERSAI file
