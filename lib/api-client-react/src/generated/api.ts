@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CkycCreateDataBatch,
   CkycCreateDataImportInput,
   CkycCreateDataImportResult,
   CkycCreateDataList,
@@ -39,6 +40,7 @@ import type {
   ClientList,
   DashboardSummary,
   ErrorResponse,
+  ExportCkycCreateDataParams,
   ExportClientsParams,
   HealthStatus,
   ImportResult,
@@ -769,6 +771,167 @@ export const useImportCkycCreateData = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getImportCkycCreateDataMutationOptions(options));
     }
+
+export const getListCkycCreateDataBatchesUrl = () => {
+
+
+
+
+  return `/api/ckyc/create-data/batches`
+}
+
+/**
+ * @summary List CKYC Create import batches
+ */
+export const listCkycCreateDataBatches = async ( options?: Parameters<typeof customFetch>[1]): Promise<CkycCreateDataBatch[]> => {
+
+  return customFetch<CkycCreateDataBatch[]>(getListCkycCreateDataBatchesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCkycCreateDataBatchesQueryKey = () => {
+    return [
+    `/api/ckyc/create-data/batches`
+    ] as const;
+    }
+
+
+export const getListCkycCreateDataBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCkycCreateDataBatchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycCreateDataBatches>>> = ({ signal }) => listCkycCreateDataBatches({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCkycCreateDataBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listCkycCreateDataBatches>>>
+export type ListCkycCreateDataBatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List CKYC Create import batches
+ */
+
+export function useListCkycCreateDataBatches<TData = Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCkycCreateDataBatchesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportCkycCreateDataUrl = (params: ExportCkycCreateDataParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/ckyc/create-data/export?${stringifiedParams}` : `/api/ckyc/create-data/export`
+}
+
+/**
+ * @summary Export one CKYC Create batch report
+ */
+export const exportCkycCreateData = async (params: ExportCkycCreateDataParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportCkycCreateDataUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportCkycCreateDataQueryKey = (params?: ExportCkycCreateDataParams,) => {
+    return [
+    `/api/ckyc/create-data/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportCkycCreateDataQueryOptions = <TData = Awaited<ReturnType<typeof exportCkycCreateData>>, TError = ErrorType<ErrorResponse>>(params: ExportCkycCreateDataParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCkycCreateData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportCkycCreateDataQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportCkycCreateData>>> = ({ signal }) => exportCkycCreateData(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportCkycCreateData>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportCkycCreateDataQueryResult = NonNullable<Awaited<ReturnType<typeof exportCkycCreateData>>>
+export type ExportCkycCreateDataQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Export one CKYC Create batch report
+ */
+
+export function useExportCkycCreateData<TData = Awaited<ReturnType<typeof exportCkycCreateData>>, TError = ErrorType<ErrorResponse>>(
+ params: ExportCkycCreateDataParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCkycCreateData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportCkycCreateDataQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetCkycRequestUrl = (id: number,) => {
 

@@ -180,6 +180,7 @@ export const GenerateCkycRequestResponse = zod.object({
 /**
  * @summary List imported CKYC Create results
  */
+
 export const listCkycCreateDataQueryPageDefault = 1;
 
 export const listCkycCreateDataQueryPageSizeDefault = 50;
@@ -190,6 +191,7 @@ export const listCkycCreateDataQueryPageSizeMax = 1000;
 export const ListCkycCreateDataQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.coerce.string().optional(),
+  "importId": zod.coerce.number().min(1).optional(),
   "page": zod.coerce.number().min(1).default(listCkycCreateDataQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listCkycCreateDataQueryPageSizeMax).default(listCkycCreateDataQueryPageSizeDefault)
 })
@@ -233,6 +235,37 @@ export const ImportCkycCreateDataResponse = zod.object({
   "skipped": zod.number(),
   "unmatchedClientIds": zod.array(zod.string())
 })
+
+
+/**
+ * @summary List CKYC Create import batches
+ */
+export const ListCkycCreateDataBatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "uploadedCount": zod.number(),
+  "matchedCount": zod.number(),
+  "unmatchedCount": zod.number(),
+  "successCount": zod.number(),
+  "probableMatchCount": zod.number(),
+  "rejectCount": zod.number(),
+  "reportStatus": zod.enum(['matched', 'partially_matched', 'unmatched']),
+  "createdAt": zod.coerce.date()
+})
+export const ListCkycCreateDataBatchesResponse = zod.array(ListCkycCreateDataBatchesResponseItem)
+
+
+/**
+ * @summary Export one CKYC Create batch report
+ */
+
+
+
+export const ExportCkycCreateDataQueryParams = zod.object({
+  "importId": zod.coerce.number().min(1)
+})
+
+export const ExportCkycCreateDataResponse = zod.unknown()
 
 
 /**

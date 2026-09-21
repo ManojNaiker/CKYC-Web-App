@@ -149,6 +149,28 @@ export interface CkycCreateDataList {
   pageSize: number;
 }
 
+export type CkycCreateDataBatchReportStatus = typeof CkycCreateDataBatchReportStatus[keyof typeof CkycCreateDataBatchReportStatus];
+
+
+export const CkycCreateDataBatchReportStatus = {
+  matched: 'matched',
+  partially_matched: 'partially_matched',
+  unmatched: 'unmatched',
+} as const;
+
+export interface CkycCreateDataBatch {
+  id: number;
+  sourceFileName: string;
+  uploadedCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  successCount: number;
+  probableMatchCount: number;
+  rejectCount: number;
+  reportStatus: CkycCreateDataBatchReportStatus;
+  createdAt: string;
+}
+
 export interface CkycCreateDataImportInput {
   sourceFileName: string;
   fileContentBase64: string;
@@ -369,11 +391,22 @@ status?: string;
 /**
  * @minimum 1
  */
+importId?: number;
+/**
+ * @minimum 1
+ */
 page?: number;
 /**
  * @minimum 1
  * @maximum 1000
  */
 pageSize?: number;
+};
+
+export type ExportCkycCreateDataParams = {
+/**
+ * @minimum 1
+ */
+importId: number;
 };
 

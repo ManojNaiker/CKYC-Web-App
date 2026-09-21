@@ -8,6 +8,8 @@
 
 export * from './ckycClientInput';
 export * from './ckycClientInputSearchType';
+export * from './ckycCreateDataBatch';
+export * from './ckycCreateDataBatchReportStatus';
 export * from './ckycCreateDataImportInput';
 export * from './ckycCreateDataImportResult';
 export * from './ckycCreateDataList';
@@ -34,6 +36,7 @@ export * from './clientInput';
 export * from './clientList';
 export * from './dashboardSummary';
 export * from './errorResponse';
+export * from './exportCkycCreateDataParams';
 export * from './exportClientsParams';
 export * from './exportClientsStatus';
 export * from './healthStatus';

@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import {
   ImportCkycCreateDataBody,
+  ListCkycCreateDataBatchesResponse,
   ListCkycCreateDataQueryParams,
   ListCkycCreateDataResponse,
 } from "@workspace/api-zod";
@@ -55,6 +56,13 @@ function normalizeHeader(value: string) {
 function normalizeCell(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+function escapeCsv(value: string | null | undefined) {
+  const raw = value ?? "";
+  const spreadsheetSafe =
+    /^\d+$/.test(raw) || /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${spreadsheetSafe.replaceAll('"', '""')}"`;
 }
 
 function findColumn(headers: string[], aliases: string[]) {
@@ -281,6 +289,160 @@ function toResponse(
   };
 }
 
+function getBatchReportStatus(matchedCount: number, unmatchedCount: number) {
+  if (unmatchedCount === 0) return "matched" as const;
+  if (matchedCount === 0) return "unmatched" as const;
+  return "partially_matched" as const;
+}
+
+router.get("/ckyc/create-data/batches", async (_req, res): Promise<void> => {
+  const batches = await db
+    .select({
+      id: ckycCreateDataImportsTable.id,
+      sourceFileName: ckycCreateDataImportsTable.sourceFileName,
+      createdAt: ckycCreateDataImportsTable.createdAt,
+      uploadedCount: sql<number>`count(distinct ${ckycCreateDataTable.id})`,
+      matchedCount: sql<number>`count(distinct case when ${clientsTable.id} is not null then ${ckycCreateDataTable.id} end)`,
+      unmatchedCount: sql<number>`count(distinct case when ${clientsTable.id} is null then ${ckycCreateDataTable.id} end)`,
+      successCount: sql<number>`count(distinct case when lower(${ckycCreateDataTable.status}) = 'success' then ${ckycCreateDataTable.id} end)`,
+      probableMatchCount: sql<number>`count(distinct case when lower(${ckycCreateDataTable.status}) = 'probable_match' then ${ckycCreateDataTable.id} end)`,
+      rejectCount: sql<number>`count(distinct case when lower(${ckycCreateDataTable.status}) in ('short_reject', 'reject', 'rejected') then ${ckycCreateDataTable.id} end)`,
+    })
+    .from(ckycCreateDataImportsTable)
+    .leftJoin(
+      ckycCreateDataTable,
+      eq(ckycCreateDataImportsTable.id, ckycCreateDataTable.importId),
+    )
+    .leftJoin(
+      clientsTable,
+      eq(ckycCreateDataTable.clientId, clientsTable.clientId),
+    )
+    .groupBy(
+      ckycCreateDataImportsTable.id,
+      ckycCreateDataImportsTable.sourceFileName,
+      ckycCreateDataImportsTable.createdAt,
+    )
+    .orderBy(
+      desc(ckycCreateDataImportsTable.createdAt),
+      desc(ckycCreateDataImportsTable.id),
+    );
+
+  res.json(
+    ListCkycCreateDataBatchesResponse.parse(
+      batches.map((batch) => {
+        const uploadedCount = Number(batch.uploadedCount ?? 0);
+        const matchedCount = Number(batch.matchedCount ?? 0);
+        const unmatchedCount = Number(batch.unmatchedCount ?? 0);
+        return {
+          id: batch.id,
+          sourceFileName: batch.sourceFileName,
+          uploadedCount,
+          matchedCount,
+          unmatchedCount,
+          successCount: Number(batch.successCount ?? 0),
+          probableMatchCount: Number(batch.probableMatchCount ?? 0),
+          rejectCount: Number(batch.rejectCount ?? 0),
+          reportStatus: getBatchReportStatus(matchedCount, unmatchedCount),
+          createdAt: batch.createdAt,
+        };
+      }),
+    ),
+  );
+});
+
+router.get("/ckyc/create-data/export", async (req, res): Promise<void> => {
+  const importId = Number(req.query.importId);
+  if (!Number.isInteger(importId) || importId < 1) {
+    res.status(400).json({ error: "A valid importId is required." });
+    return;
+  }
+
+  const [batch] = await db
+    .select({
+      id: ckycCreateDataImportsTable.id,
+      sourceFileName: ckycCreateDataImportsTable.sourceFileName,
+    })
+    .from(ckycCreateDataImportsTable)
+    .where(eq(ckycCreateDataImportsTable.id, importId))
+    .limit(1);
+
+  if (!batch) {
+    res.status(404).json({ error: "Import batch not found." });
+    return;
+  }
+
+  const rows = await db
+    .select({ row: ckycCreateDataTable })
+    .from(ckycCreateDataTable)
+    .where(eq(ckycCreateDataTable.importId, importId))
+    .orderBy(ckycCreateDataTable.id);
+
+  const clientIds = [...new Set(rows.map(({ row }) => row.clientId))];
+  const clientsById = new Map<
+    string,
+    { clientName: string; ckycNumber: string | null }
+  >();
+  for (let index = 0; index < clientIds.length; index += 500) {
+    const clients = await db
+      .select({
+        clientId: clientsTable.clientId,
+        clientName: clientsTable.clientName,
+        ckycNumber: clientsTable.ckycNumber,
+      })
+      .from(clientsTable)
+      .where(inArray(clientsTable.clientId, clientIds.slice(index, index + 500)));
+    for (const client of clients) {
+      if (!clientsById.has(client.clientId)) {
+        clientsById.set(client.clientId, {
+          clientName: client.clientName,
+          ckycNumber: client.ckycNumber,
+        });
+      }
+    }
+  }
+
+  const header = [
+    "Source file",
+    "Client ID",
+    "Ref ID",
+    "LMS client name",
+    "Existing Final CKYC",
+    "Uploaded CKYC No",
+    "Reference No",
+    "Portal status",
+    "Reason",
+    "LMS match status",
+  ];
+  const body = rows.map(({ row }) => {
+    const client = clientsById.get(row.clientId);
+    return [
+      row.sourceFileName,
+      row.clientId,
+      row.refId,
+      client?.clientName ?? "",
+      client?.ckycNumber ?? "",
+      row.uploadedCkycNumber,
+      row.referenceNumber,
+      row.status,
+      row.reason,
+      client ? "matched" : "unmatched",
+    ];
+  });
+  const csv = `\uFEFF${[header, ...body]
+    .map((columns) => columns.map(escapeCsv).join(","))
+    .join("\r\n")}\r\n`;
+  const safeFileName = batch.sourceFileName
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "_");
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="ckyc-create-${safeFileName || importId}-report.csv"`,
+  );
+  res.send(csv);
+});
+
 router.get("/ckyc/create-data", async (req, res): Promise<void> => {
   const parsed = ListCkycCreateDataQueryParams.safeParse(req.query);
   if (!parsed.success) {
@@ -288,8 +450,11 @@ router.get("/ckyc/create-data", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, status, page, pageSize } = parsed.data;
+  const { search, status, importId, page, pageSize } = parsed.data;
   const filters = [];
+  if (importId) {
+    filters.push(eq(ckycCreateDataTable.importId, importId));
+  }
   if (search?.trim()) {
     const term = `%${search.trim()}%`;
     filters.push(
