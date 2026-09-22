@@ -43,5 +43,6 @@ export * from './exportClientsStatus';
 export * from './healthStatus';
 export * from './importResult';
 export * from './listCkycCreateDataParams';
+export * from './listCkycDownloadResponseFilesParams';
 export * from './listClientsParams';
 export * from './listClientsStatus';

@@ -382,15 +382,58 @@ export const DownloadCkycDownloadResponseFileResponse = zod.unknown()
 /**
  * @summary List uploaded final CKYC response files
  */
+export const listCkycDownloadResponseFilesQueryIncludeArchivedDefault = false;
+
+export const ListCkycDownloadResponseFilesQueryParams = zod.object({
+  "includeArchived": zod.coerce.boolean().default(listCkycDownloadResponseFilesQueryIncludeArchivedDefault)
+})
+
 export const ListCkycDownloadResponseFilesResponseItem = zod.object({
   "id": zod.number(),
   "sourceFileName": zod.string(),
   "requestNumber": zod.number().nullable(),
   "recordCount": zod.number(),
   "matchedRequestId": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListCkycDownloadResponseFilesResponse = zod.array(ListCkycDownloadResponseFilesResponseItem)
+
+
+/**
+ * @summary Archive an uploaded final CKYC response file
+ */
+export const ArchiveCkycDownloadResponseFileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ArchiveCkycDownloadResponseFileResponse = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "requestNumber": zod.number().nullable(),
+  "recordCount": zod.number(),
+  "matchedRequestId": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Restore an archived final CKYC response file
+ */
+export const RestoreCkycDownloadResponseFileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RestoreCkycDownloadResponseFileResponse = zod.object({
+  "id": zod.number(),
+  "sourceFileName": zod.string(),
+  "requestNumber": zod.number().nullable(),
+  "recordCount": zod.number(),
+  "matchedRequestId": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
 
 
 /**

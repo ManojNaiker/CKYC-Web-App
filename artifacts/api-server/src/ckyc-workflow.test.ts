@@ -629,6 +629,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         requestNumber: number | null;
         recordCount: number;
         matchedRequestId: number | null;
+        archivedAt: string | null;
       }>
     >(baseUrl, "/ckyc/download-requests/response-files");
     const storedResponseFile = responseFiles.find(
@@ -640,6 +641,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(storedResponseFile.requestNumber, null);
     assert.equal(storedResponseFile.recordCount, 1);
     assert.equal(storedResponseFile.matchedRequestId, null);
+    assert.equal(storedResponseFile.archivedAt, null);
 
     const responseDownload = await fetch(
       `${baseUrl}/ckyc/download-requests/response-files/${responseImported.storedRecordId}/file`,
@@ -651,6 +653,59 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.deepEqual(
       Buffer.from(await responseDownload.arrayBuffer()),
+      workbookBuffer,
+    );
+
+    const archivedResponseFile = await requestJson<{
+      id: number;
+      archivedAt: string | null;
+    }>(
+      baseUrl,
+      `/ckyc/download-requests/response-files/${responseImported.storedRecordId}/archive`,
+      { method: "POST" },
+    );
+    assert.equal(archivedResponseFile.id, responseImported.storedRecordId);
+    assert.ok(archivedResponseFile.archivedAt);
+
+    const activeResponseFiles = await requestJson<
+      Array<{ id: number; archivedAt: string | null }>
+    >(baseUrl, "/ckyc/download-requests/response-files");
+    assert.equal(
+      activeResponseFiles.some(
+        (responseFile) => responseFile.id === responseImported.storedRecordId,
+      ),
+      false,
+    );
+
+    const allResponseFiles = await requestJson<
+      Array<{ id: number; archivedAt: string | null }>
+    >(
+      baseUrl,
+      "/ckyc/download-requests/response-files?includeArchived=true",
+    );
+    const archivedResponseInReview = allResponseFiles.find(
+      (responseFile) => responseFile.id === responseImported.storedRecordId,
+    );
+    assert.ok(archivedResponseInReview);
+    assert.equal(archivedResponseInReview.archivedAt, archivedResponseFile.archivedAt);
+
+    const restoredResponseFile = await requestJson<{
+      id: number;
+      archivedAt: string | null;
+    }>(
+      baseUrl,
+      `/ckyc/download-requests/response-files/${responseImported.storedRecordId}/restore`,
+      { method: "POST" },
+    );
+    assert.equal(restoredResponseFile.id, responseImported.storedRecordId);
+    assert.equal(restoredResponseFile.archivedAt, null);
+
+    const restoredResponseDownload = await fetch(
+      `${baseUrl}/ckyc/download-requests/response-files/${responseImported.storedRecordId}/file`,
+    );
+    assert.equal(restoredResponseDownload.status, 200);
+    assert.deepEqual(
+      Buffer.from(await restoredResponseDownload.arrayBuffer()),
       workbookBuffer,
     );
 

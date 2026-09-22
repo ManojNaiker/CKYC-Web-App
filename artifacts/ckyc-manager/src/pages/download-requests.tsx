@@ -1,5 +1,7 @@
 import { ChangeEvent, useState } from "react";
 import {
+  Archive,
+  ArchiveRestore,
   CheckCircle2,
   Download,
   FileDown,
@@ -10,9 +12,11 @@ import {
 import {
   getListCkycDownloadRequestsQueryKey,
   getListCkycDownloadResponseFilesQueryKey,
+  useArchiveCkycDownloadResponseFile,
   useGenerateCkycDownloadRequestBatch,
   useListCkycDownloadResponseFiles,
   useListCkycDownloadRequests,
+  useRestoreCkycDownloadResponseFile,
   useUploadCkycDownloadResponse,
 } from "@workspace/api-client-react";
 import { EmptyState, PageIntro, QueryError } from "@/components/workspace-shell";
@@ -71,15 +75,24 @@ export default function DownloadRequests() {
     null,
   );
   const [responseContentBase64, setResponseContentBase64] = useState("");
+  const [showArchivedResponseFiles, setShowArchivedResponseFiles] =
+    useState(false);
+  const [responseFileActionId, setResponseFileActionId] = useState<number | null>(
+    null,
+  );
+  const [responseFileActionFeedback, setResponseFileActionFeedback] = useState("");
   const [responseFeedback, setResponseFeedback] = useState("");
   const historyQuery = useListCkycDownloadRequests({
     query: { queryKey: getListCkycDownloadRequestsQueryKey() },
   });
-  const responseFilesQuery = useListCkycDownloadResponseFiles({
-    query: { queryKey: getListCkycDownloadResponseFilesQueryKey() },
-  });
+  const responseFilesQuery = useListCkycDownloadResponseFiles(
+    { includeArchived: showArchivedResponseFiles },
+    { query: { queryKey: getListCkycDownloadResponseFilesQueryKey({ includeArchived: showArchivedResponseFiles }) } },
+  );
   const generateBatch = useGenerateCkycDownloadRequestBatch();
   const uploadResponse = useUploadCkycDownloadResponse();
+  const archiveResponseFile = useArchiveCkycDownloadResponseFile();
+  const restoreResponseFile = useRestoreCkycDownloadResponseFile();
 
   const chooseClientFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -217,10 +230,33 @@ export default function DownloadRequests() {
     );
   };
 
+  const updateResponseFileArchiveState = (id: number, archive: boolean) => {
+    setResponseFileActionId(id);
+    setResponseFileActionFeedback("");
+    const mutation = archive ? archiveResponseFile : restoreResponseFile;
+    mutation.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          setResponseFileActionFeedback(
+            archive
+              ? "Response file archived. It remains downloadable and can be restored."
+              : "Response file restored to the active list.",
+          );
+          void responseFilesQuery.refetch();
+        },
+        onError: (error) => setResponseFileActionFeedback(cleanApiError(error)),
+        onSettled: () => setResponseFileActionId(null),
+      },
+    );
+  };
+
   const persistedResponseRequest = historyQuery.data?.find(
     (request) => request.responseFileName,
   );
-  const persistedResponseFile = responseFilesQuery.data?.[0];
+  const persistedResponseFile = responseFilesQuery.data?.find(
+    (responseFile) => !responseFile.archivedAt,
+  );
   const displayedResponseFileName =
     savedResponseFileName ||
     persistedResponseFile?.sourceFileName ||
@@ -526,11 +562,40 @@ export default function DownloadRequests() {
         </div>
 
         <section>
-          <div className="mb-3">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">
               Uploaded final response files
             </p>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-[10px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showArchivedResponseFiles}
+                onChange={(event) =>
+                  setShowArchivedResponseFiles(event.target.checked)
+                }
+                className="size-3.5 accent-primary"
+                data-testid="checkbox-show-archived-response-files"
+              />
+              Show archived
+            </label>
           </div>
+          <p className="mb-3 text-[10px] leading-4 text-muted-foreground">
+            Archive old uploads to remove them from the active list without deleting
+            their audit record, request links, or download access.
+          </p>
+          {responseFileActionFeedback && (
+            <p
+              className={`mb-3 text-[10px] ${
+                responseFileActionFeedback.includes("could not") ||
+                responseFileActionFeedback.includes("HTTP")
+                  ? "text-destructive"
+                  : "text-[#31734d]"
+              }`}
+              data-testid="status-response-file-archive"
+            >
+              {responseFileActionFeedback}
+            </p>
+          )}
           {responseFilesQuery.isError ? (
             <QueryError onRetry={() => responseFilesQuery.refetch()} />
           ) : responseFilesQuery.isLoading ? (
@@ -545,17 +610,17 @@ export default function DownloadRequests() {
             />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-              <div className="data-table hidden grid-cols-[minmax(0,1fr)_110px_150px_120px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
+              <div className="data-table hidden grid-cols-[minmax(0,1fr)_110px_150px_250px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
                 <span>Response file</span>
                 <span>Rows</span>
                 <span>Request link</span>
-                <span>Uploaded</span>
+                <span>Uploaded / manage</span>
               </div>
               <div className="divide-y divide-border">
                 {responseFilesQuery.data.map((responseFile) => (
                   <div
                     key={responseFile.id}
-                    className="grid gap-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_110px_150px_120px] md:items-center md:gap-4"
+                    className="grid gap-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_110px_150px_250px] md:items-center md:gap-4"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e2f2e9] text-[#31734d]">
@@ -566,7 +631,9 @@ export default function DownloadRequests() {
                           {responseFile.sourceFileName}
                         </span>
                         <span className="mt-1 block truncate text-[10px] text-muted-foreground">
-                          Stored independently from request history
+                          {responseFile.archivedAt
+                            ? "Archived · retained for audit and download"
+                            : "Active · stored independently from request history"}
                         </span>
                       </span>
                     </span>
@@ -578,7 +645,7 @@ export default function DownloadRequests() {
                         ? `D${responseFile.requestNumber}`
                         : "No matching request"}
                     </span>
-                    <span className="flex items-center justify-between gap-2">
+                    <span className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-mono-ui text-[10px] text-muted-foreground">
                         {new Intl.DateTimeFormat("en-IN", {
                           day: "2-digit",
@@ -586,15 +653,38 @@ export default function DownloadRequests() {
                           year: "numeric",
                         }).format(new Date(responseFile.createdAt))}
                       </span>
-                      <a
-                        href={`/api/ckyc/download-requests/response-files/${responseFile.id}/file`}
-                        download={responseFile.sourceFileName}
-                        className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[#31734d]/35 px-2 text-[10px] font-semibold text-[#31734d] hover:bg-[#e2f2e9]"
-                        data-testid={`button-download-uploaded-response-file-${responseFile.id}`}
-                      >
-                        <Download size={13} />
-                        Download
-                      </a>
+                      <span className="flex items-center gap-2">
+                        <a
+                          href={`/api/ckyc/download-requests/response-files/${responseFile.id}/file`}
+                          download={responseFile.sourceFileName}
+                          className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[#31734d]/35 px-2 text-[10px] font-semibold text-[#31734d] hover:bg-[#e2f2e9]"
+                          data-testid={`button-download-uploaded-response-file-${responseFile.id}`}
+                        >
+                          <Download size={13} />
+                          Download
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateResponseFileArchiveState(
+                              responseFile.id,
+                              !responseFile.archivedAt,
+                            )
+                          }
+                          disabled={responseFileActionId === responseFile.id}
+                          className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border px-2 text-[10px] font-semibold text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                          data-testid={`button-${
+                            responseFile.archivedAt ? "restore" : "archive"
+                          }-uploaded-response-file-${responseFile.id}`}
+                        >
+                          {responseFile.archivedAt ? (
+                            <ArchiveRestore size={13} />
+                          ) : (
+                            <Archive size={13} />
+                          )}
+                          {responseFile.archivedAt ? "Restore" : "Archive"}
+                        </button>
+                      </span>
                     </span>
                   </div>
                 ))}

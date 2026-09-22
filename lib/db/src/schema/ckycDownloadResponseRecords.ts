@@ -15,6 +15,7 @@ export const ckycDownloadResponseRecordsTable = pgTable(
       .notNull()
       .defaultNow(),
     matchedAt: timestamp("matched_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
 );
 

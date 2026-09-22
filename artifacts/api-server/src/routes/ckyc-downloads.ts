@@ -439,7 +439,7 @@ router.get(
 
 router.get(
   "/ckyc/download-requests/response-files",
-  async (_req, res): Promise<void> => {
+  async (req, res): Promise<void> => {
     const rows = await db
       .select({
         id: ckycDownloadResponseRecordsTable.id,
@@ -447,15 +447,81 @@ router.get(
         requestNumber: ckycDownloadResponseRecordsTable.requestNumber,
         recordCount: ckycDownloadResponseRecordsTable.recordCount,
         matchedRequestId: ckycDownloadResponseRecordsTable.matchedRequestId,
+        archivedAt: ckycDownloadResponseRecordsTable.archivedAt,
         createdAt: ckycDownloadResponseRecordsTable.createdAt,
       })
       .from(ckycDownloadResponseRecordsTable)
+      .where(
+        req.query.includeArchived === "true"
+          ? undefined
+          : isNull(ckycDownloadResponseRecordsTable.archivedAt),
+      )
       .orderBy(
         desc(ckycDownloadResponseRecordsTable.createdAt),
         desc(ckycDownloadResponseRecordsTable.id),
       )
       .limit(50);
     res.json(ListCkycDownloadResponseFilesResponse.parse(rows));
+  },
+);
+
+router.post(
+  "/ckyc/download-requests/response-files/:id/archive",
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+
+    const [updated] = await db
+      .update(ckycDownloadResponseRecordsTable)
+      .set({ archivedAt: new Date() })
+      .where(eq(ckycDownloadResponseRecordsTable.id, id))
+      .returning({
+        id: ckycDownloadResponseRecordsTable.id,
+        sourceFileName: ckycDownloadResponseRecordsTable.sourceFileName,
+        requestNumber: ckycDownloadResponseRecordsTable.requestNumber,
+        recordCount: ckycDownloadResponseRecordsTable.recordCount,
+        matchedRequestId: ckycDownloadResponseRecordsTable.matchedRequestId,
+        archivedAt: ckycDownloadResponseRecordsTable.archivedAt,
+        createdAt: ckycDownloadResponseRecordsTable.createdAt,
+      });
+    if (!updated) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+    res.json(ListCkycDownloadResponseFilesResponse.parse([updated])[0]);
+  },
+);
+
+router.post(
+  "/ckyc/download-requests/response-files/:id/restore",
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+
+    const [updated] = await db
+      .update(ckycDownloadResponseRecordsTable)
+      .set({ archivedAt: null })
+      .where(eq(ckycDownloadResponseRecordsTable.id, id))
+      .returning({
+        id: ckycDownloadResponseRecordsTable.id,
+        sourceFileName: ckycDownloadResponseRecordsTable.sourceFileName,
+        requestNumber: ckycDownloadResponseRecordsTable.requestNumber,
+        recordCount: ckycDownloadResponseRecordsTable.recordCount,
+        matchedRequestId: ckycDownloadResponseRecordsTable.matchedRequestId,
+        archivedAt: ckycDownloadResponseRecordsTable.archivedAt,
+        createdAt: ckycDownloadResponseRecordsTable.createdAt,
+      });
+    if (!updated) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+    res.json(ListCkycDownloadResponseFilesResponse.parse([updated])[0]);
   },
 );
 

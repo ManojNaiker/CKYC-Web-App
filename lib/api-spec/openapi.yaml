@@ -433,6 +433,13 @@ paths:
       operationId: listCkycDownloadResponseFiles
       tags: [ckyc]
       summary: List uploaded final CKYC response files
+      parameters:
+        - name: includeArchived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Recently uploaded final CKYC response files
@@ -442,6 +449,54 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CkycDownloadResponseFile"
+  /ckyc/download-requests/response-files/{id}/archive:
+    post:
+      operationId: archiveCkycDownloadResponseFile
+      tags: [ckyc]
+      summary: Archive an uploaded final CKYC response file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Archived response file metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycDownloadResponseFile"
+        "404":
+          description: Uploaded response file not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/download-requests/response-files/{id}/restore:
+    post:
+      operationId: restoreCkycDownloadResponseFile
+      tags: [ckyc]
+      summary: Restore an archived final CKYC response file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Restored response file metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CkycDownloadResponseFile"
+        "404":
+          description: Uploaded response file not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /ckyc/download-requests/response-files/{id}/file:
     get:
       operationId: downloadCkycDownloadResponseRecordFile
@@ -1071,6 +1126,9 @@ components:
           type: number
         matchedRequestId:
           type: ["number", "null"]
+        archivedAt:
+          type: ["string", "null"]
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -1080,6 +1138,7 @@ components:
         - requestNumber
         - recordCount
         - matchedRequestId
+        - archivedAt
         - createdAt
     CkycDownloadRequest:
       type: object

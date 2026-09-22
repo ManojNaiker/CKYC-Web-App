@@ -46,6 +46,7 @@ import type {
   HealthStatus,
   ImportResult,
   ListCkycCreateDataParams,
+  ListCkycDownloadResponseFilesParams,
   ListClientsParams
 } from './api.schemas';
 
@@ -1385,20 +1386,27 @@ export function useDownloadCkycDownloadResponseFile<TData = Awaited<ReturnType<t
 
 
 
-export const getListCkycDownloadResponseFilesUrl = () => {
+export const getListCkycDownloadResponseFilesUrl = (params?: ListCkycDownloadResponseFilesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/ckyc/download-requests/response-files`
+  return stringifiedParams.length > 0 ? `/api/ckyc/download-requests/response-files?${stringifiedParams}` : `/api/ckyc/download-requests/response-files`
 }
 
 /**
  * @summary List uploaded final CKYC response files
  */
-export const listCkycDownloadResponseFiles = async ( options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponseFile[]> => {
+export const listCkycDownloadResponseFiles = async (params?: ListCkycDownloadResponseFilesParams, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponseFile[]> => {
 
-  return customFetch<CkycDownloadResponseFile[]>(getListCkycDownloadResponseFilesUrl(),
+  return customFetch<CkycDownloadResponseFile[]>(getListCkycDownloadResponseFilesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1411,23 +1419,23 @@ export const listCkycDownloadResponseFiles = async ( options?: Parameters<typeof
 
 
 
-export const getListCkycDownloadResponseFilesQueryKey = () => {
+export const getListCkycDownloadResponseFilesQueryKey = (params?: ListCkycDownloadResponseFilesParams,) => {
     return [
-    `/api/ckyc/download-requests/response-files`
+    `/api/ckyc/download-requests/response-files`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListCkycDownloadResponseFilesQueryOptions = <TData = Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListCkycDownloadResponseFilesQueryOptions = <TData = Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError = ErrorType<unknown>>(params?: ListCkycDownloadResponseFilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListCkycDownloadResponseFilesQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListCkycDownloadResponseFilesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>> = ({ signal }) => listCkycDownloadResponseFiles({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>> = ({ signal }) => listCkycDownloadResponseFiles(params, { signal, ...requestOptions });
 
 
 
@@ -1445,11 +1453,11 @@ export type ListCkycDownloadResponseFilesQueryError = ErrorType<unknown>
  */
 
 export function useListCkycDownloadResponseFiles<TData = Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListCkycDownloadResponseFilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListCkycDownloadResponseFilesQueryOptions(options)
+  const queryOptions = getListCkycDownloadResponseFilesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1461,6 +1469,148 @@ export function useListCkycDownloadResponseFiles<TData = Awaited<ReturnType<type
 
 
 
+
+export const getArchiveCkycDownloadResponseFileUrl = (id: number,) => {
+
+
+
+
+  return `/api/ckyc/download-requests/response-files/${id}/archive`
+}
+
+/**
+ * @summary Archive an uploaded final CKYC response file
+ */
+export const archiveCkycDownloadResponseFile = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponseFile> => {
+
+  return customFetch<CkycDownloadResponseFile>(getArchiveCkycDownloadResponseFileUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getArchiveCkycDownloadResponseFileMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['archiveCkycDownloadResponseFile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  archiveCkycDownloadResponseFile(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveCkycDownloadResponseFileMutationResult = NonNullable<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>>
+
+    export type ArchiveCkycDownloadResponseFileMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Archive an uploaded final CKYC response file
+ */
+export const useArchiveCkycDownloadResponseFile = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getArchiveCkycDownloadResponseFileMutationOptions(options));
+    }
+
+export const getRestoreCkycDownloadResponseFileUrl = (id: number,) => {
+
+
+
+
+  return `/api/ckyc/download-requests/response-files/${id}/restore`
+}
+
+/**
+ * @summary Restore an archived final CKYC response file
+ */
+export const restoreCkycDownloadResponseFile = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<CkycDownloadResponseFile> => {
+
+  return customFetch<CkycDownloadResponseFile>(getRestoreCkycDownloadResponseFileUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestoreCkycDownloadResponseFileMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['restoreCkycDownloadResponseFile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  restoreCkycDownloadResponseFile(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreCkycDownloadResponseFileMutationResult = NonNullable<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>>
+
+    export type RestoreCkycDownloadResponseFileMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Restore an archived final CKYC response file
+ */
+export const useRestoreCkycDownloadResponseFile = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRestoreCkycDownloadResponseFileMutationOptions(options));
+    }
 
 export const getDownloadCkycDownloadResponseRecordFileUrl = (id: number,) => {
 

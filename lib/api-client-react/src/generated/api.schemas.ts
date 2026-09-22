@@ -311,6 +311,8 @@ export interface CkycDownloadResponseFile {
   recordCount: number;
   /** @nullable */
   matchedRequestId: number | null;
+  /** @nullable */
+  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -423,5 +425,9 @@ export type ExportCkycCreateDataParams = {
  * @minimum 1
  */
 importId: number;
+};
+
+export type ListCkycDownloadResponseFilesParams = {
+includeArchived?: boolean;
 };
 

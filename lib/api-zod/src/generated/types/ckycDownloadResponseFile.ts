@@ -14,5 +14,7 @@ export interface CkycDownloadResponseFile {
   recordCount: number;
   /** @nullable */
   matchedRequestId: number | null;
+  /** @nullable */
+  archivedAt: Date | null;
   createdAt: Date;
 }
