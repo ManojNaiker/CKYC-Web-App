@@ -7,4 +7,4 @@ Use a unique run-scoped prefix for imported records and generated response files
 
 **Why:** The development database is shared with existing workspace data, so fixed identifiers or broad cleanup can make tests flaky or remove operator data.
 
-**How to apply:** Keep the suite self-contained and cleanup-safe; avoid exact global counts and only delete rows created by the current run.
+**How to apply:** Keep the suite self-contained and cleanup-safe; avoid exact global counts or list snapshots and only delete rows created by the current run. Assert list entries by IDs created in the current run.

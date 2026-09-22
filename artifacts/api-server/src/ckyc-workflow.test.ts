@@ -664,6 +664,148 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       workbookBuffer,
     );
 
+    const correctedWorkbook = new ExcelJS.Workbook();
+    const correctedSheet = correctedWorkbook.addWorksheet("CKYC Result");
+    correctedSheet.addRow([
+      "Applicant Name",
+      "KYC Number",
+      "ALPHANUMERIC Reference NO",
+    ]);
+    correctedSheet.addRow([
+      "Asha Rao",
+      "O50009293913726",
+      downloadReference,
+    ]);
+    correctedSheet.addRow([
+      "Unmatched Applicant",
+      "O61111111111111",
+      "UNMATCHED-REF",
+    ]);
+    const correctedWorkbookBuffer = Buffer.from(
+      await correctedWorkbook.xlsx.writeBuffer(),
+    );
+    const correctedResponseImported = await requestJson<{
+      sourceFileName: string;
+      storedRecordId: number;
+      requestNumber: number | null;
+      storedRecordCount: number;
+      requestMatched: boolean;
+      updatedCount: number;
+      skippedCount: number;
+      missingReferences: string[];
+    }>(baseUrl, "/ckyc/download-requests/response", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceFileName: "portal-download-response-corrected.xlsx",
+        fileContentBase64: correctedWorkbookBuffer.toString("base64"),
+      }),
+    });
+    downloadResponseRecordIds.push(correctedResponseImported.storedRecordId);
+    assert.equal(
+      correctedResponseImported.sourceFileName,
+      "portal-download-response-corrected.xlsx",
+    );
+    assert.equal(correctedResponseImported.requestNumber, null);
+    assert.equal(correctedResponseImported.storedRecordCount, 2);
+    assert.equal(correctedResponseImported.requestMatched, false);
+    assert.equal(correctedResponseImported.updatedCount, 2);
+    assert.equal(correctedResponseImported.skippedCount, 1);
+    assert.deepEqual(correctedResponseImported.missingReferences, [
+      "UNMATCHED-REF",
+    ]);
+
+    // A corrected upload must retain the earlier workbook as a separate
+    // downloadable record while exposing the newest metadata in the list.
+    const responseFilesAfterCorrection = await requestJson<
+      Array<{
+        id: number;
+        sourceFileName: string;
+        requestNumber: number | null;
+        recordCount: number;
+        matchedRequestId: number | null;
+        archivedAt: string | null;
+      }>
+    >(baseUrl, "/ckyc/download-requests/response-files");
+    const correctedResponseFile = responseFilesAfterCorrection.find(
+      (responseFile) => responseFile.id === correctedResponseImported.storedRecordId,
+    );
+    const originalResponseFile = responseFilesAfterCorrection.find(
+      (responseFile) => responseFile.id === responseImported.storedRecordId,
+    );
+    assert.ok(correctedResponseFile);
+    assert.ok(originalResponseFile);
+    assert.deepEqual(
+      {
+        id: correctedResponseFile.id,
+        sourceFileName: correctedResponseFile.sourceFileName,
+        requestNumber: correctedResponseFile.requestNumber,
+        recordCount: correctedResponseFile.recordCount,
+        matchedRequestId: correctedResponseFile.matchedRequestId,
+        archivedAt: correctedResponseFile.archivedAt,
+      },
+      {
+        id: correctedResponseImported.storedRecordId,
+        sourceFileName: "portal-download-response-corrected.xlsx",
+        requestNumber: null,
+        recordCount: 2,
+        matchedRequestId: null,
+        archivedAt: null,
+      },
+    );
+    assert.deepEqual(
+      {
+        id: originalResponseFile.id,
+        sourceFileName: originalResponseFile.sourceFileName,
+        requestNumber: originalResponseFile.requestNumber,
+        recordCount: originalResponseFile.recordCount,
+        matchedRequestId: originalResponseFile.matchedRequestId,
+        archivedAt: originalResponseFile.archivedAt,
+      },
+      {
+        id: responseImported.storedRecordId,
+        sourceFileName: "portal-download-response.xlsx",
+        requestNumber: null,
+        recordCount: 1,
+        matchedRequestId: null,
+        archivedAt: null,
+      },
+    );
+    assert.ok(
+      responseFilesAfterCorrection.findIndex(
+        (responseFile) => responseFile.id === correctedResponseImported.storedRecordId,
+      ) <
+        responseFilesAfterCorrection.findIndex(
+          (responseFile) => responseFile.id === responseImported.storedRecordId,
+        ),
+    );
+
+    const correctedResponseDownload = await fetch(
+      `${baseUrl}/ckyc/download-requests/response-files/${correctedResponseImported.storedRecordId}/file`,
+    );
+    assert.equal(correctedResponseDownload.status, 200);
+    assert.match(
+      correctedResponseDownload.headers.get("content-disposition") ?? "",
+      /filename="portal-download-response-corrected\.xlsx"/,
+    );
+    assert.deepEqual(
+      Buffer.from(await correctedResponseDownload.arrayBuffer()),
+      correctedWorkbookBuffer,
+    );
+
+    const originalResponseDownloadAfterCorrection = await fetch(
+      `${baseUrl}/ckyc/download-requests/response-files/${responseImported.storedRecordId}/file`,
+    );
+    assert.equal(originalResponseDownloadAfterCorrection.status, 200);
+    assert.match(
+      originalResponseDownloadAfterCorrection.headers.get("content-disposition") ?? "",
+      /filename="portal-download-response\.xlsx"/,
+    );
+    assert.deepEqual(
+      Buffer.from(await originalResponseDownloadAfterCorrection.arrayBuffer()),
+      workbookBuffer,
+    );
+
     const archivedResponseFile = await requestJson<{
       id: number;
       archivedAt: string | null;
