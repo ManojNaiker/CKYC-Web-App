@@ -457,8 +457,8 @@ router.get(
           : isNull(ckycDownloadResponseRecordsTable.archivedAt),
       )
       .orderBy(
-        desc(ckycDownloadResponseRecordsTable.createdAt),
         desc(ckycDownloadResponseRecordsTable.id),
+        desc(ckycDownloadResponseRecordsTable.createdAt),
       )
       .limit(50);
     res.json(ListCkycDownloadResponseFilesResponse.parse(rows));

@@ -488,6 +488,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       Math.max(
         ...batchedDownload.requests.map((request) => request.requestNumber),
       ) + 1;
+    const pendingResponseContent = `10|${pendingRequestNumber}|IN2884|1|1|10-09-2026|V1.3|||||\r\n20|1|E|REFERENCE||||\r\n`;
     const pendingResponse = await requestJson<{
       storedRecordId: number;
       requestNumber: number | null;
@@ -499,9 +500,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         sourceFileName: `Pasted-10-${pendingRequestNumber}-final.txt`,
-        fileContentBase64: Buffer.from(
-          `10|${pendingRequestNumber}|IN2884|1|1|10-09-2026|V1.3|||||\r\n20|1|E|REFERENCE||||\r\n`,
-        ).toString("base64"),
+        fileContentBase64: Buffer.from(pendingResponseContent).toString("base64"),
       }),
     });
     downloadResponseRecordIds.push(pendingResponse.storedRecordId);
@@ -780,31 +779,76 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         ),
     );
 
-    const correctedResponseDownload = await fetch(
-      `${baseUrl}/ckyc/download-requests/response-files/${correctedResponseImported.storedRecordId}/file`,
-    );
-    assert.equal(correctedResponseDownload.status, 200);
-    assert.match(
-      correctedResponseDownload.headers.get("content-disposition") ?? "",
-      /filename="portal-download-response-corrected\.xlsx"/,
+    const expectedResponseFiles = [
+      {
+        id: correctedResponseImported.storedRecordId,
+        sourceFileName: "portal-download-response-corrected.xlsx",
+        requestNumber: null,
+        recordCount: 2,
+        matchedRequestId: null,
+        content: correctedWorkbookBuffer,
+      },
+      {
+        id: responseImported.storedRecordId,
+        sourceFileName: "portal-download-response.xlsx",
+        requestNumber: null,
+        recordCount: 1,
+        matchedRequestId: null,
+        content: workbookBuffer,
+      },
+      {
+        id: pendingResponse.storedRecordId,
+        sourceFileName: `Pasted-10-${pendingRequestNumber}-final.txt`,
+        requestNumber: pendingRequestNumber,
+        recordCount: 1,
+        matchedRequestId: downloadRequestId,
+        content: Buffer.from(pendingResponseContent),
+      },
+    ];
+    const currentRunResponseFiles = responseFilesAfterCorrection.filter((responseFile) =>
+      expectedResponseFiles.some((expected) => expected.id === responseFile.id),
     );
     assert.deepEqual(
-      Buffer.from(await correctedResponseDownload.arrayBuffer()),
-      correctedWorkbookBuffer,
+      currentRunResponseFiles.map((responseFile) => responseFile.id),
+      expectedResponseFiles.map((expected) => expected.id),
     );
+    for (const expected of expectedResponseFiles) {
+      const responseFile = currentRunResponseFiles.find(
+        (candidate) => candidate.id === expected.id,
+      );
+      assert.ok(responseFile);
+      assert.deepEqual(
+        {
+          id: responseFile.id,
+          sourceFileName: responseFile.sourceFileName,
+          requestNumber: responseFile.requestNumber,
+          recordCount: responseFile.recordCount,
+          matchedRequestId: responseFile.matchedRequestId,
+          archivedAt: responseFile.archivedAt,
+        },
+        {
+          id: expected.id,
+          sourceFileName: expected.sourceFileName,
+          requestNumber: expected.requestNumber,
+          recordCount: expected.recordCount,
+          matchedRequestId: expected.matchedRequestId,
+          archivedAt: null,
+        },
+      );
 
-    const originalResponseDownloadAfterCorrection = await fetch(
-      `${baseUrl}/ckyc/download-requests/response-files/${responseImported.storedRecordId}/file`,
-    );
-    assert.equal(originalResponseDownloadAfterCorrection.status, 200);
-    assert.match(
-      originalResponseDownloadAfterCorrection.headers.get("content-disposition") ?? "",
-      /filename="portal-download-response\.xlsx"/,
-    );
-    assert.deepEqual(
-      Buffer.from(await originalResponseDownloadAfterCorrection.arrayBuffer()),
-      workbookBuffer,
-    );
+      const responseDownload = await fetch(
+        `${baseUrl}/ckyc/download-requests/response-files/${expected.id}/file`,
+      );
+      assert.equal(responseDownload.status, 200);
+      assert.match(
+        responseDownload.headers.get("content-disposition") ?? "",
+        new RegExp(`filename="${expected.sourceFileName.replace(".", "\\.")}"`),
+      );
+      assert.deepEqual(
+        Buffer.from(await responseDownload.arrayBuffer()),
+        expected.content,
+      );
+    }
 
     const archivedResponseFile = await requestJson<{
       id: number;
