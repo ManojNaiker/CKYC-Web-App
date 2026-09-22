@@ -74,6 +74,9 @@ export default function DownloadRequests() {
   const [savedResponseRecordId, setSavedResponseRecordId] = useState<number | null>(
     null,
   );
+  const [savedResponseRecordCount, setSavedResponseRecordCount] = useState<
+    number | null
+  >(null);
   const [responseContentBase64, setResponseContentBase64] = useState("");
   const [showArchivedResponseFiles, setShowArchivedResponseFiles] =
     useState(false);
@@ -221,6 +224,7 @@ export default function DownloadRequests() {
           );
           setSavedResponseFileName(responseFileName);
           setSavedResponseRecordId(result.storedRecordId);
+          setSavedResponseRecordCount(result.storedRecordCount);
           setResponseContentBase64("");
           void historyQuery.refetch();
           void responseFilesQuery.refetch();
@@ -264,6 +268,14 @@ export default function DownloadRequests() {
     "";
   const displayedResponseRecordId =
     savedResponseRecordId ?? persistedResponseFile?.id ?? null;
+  const displayedResponseRecordCount =
+    (displayedResponseRecordId
+      ? responseFilesQuery.data?.find(
+          (responseFile) => responseFile.id === displayedResponseRecordId,
+        )?.recordCount
+      : undefined) ??
+    savedResponseRecordCount ??
+    null;
   const savedResponseRequest = displayedResponseFileName
     ? historyQuery.data?.find(
         (request) => request.responseFileName === displayedResponseFileName,
@@ -521,6 +533,11 @@ export default function DownloadRequests() {
                       <span className="mt-0.5 block truncate font-mono-ui">
                         {displayedResponseFileName}
                       </span>
+                      {displayedResponseRecordCount !== null && (
+                        <span className="mt-0.5 block font-mono-ui">
+                          {displayedResponseRecordCount} rows
+                        </span>
+                      )}
                     </span>
                   </span>
                   {displayedResponseRecordId ? (
@@ -627,7 +644,10 @@ export default function DownloadRequests() {
                         <FileSpreadsheet size={16} />
                       </span>
                       <span className="min-w-0">
-                        <span className="block truncate font-mono-ui text-[11px] font-medium">
+                        <span
+                          className="block truncate font-mono-ui text-[11px] font-medium"
+                          data-testid={`text-uploaded-response-file-name-${responseFile.id}`}
+                        >
                           {responseFile.sourceFileName}
                         </span>
                         <span className="mt-1 block truncate text-[10px] text-muted-foreground">
@@ -637,7 +657,10 @@ export default function DownloadRequests() {
                         </span>
                       </span>
                     </span>
-                    <span className="font-mono-ui text-[11px] text-muted-foreground">
+                    <span
+                      className="font-mono-ui text-[11px] text-muted-foreground"
+                      data-testid={`text-uploaded-response-file-count-${responseFile.id}`}
+                    >
                       {responseFile.recordCount} rows
                     </span>
                     <span className="text-[10px] text-muted-foreground">

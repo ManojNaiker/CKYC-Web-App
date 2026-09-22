@@ -615,13 +615,21 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(responseImported.skippedCount, 0);
     assert.deepEqual(responseImported.missingReferences, []);
 
-    await requestJson<
+    const refreshedHistory = await requestJson<
       Array<{
         id: number;
         responseFileName: string | null;
       }>
     >(baseUrl, "/ckyc/download-requests");
+    assert.equal(
+      refreshedHistory.find((request) => request.id === downloadRequestId)
+        ?.responseFileName,
+      downloaded.responseFileName,
+    );
 
+    // This is the same independent query the manager runs after a full page
+    // reload. The response-file record must carry enough metadata to render
+    // the row and must remain downloadable as the original workbook.
     const responseFiles = await requestJson<
       Array<{
         id: number;
