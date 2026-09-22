@@ -23,6 +23,7 @@ import {
   GenerateCkycDownloadRequestBatchResponse,
   GenerateCkycDownloadRequestBody,
   GenerateCkycDownloadRequestResponse,
+  ListCkycDownloadResponseFilesResponse,
   ListCkycDownloadRequestsResponse,
   UploadCkycDownloadResponseBody,
   UploadCkycDownloadResponseResponse,
@@ -287,6 +288,18 @@ function toResponse(
   };
 }
 
+function responseFilePayload(fileName: string, content: string) {
+  const isTextResponse =
+    fileName.toLowerCase().endsWith(".txt") ||
+    content.trimStart().startsWith("10|");
+  return {
+    isTextResponse,
+    buffer: isTextResponse
+      ? Buffer.from(content, "utf8")
+      : Buffer.from(content, "base64"),
+  };
+}
+
 async function attachStoredResponseToRequest(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   response: typeof ckycDownloadResponseRecordsTable.$inferSelect,
@@ -406,21 +419,84 @@ router.get(
     }
 
     const safeFileName = request.responseFileName.replace(/["\\\r\n]/g, "_");
-    const isTextResponse =
-      request.responseFileName.toLowerCase().endsWith(".txt") ||
-      request.responseContent.trimStart().startsWith("10|");
-    const responseBuffer = isTextResponse
-      ? Buffer.from(request.responseContent, "utf8")
-      : Buffer.from(request.responseContent, "base64");
+    const responsePayload = responseFilePayload(
+      request.responseFileName,
+      request.responseContent,
+    );
     res.setHeader(
       "Content-Type",
-      isTextResponse ? "text/plain; charset=utf-8" : "application/octet-stream",
+      responsePayload.isTextResponse
+        ? "text/plain; charset=utf-8"
+        : "application/octet-stream",
     );
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${safeFileName}"`,
     );
-    res.send(responseBuffer);
+    res.send(responsePayload.buffer);
+  },
+);
+
+router.get(
+  "/ckyc/download-requests/response-files",
+  async (_req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        id: ckycDownloadResponseRecordsTable.id,
+        sourceFileName: ckycDownloadResponseRecordsTable.sourceFileName,
+        requestNumber: ckycDownloadResponseRecordsTable.requestNumber,
+        recordCount: ckycDownloadResponseRecordsTable.recordCount,
+        matchedRequestId: ckycDownloadResponseRecordsTable.matchedRequestId,
+        createdAt: ckycDownloadResponseRecordsTable.createdAt,
+      })
+      .from(ckycDownloadResponseRecordsTable)
+      .orderBy(
+        desc(ckycDownloadResponseRecordsTable.createdAt),
+        desc(ckycDownloadResponseRecordsTable.id),
+      )
+      .limit(50);
+    res.json(ListCkycDownloadResponseFilesResponse.parse(rows));
+  },
+);
+
+router.get(
+  "/ckyc/download-requests/response-files/:id/file",
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+
+    const [response] = await db
+      .select({
+        sourceFileName: ckycDownloadResponseRecordsTable.sourceFileName,
+        content: ckycDownloadResponseRecordsTable.content,
+      })
+      .from(ckycDownloadResponseRecordsTable)
+      .where(eq(ckycDownloadResponseRecordsTable.id, id))
+      .limit(1);
+    if (!response) {
+      res.status(404).json({ error: "Uploaded final CKYC response file not found." });
+      return;
+    }
+
+    const safeFileName = response.sourceFileName.replace(/["\\\r\n]/g, "_");
+    const responsePayload = responseFilePayload(
+      response.sourceFileName,
+      response.content,
+    );
+    res.setHeader(
+      "Content-Type",
+      responsePayload.isTextResponse
+        ? "text/plain; charset=utf-8"
+        : "application/octet-stream",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeFileName}"`,
+    );
+    res.send(responsePayload.buffer);
   },
 );
 

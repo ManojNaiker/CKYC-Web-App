@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 import {
   getListCkycDownloadRequestsQueryKey,
+  getListCkycDownloadResponseFilesQueryKey,
   useGenerateCkycDownloadRequestBatch,
+  useListCkycDownloadResponseFiles,
   useListCkycDownloadRequests,
   useUploadCkycDownloadResponse,
 } from "@workspace/api-client-react";
@@ -65,10 +67,16 @@ export default function DownloadRequests() {
   >([]);
   const [responseFileName, setResponseFileName] = useState("");
   const [savedResponseFileName, setSavedResponseFileName] = useState("");
+  const [savedResponseRecordId, setSavedResponseRecordId] = useState<number | null>(
+    null,
+  );
   const [responseContentBase64, setResponseContentBase64] = useState("");
   const [responseFeedback, setResponseFeedback] = useState("");
   const historyQuery = useListCkycDownloadRequests({
     query: { queryKey: getListCkycDownloadRequestsQueryKey() },
+  });
+  const responseFilesQuery = useListCkycDownloadResponseFiles({
+    query: { queryKey: getListCkycDownloadResponseFilesQueryKey() },
   });
   const generateBatch = useGenerateCkycDownloadRequestBatch();
   const uploadResponse = useUploadCkycDownloadResponse();
@@ -98,6 +106,7 @@ export default function DownloadRequests() {
     if (!file) return;
     setResponseFeedback("");
     setSavedResponseFileName("");
+    setSavedResponseRecordId(null);
     setResponseFileName(file.name);
     try {
       setResponseContentBase64(await readAsBase64(file));
@@ -198,8 +207,10 @@ export default function DownloadRequests() {
                 }${missing}`,
           );
           setSavedResponseFileName(responseFileName);
+          setSavedResponseRecordId(result.storedRecordId);
           setResponseContentBase64("");
           void historyQuery.refetch();
+          void responseFilesQuery.refetch();
         },
         onError: (error) => setResponseFeedback(cleanApiError(error)),
       },
@@ -209,13 +220,20 @@ export default function DownloadRequests() {
   const persistedResponseRequest = historyQuery.data?.find(
     (request) => request.responseFileName,
   );
+  const persistedResponseFile = responseFilesQuery.data?.[0];
   const displayedResponseFileName =
-    savedResponseFileName || persistedResponseRequest?.responseFileName || "";
+    savedResponseFileName ||
+    persistedResponseFile?.sourceFileName ||
+    persistedResponseRequest?.responseFileName ||
+    "";
+  const displayedResponseRecordId =
+    savedResponseRecordId ?? persistedResponseFile?.id ?? null;
   const savedResponseRequest = displayedResponseFileName
     ? historyQuery.data?.find(
         (request) => request.responseFileName === displayedResponseFileName,
       )
     : undefined;
+  const savedResponseRequestId = savedResponseRequest?.id;
 
   return (
     <div className="animate-fade">
@@ -469,17 +487,27 @@ export default function DownloadRequests() {
                       </span>
                     </span>
                   </span>
-                  {savedResponseRequest && (
+                  {displayedResponseRecordId ? (
                     <a
-                      href={`/api/ckyc/download-requests/${savedResponseRequest.id}/response-file`}
+                      href={`/api/ckyc/download-requests/response-files/${displayedResponseRecordId}/file`}
                       download={displayedResponseFileName}
                       className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[#31734d]/35 bg-background px-2 text-[10px] font-semibold text-[#31734d] hover:bg-white"
-                      data-testid={`button-download-uploaded-final-${savedResponseRequest.id}`}
+                      data-testid={`button-download-uploaded-final-${displayedResponseRecordId}`}
                     >
                       <Download size={12} />
                       Download
                     </a>
-                  )}
+                  ) : savedResponseRequestId ? (
+                    <a
+                      href={`/api/ckyc/download-requests/${savedResponseRequestId}/response-file`}
+                      download={displayedResponseFileName}
+                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[#31734d]/35 bg-background px-2 text-[10px] font-semibold text-[#31734d] hover:bg-white"
+                      data-testid={`button-download-uploaded-final-${savedResponseRequestId}`}
+                    >
+                      <Download size={12} />
+                      Download
+                    </a>
+                  ) : null}
                 </div>
               )}
               <button

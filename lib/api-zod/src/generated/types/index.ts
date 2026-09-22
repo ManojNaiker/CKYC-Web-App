@@ -21,6 +21,7 @@ export * from './ckycDownloadRequestBatchResponse';
 export * from './ckycDownloadRequestDetail';
 export * from './ckycDownloadRequestInput';
 export * from './ckycDownloadResponse';
+export * from './ckycDownloadResponseFile';
 export * from './ckycDownloadResponseInput';
 export * from './ckycFile';
 export * from './ckycRequest';

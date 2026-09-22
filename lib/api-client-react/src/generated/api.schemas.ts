@@ -303,6 +303,17 @@ export interface CkycDownloadResponse {
   missingReferences: string[];
 }
 
+export interface CkycDownloadResponseFile {
+  id: number;
+  sourceFileName: string;
+  /** @nullable */
+  requestNumber: number | null;
+  recordCount: number;
+  /** @nullable */
+  matchedRequestId: number | null;
+  createdAt: string;
+}
+
 export interface CkycDownloadRequest {
   id: number;
   requestNumber: number;
