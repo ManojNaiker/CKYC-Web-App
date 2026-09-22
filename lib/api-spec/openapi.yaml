@@ -403,6 +403,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/download-requests/{id}/response-file:
+    get:
+      operationId: downloadCkycDownloadResponseFile
+      tags: [ckyc]
+      summary: Download the uploaded final CKYC response file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Uploaded final CKYC response file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Final response file not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /ckyc/download-requests/response:
     post:
       operationId: uploadCkycDownloadResponse

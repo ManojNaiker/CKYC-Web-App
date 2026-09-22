@@ -212,8 +212,8 @@ export default function DownloadRequests() {
         description="Generate the portal TXT from saved CKYC response IDs and LMS dates of birth. After processing, upload the portal Excel or final CKYC TXT response; both files are retained and matched to their D request when available."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <div className="space-y-6">
+      <div className="space-y-6">
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,.8fr)]">
           <section className="rounded-xl border border-primary/25 bg-card shadow-xs">
             <div className="border-b border-border bg-[#eff8f5] p-5 dark:bg-secondary/45">
               <div className="flex items-start gap-3">
@@ -478,17 +478,17 @@ export default function DownloadRequests() {
             />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-              <div className="data-table hidden grid-cols-[1fr_90px_100px_150px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
+              <div className="data-table hidden grid-cols-[minmax(0,1fr)_90px_210px_150px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
                 <span>Request file</span>
                 <span>Rows</span>
-                <span>Action</span>
+                <span>Downloads</span>
                 <span>Created</span>
               </div>
               <div className="divide-y divide-border">
                 {historyQuery.data.map((request) => (
                   <div
                     key={request.id}
-                    className="grid gap-2 px-5 py-4 md:grid-cols-[1fr_90px_100px_150px] md:items-center md:gap-4"
+                    className="grid gap-2 px-5 py-4 md:grid-cols-[minmax(0,1fr)_90px_210px_150px] md:items-center md:gap-4"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e2f2e9] text-[#31734d]">
@@ -509,15 +509,32 @@ export default function DownloadRequests() {
                     <span className="font-mono-ui text-[11px] text-muted-foreground">
                       {request.recordCount} rows
                     </span>
-                    <a
-                      href={`/api/ckyc/download-requests/${request.id}/file`}
-                      download={request.fileName}
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-primary/35 px-2 text-[10px] font-semibold text-primary hover:bg-secondary"
-                      data-testid={`button-redownload-download-request-${request.id}`}
-                    >
-                      <Download size={13} />
-                      Download
-                    </a>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={`/api/ckyc/download-requests/${request.id}/file`}
+                        download={request.fileName}
+                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-primary/35 px-2 text-[10px] font-semibold text-primary hover:bg-secondary"
+                        data-testid={`button-redownload-download-request-${request.id}`}
+                      >
+                        <Download size={13} />
+                        Request TXT
+                      </a>
+                      {request.responseFileName ? (
+                        <a
+                          href={`/api/ckyc/download-requests/${request.id}/response-file`}
+                          download={request.responseFileName}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[#31734d]/35 px-2 text-[10px] font-semibold text-[#31734d] hover:bg-[#e2f2e9]"
+                          data-testid={`button-download-final-ckyc-${request.id}`}
+                        >
+                          <FileSpreadsheet size={13} />
+                          Final CKYC
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">
+                          Final file pending
+                        </span>
+                      )}
+                    </span>
                     <span className="font-mono-ui text-[10px] text-muted-foreground">
                       {new Intl.DateTimeFormat("en-IN", {
                         day: "2-digit",
