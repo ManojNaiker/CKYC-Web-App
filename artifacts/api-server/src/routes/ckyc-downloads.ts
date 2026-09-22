@@ -406,12 +406,21 @@ router.get(
     }
 
     const safeFileName = request.responseFileName.replace(/["\\\r\n]/g, "_");
-    res.setHeader("Content-Type", "application/octet-stream");
+    const isTextResponse =
+      request.responseFileName.toLowerCase().endsWith(".txt") ||
+      request.responseContent.trimStart().startsWith("10|");
+    const responseBuffer = isTextResponse
+      ? Buffer.from(request.responseContent, "utf8")
+      : Buffer.from(request.responseContent, "base64");
+    res.setHeader(
+      "Content-Type",
+      isTextResponse ? "text/plain; charset=utf-8" : "application/octet-stream",
+    );
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="${safeFileName}"`,
     );
-    res.send(Buffer.from(request.responseContent, "base64"));
+    res.send(responseBuffer);
   },
 );
 

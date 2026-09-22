@@ -370,6 +370,16 @@ export const DownloadCkycDownloadRequestFileResponse = zod.string()
 
 
 /**
+ * @summary Download the uploaded final CKYC response file
+ */
+export const DownloadCkycDownloadResponseFileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DownloadCkycDownloadResponseFileResponse = zod.unknown()
+
+
+/**
  * @summary Save a CKYC download response Excel or TXT file
  */
 export const UploadCkycDownloadResponseBody = zod.object({
