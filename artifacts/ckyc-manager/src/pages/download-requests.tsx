@@ -64,6 +64,7 @@ export default function DownloadRequests() {
     Array<{ fileName: string; content: string; recordCount: number }>
   >([]);
   const [responseFileName, setResponseFileName] = useState("");
+  const [savedResponseFileName, setSavedResponseFileName] = useState("");
   const [responseContentBase64, setResponseContentBase64] = useState("");
   const [responseFeedback, setResponseFeedback] = useState("");
   const historyQuery = useListCkycDownloadRequests({
@@ -96,6 +97,7 @@ export default function DownloadRequests() {
     const file = event.target.files?.[0];
     if (!file) return;
     setResponseFeedback("");
+    setSavedResponseFileName("");
     setResponseFileName(file.name);
     try {
       setResponseContentBase64(await readAsBase64(file));
@@ -195,14 +197,25 @@ export default function DownloadRequests() {
                     : "The response is saved and will link when the matching request is generated."
                 }${missing}`,
           );
-          setResponseFileName("");
+          setSavedResponseFileName(responseFileName);
           setResponseContentBase64("");
-            void historyQuery.refetch();
+          void historyQuery.refetch();
         },
         onError: (error) => setResponseFeedback(cleanApiError(error)),
       },
     );
   };
+
+  const persistedResponseRequest = historyQuery.data?.find(
+    (request) => request.responseFileName,
+  );
+  const displayedResponseFileName =
+    savedResponseFileName || persistedResponseRequest?.responseFileName || "";
+  const savedResponseRequest = displayedResponseFileName
+    ? historyQuery.data?.find(
+        (request) => request.responseFileName === displayedResponseFileName,
+      )
+    : undefined;
 
   return (
     <div className="animate-fade">
@@ -416,7 +429,9 @@ export default function DownloadRequests() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[12px] font-semibold">
-                    {responseFileName || "Select final CKYC response file"}
+                    {responseFileName ||
+                      savedResponseFileName ||
+                      "Select final CKYC response file"}
                   </span>
                   <span className="mt-0.5 block text-[10px] text-muted-foreground">
                     Accepts portal Excel or CERSAI TXT response
@@ -441,6 +456,32 @@ export default function DownloadRequests() {
               >
                 {responseFeedback}
               </p>
+              {displayedResponseFileName && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-[#31734d]/25 bg-[#e2f2e9] px-3 py-2.5">
+                  <span className="flex min-w-0 items-center gap-2 text-[10px] text-[#31734d]">
+                    <FileSpreadsheet size={14} className="shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block font-semibold">
+                        Uploaded final CKYC file
+                      </span>
+                      <span className="mt-0.5 block truncate font-mono-ui">
+                        {displayedResponseFileName}
+                      </span>
+                    </span>
+                  </span>
+                  {savedResponseRequest && (
+                    <a
+                      href={`/api/ckyc/download-requests/${savedResponseRequest.id}/response-file`}
+                      download={displayedResponseFileName}
+                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-[#31734d]/35 bg-background px-2 text-[10px] font-semibold text-[#31734d] hover:bg-white"
+                      data-testid={`button-download-uploaded-final-${savedResponseRequest.id}`}
+                    >
+                      <Download size={12} />
+                      Download
+                    </a>
+                  )}
+                </div>
+              )}
               <button
                 onClick={importResponse}
                 disabled={uploadResponse.isPending || !responseContentBase64}
