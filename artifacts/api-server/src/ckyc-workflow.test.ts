@@ -587,9 +587,8 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       "O50009293913726",
       downloadReference,
     ]);
-    const fileContentBase64 = Buffer.from(
-      await workbook.xlsx.writeBuffer(),
-    ).toString("base64");
+    const workbookBuffer = Buffer.from(await workbook.xlsx.writeBuffer());
+    const fileContentBase64 = workbookBuffer.toString("base64");
     const responseImported = await requestJson<{
       sourceFileName: string;
       storedRecordId: number;
@@ -615,6 +614,45 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(responseImported.updatedCount, 2);
     assert.equal(responseImported.skippedCount, 0);
     assert.deepEqual(responseImported.missingReferences, []);
+
+    await requestJson<
+      Array<{
+        id: number;
+        responseFileName: string | null;
+      }>
+    >(baseUrl, "/ckyc/download-requests");
+
+    const responseFiles = await requestJson<
+      Array<{
+        id: number;
+        sourceFileName: string;
+        requestNumber: number | null;
+        recordCount: number;
+        matchedRequestId: number | null;
+      }>
+    >(baseUrl, "/ckyc/download-requests/response-files");
+    const storedResponseFile = responseFiles.find(
+      (responseFile) => responseFile.id === responseImported.storedRecordId,
+    );
+    assert.ok(storedResponseFile);
+    assert.equal(storedResponseFile.id, responseImported.storedRecordId);
+    assert.equal(storedResponseFile.sourceFileName, "portal-download-response.xlsx");
+    assert.equal(storedResponseFile.requestNumber, null);
+    assert.equal(storedResponseFile.recordCount, 1);
+    assert.equal(storedResponseFile.matchedRequestId, null);
+
+    const responseDownload = await fetch(
+      `${baseUrl}/ckyc/download-requests/response-files/${responseImported.storedRecordId}/file`,
+    );
+    assert.equal(responseDownload.status, 200);
+    assert.match(
+      responseDownload.headers.get("content-disposition") ?? "",
+      /filename="portal-download-response\.xlsx"/,
+    );
+    assert.deepEqual(
+      Buffer.from(await responseDownload.arrayBuffer()),
+      workbookBuffer,
+    );
 
     const finalClients = await requestJson<{
       items: ClientRecord[];
