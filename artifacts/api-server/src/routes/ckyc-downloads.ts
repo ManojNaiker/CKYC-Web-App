@@ -351,6 +351,38 @@ router.get("/ckyc/download-requests", async (_req, res): Promise<void> => {
   res.json(ListCkycDownloadRequestsResponse.parse(rows.map((row) => toResponse(row))));
 });
 
+router.get(
+  "/ckyc/download-requests/:id/file",
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(404).json({ error: "Download request not found." });
+      return;
+    }
+
+    const [request] = await db
+      .select({
+        fileName: ckycDownloadRequestsTable.fileName,
+        content: ckycDownloadRequestsTable.content,
+      })
+      .from(ckycDownloadRequestsTable)
+      .where(eq(ckycDownloadRequestsTable.id, id))
+      .limit(1);
+    if (!request) {
+      res.status(404).json({ error: "Download request not found." });
+      return;
+    }
+
+    const safeFileName = request.fileName.replace(/["\\\r\n]/g, "_");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${safeFileName}"`,
+    );
+    res.send(request.content);
+  },
+);
+
 router.post("/ckyc/download-requests", async (req, res): Promise<void> => {
   const parsed = GenerateCkycDownloadRequestBody.safeParse(req.body);
   if (!parsed.success) {

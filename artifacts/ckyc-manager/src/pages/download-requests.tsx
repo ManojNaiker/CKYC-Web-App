@@ -478,16 +478,17 @@ export default function DownloadRequests() {
             />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-              <div className="data-table hidden grid-cols-[1fr_110px_150px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
+              <div className="data-table hidden grid-cols-[1fr_90px_100px_150px] gap-4 border-b border-border bg-secondary/55 px-5 py-3 text-muted-foreground md:grid">
                 <span>Request file</span>
                 <span>Rows</span>
+                <span>Action</span>
                 <span>Created</span>
               </div>
               <div className="divide-y divide-border">
                 {historyQuery.data.map((request) => (
                   <div
                     key={request.id}
-                    className="grid gap-2 px-5 py-4 md:grid-cols-[1fr_110px_150px] md:items-center md:gap-4"
+                    className="grid gap-2 px-5 py-4 md:grid-cols-[1fr_90px_100px_150px] md:items-center md:gap-4"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e2f2e9] text-[#31734d]">
@@ -508,6 +509,15 @@ export default function DownloadRequests() {
                     <span className="font-mono-ui text-[11px] text-muted-foreground">
                       {request.recordCount} rows
                     </span>
+                    <a
+                      href={`/api/ckyc/download-requests/${request.id}/file`}
+                      download={request.fileName}
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-primary/35 px-2 text-[10px] font-semibold text-primary hover:bg-secondary"
+                      data-testid={`button-redownload-download-request-${request.id}`}
+                    >
+                      <Download size={13} />
+                      Download
+                    </a>
                     <span className="font-mono-ui text-[10px] text-muted-foreground">
                       {new Intl.DateTimeFormat("en-IN", {
                         day: "2-digit",

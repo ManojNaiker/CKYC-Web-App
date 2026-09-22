@@ -1230,6 +1230,83 @@ export const useGenerateCkycDownloadRequest = <TError = ErrorType<ErrorResponse>
       return useMutation(getGenerateCkycDownloadRequestMutationOptions(options));
     }
 
+export const getDownloadCkycDownloadRequestFileUrl = (id: number,) => {
+
+
+
+
+  return `/api/ckyc/download-requests/${id}/file`
+}
+
+/**
+ * @summary Download a previously generated CKYC request file
+ */
+export const downloadCkycDownloadRequestFile = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getDownloadCkycDownloadRequestFileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadCkycDownloadRequestFileQueryKey = (id: number,) => {
+    return [
+    `/api/ckyc/download-requests/${id}/file`
+    ] as const;
+    }
+
+
+export const getDownloadCkycDownloadRequestFileQueryOptions = <TData = Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadCkycDownloadRequestFileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>> = ({ signal }) => downloadCkycDownloadRequestFile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadCkycDownloadRequestFileQueryResult = NonNullable<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>>
+export type DownloadCkycDownloadRequestFileQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Download a previously generated CKYC request file
+ */
+
+export function useDownloadCkycDownloadRequestFile<TData = Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadCkycDownloadRequestFileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getUploadCkycDownloadResponseUrl = () => {
 
 

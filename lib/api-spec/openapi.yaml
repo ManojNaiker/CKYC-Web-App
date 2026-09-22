@@ -379,6 +379,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /ckyc/download-requests/{id}/file:
+    get:
+      operationId: downloadCkycDownloadRequestFile
+      tags: [ckyc]
+      summary: Download a previously generated CKYC request file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Previously generated CKYC request TXT file
+          content:
+            text/plain:
+              schema:
+                type: string
+        "404":
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /ckyc/download-requests/response:
     post:
       operationId: uploadCkycDownloadResponse

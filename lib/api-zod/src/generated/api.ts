@@ -360,6 +360,16 @@ export const GenerateCkycDownloadRequestResponse = zod.object({
 
 
 /**
+ * @summary Download a previously generated CKYC request file
+ */
+export const DownloadCkycDownloadRequestFileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DownloadCkycDownloadRequestFileResponse = zod.string()
+
+
+/**
  * @summary Save a CKYC download response Excel or TXT file
  */
 export const UploadCkycDownloadResponseBody = zod.object({
