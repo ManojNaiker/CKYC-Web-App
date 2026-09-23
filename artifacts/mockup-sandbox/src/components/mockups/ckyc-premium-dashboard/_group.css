@@ -29,6 +29,10 @@
   background-size: 24px 24px;
 }
 
+.ckyc-premium-dashboard .ring-progress {
+  background: conic-gradient(var(--ring-color) 0deg 268deg, var(--ring-track) 268deg 360deg);
+}
+
 .ckyc-premium-dashboard button,
 .ckyc-premium-dashboard a {
   transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;

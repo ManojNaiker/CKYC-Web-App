@@ -42,3 +42,17 @@ mtime_ms = 1790148144815
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/93aefe0d-cfbe-4844-98d8-d872e6c0d811/7843744f-a3a0-4064-8ad7-3a59c3865abd"
 storage_version_token = "1790148155190270"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "uwC_YyeMRB7qMSxA5iJLH"
+uri = "file://screenshots/light-ckyc-dashboard-reference-style-latest.jpg"
+type = "image"
+title = "Light CKYC Dashboard — Reference Style Sample"
+description = "Updated premium CKYC dashboard sample with compact white sidebar, soft workspace canvas, request activity, gateway health, latest tasks, progress rings, achievements, and AI Assistant card."
+logical_id = "4862ad44-cba5-454c-975b-50fa97ade540"
+content_hash = "sha256:67ee0749c63507a0f51cb0130b219181335a09c409dcbd2bee2efb64fe87197d"
+size = 64271
+mtime_ms = 1790148815904
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/4862ad44-cba5-454c-975b-50fa97ade540/3664ceed-c522-4c79-b1b2-395e680b69cd"
+storage_version_token = "1790148826011857"
+content_type = "image/jpeg"
