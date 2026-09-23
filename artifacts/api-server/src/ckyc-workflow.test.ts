@@ -7,6 +7,7 @@ import {
   createClientsCsv,
   getCkycResponseMatchStatus,
 } from "./routes/clients";
+import { GetDashboardSummaryResponse } from "@workspace/api-zod";
 import ExcelJS from "exceljs";
 
 type ClientInput = {
@@ -55,6 +56,19 @@ type CkycFile = {
   responseFileName: string | null;
   responseContent?: string | null;
 };
+
+async function getDashboardSummary(baseUrl: string) {
+  return GetDashboardSummaryResponse.parse(
+    await requestJson<unknown>(baseUrl, "/dashboard/summary"),
+  );
+}
+
+function pendingErrorCount(
+  summary: Awaited<ReturnType<typeof getDashboardSummary>>,
+  name: string,
+) {
+  return summary.pendingErrors.find((error) => error.name === name)?.count ?? 0;
+}
 
 const LMS_HEADERS = [
   "loanid",
@@ -157,6 +171,7 @@ describe("CKYC file workflow", () => {
   });
 
   it("imports LMS rows, generates CKYC content, and stores a matching response", async () => {
+    const summaryBeforeImport = await getDashboardSummary(baseUrl);
     const fileName = `${loanPrefix}.csv`;
     const rows = parseLmsCsv(`loanid,ClientID,disbursedon_date,Client_UID,Client_VID,Client_PAN,ClientName,mobile_no,alternate_mobile_no,Gender,date_of_birth
 ${loanPrefix}-1,CLI-${runId}-1,01-01-2026,1234 5678 9012,VID-${runId}-1,ABCDE1234F,  Asha   Rao  ,9876543210,9123456780,F,02-04-1990
@@ -313,6 +328,30 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(uploaded.responseFileName, responseFileName);
     assert.equal(uploaded.responseContent, responseContent);
 
+    const summaryAfterResponse = await getDashboardSummary(baseUrl);
+    const pendingError =
+      "KYC Number does not exist for this identity type and number";
+    assert.equal(
+      summaryAfterResponse.totalClients,
+      summaryBeforeImport.totalClients + 3,
+    );
+    assert.equal(
+      summaryAfterResponse.finalCkycUpdated,
+      summaryBeforeImport.finalCkycUpdated,
+    );
+    assert.equal(
+      summaryAfterResponse.requestIdUpdated,
+      summaryBeforeImport.requestIdUpdated + 1,
+    );
+    assert.equal(
+      summaryAfterResponse.recordsPending,
+      summaryBeforeImport.recordsPending + 2,
+    );
+    assert.equal(
+      pendingErrorCount(summaryAfterResponse, pendingError),
+      pendingErrorCount(summaryBeforeImport, pendingError) + 1,
+    );
+
     const detail = await requestJson<CkycFile>(
       baseUrl,
       `/ckyc/requests/${generated.id}`,
@@ -434,6 +473,24 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     await pool.query(
       "UPDATE clients SET ckyc_response_id = $1, ckyc_response_status = 'matched', ckyc_number = $2 WHERE id = $3",
       ["PREFIXINWITHKYCNUMBER", "30064364932165", noIdentifier.id],
+    );
+
+    const summaryBeforeFinalResponse = await getDashboardSummary(baseUrl);
+    assert.equal(
+      summaryBeforeFinalResponse.finalCkycUpdated,
+      summaryBeforeImport.finalCkycUpdated + 1,
+    );
+    assert.equal(
+      summaryBeforeFinalResponse.requestIdUpdated,
+      summaryBeforeImport.requestIdUpdated + 3,
+    );
+    assert.equal(
+      summaryBeforeFinalResponse.recordsPending,
+      summaryBeforeImport.recordsPending,
+    );
+    assert.equal(
+      pendingErrorCount(summaryBeforeFinalResponse, pendingError),
+      pendingErrorCount(summaryBeforeImport, pendingError),
     );
 
     const batchedDownload = await requestJson<{
@@ -613,6 +670,24 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.equal(responseImported.updatedCount, 2);
     assert.equal(responseImported.skippedCount, 0);
     assert.deepEqual(responseImported.missingReferences, []);
+
+    const summaryAfterFinalResponse = await getDashboardSummary(baseUrl);
+    assert.equal(
+      summaryAfterFinalResponse.finalCkycUpdated,
+      summaryBeforeFinalResponse.finalCkycUpdated + 2,
+    );
+    assert.equal(
+      summaryAfterFinalResponse.requestIdUpdated,
+      summaryBeforeFinalResponse.requestIdUpdated,
+    );
+    assert.equal(
+      summaryAfterFinalResponse.recordsPending,
+      summaryBeforeFinalResponse.recordsPending,
+    );
+    assert.equal(
+      pendingErrorCount(summaryAfterFinalResponse, pendingError),
+      pendingErrorCount(summaryBeforeFinalResponse, pendingError),
+    );
 
     const refreshedHistory = await requestJson<
       Array<{
