@@ -84,3 +84,17 @@ mtime_ms = 1790155777898
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/583b0001-b03f-4221-859b-b3cff9543ab7/9cdb850c-c654-4527-aebb-579f0bafbd97"
 storage_version_token = "1790155808017508"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "bEVQfzb5kyZ0PyuFgWyQt"
+uri = "file://screenshots/ckyc-manager-pulse-update.jpg"
+type = "image"
+title = "CKYC Manager — Pulse and Pending Records"
+description = "Updated dashboard with the two requested panels removed, live CKYC pulse percentages/counts, and the pending-record error breakdown chart."
+logical_id = "3b3e5299-2e43-4803-ad65-d61bd6579203"
+content_hash = "sha256:e6587acb581f1a628cb8a4e36dbccd63968558e5f2bc079497f589e548f2701e"
+size = 92384
+mtime_ms = 1790156952683
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/3b3e5299-2e43-4803-ad65-d61bd6579203/efea767f-1e45-4179-b7e7-36dc24ccf81d"
+storage_version_token = "1790156988599626"
+content_type = "image/jpeg"

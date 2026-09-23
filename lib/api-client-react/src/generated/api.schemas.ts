@@ -340,10 +340,19 @@ export interface CkycDownloadRequestBatchResponse {
   unmatchedReferences: string[];
 }
 
+export type DashboardSummaryPendingErrorsItem = {
+  name: string;
+  count: number;
+};
+
 export interface DashboardSummary {
   totalClients: number;
   generatedRequests: number;
   responsesUploaded: number;
+  finalCkycUpdated: number;
+  requestIdUpdated: number;
+  recordsPending: number;
+  pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;
   /** @nullable */

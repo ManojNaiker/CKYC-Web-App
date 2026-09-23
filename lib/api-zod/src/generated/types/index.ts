@@ -36,6 +36,7 @@ export * from './clientImportInput';
 export * from './clientInput';
 export * from './clientList';
 export * from './dashboardSummary';
+export * from './dashboardSummaryPendingErrorsItem';
 export * from './errorResponse';
 export * from './exportCkycCreateDataParams';
 export * from './exportClientsParams';

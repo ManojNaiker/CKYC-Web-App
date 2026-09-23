@@ -1208,6 +1208,24 @@ components:
           type: number
         responsesUploaded:
           type: number
+        finalCkycUpdated:
+          type: number
+        requestIdUpdated:
+          type: number
+        recordsPending:
+          type: number
+        pendingErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              count:
+                type: number
+            required:
+              - name
+              - count
         lastImportFile:
           type: ["string", "null"]
         lastActivityAt:
@@ -1216,6 +1234,10 @@ components:
         - totalClients
         - generatedRequests
         - responsesUploaded
+        - finalCkycUpdated
+        - requestIdUpdated
+        - recordsPending
+        - pendingErrors
         - lastImportFile
         - lastActivityAt
     ErrorResponse:

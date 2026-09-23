@@ -24,6 +24,13 @@ export const GetDashboardSummaryResponse = zod.object({
   "totalClients": zod.number(),
   "generatedRequests": zod.number(),
   "responsesUploaded": zod.number(),
+  "finalCkycUpdated": zod.number(),
+  "requestIdUpdated": zod.number(),
+  "recordsPending": zod.number(),
+  "pendingErrors": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number()
+})),
   "lastImportFile": zod.string().nullable(),
   "lastActivityAt": zod.string().nullable()
 })

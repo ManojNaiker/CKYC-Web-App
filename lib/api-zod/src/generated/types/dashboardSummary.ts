@@ -5,11 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSummaryPendingErrorsItem } from './dashboardSummaryPendingErrorsItem';
 
 export interface DashboardSummary {
   totalClients: number;
   generatedRequests: number;
   responsesUploaded: number;
+  finalCkycUpdated: number;
+  requestIdUpdated: number;
+  recordsPending: number;
+  pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;
   /** @nullable */

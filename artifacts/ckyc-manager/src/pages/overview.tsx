@@ -3,13 +3,11 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
-  ChevronDown,
   Database,
   FileCheck2,
   FileClock,
   FileDown,
   FileUp,
-  RefreshCw,
   ShieldCheck,
   Sparkles,
   UploadCloud,
@@ -38,6 +36,10 @@ function formatDate(value?: string | null) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-IN').format(value);
+}
+
+function formatPercent(value: number, total: number) {
+  return total > 0 ? Math.round((value / total) * 100) : 0;
 }
 
 function TotalTile({
@@ -69,10 +71,10 @@ function TotalTile({
   );
 }
 
-function ProgressRing({ value, label, color }: { value: number; label: string; color: string }) {
+function ProgressRing({ value, count, label, color }: { value: number; count: number; label: string; color: string }) {
   const safeValue = Math.max(0, Math.min(100, value));
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
       <div
         className="grid size-[74px] place-items-center rounded-full"
         style={{ background: `conic-gradient(${color} ${safeValue * 3.6}deg, #edf0f4 0deg)` }}
@@ -82,7 +84,57 @@ function ProgressRing({ value, label, color }: { value: number; label: string; c
           <span className="font-mono-ui text-[13px] font-semibold text-foreground">{safeValue}%</span>
         </div>
       </div>
-      <span className="text-center text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-center text-[10px] font-semibold text-foreground">{label}</span>
+      <span className="font-mono-ui text-[9px] text-muted-foreground">{formatNumber(count)} records</span>
+    </div>
+  );
+}
+
+function PendingErrorChart({
+  errors,
+  pendingCount,
+}: {
+  errors: { name: string; count: number }[];
+  pendingCount: number;
+}) {
+  const maxCount = Math.max(...errors.map((error) => error.count), 1);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Pending records</p>
+          <h3 className="mt-1 font-display text-[22px] font-semibold tracking-[-.025em] text-foreground">Why records are pending</h3>
+          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">Error share is calculated against all records still waiting for a CKYC response ID.</p>
+        </div>
+        <div className="rounded-xl bg-[#fff0c9] px-3 py-2 text-right">
+          <p className="font-mono-ui text-[18px] font-semibold leading-none text-[#9d761f]">{formatNumber(pendingCount)}</p>
+          <p className="mt-1 font-mono-ui text-[8px] uppercase tracking-[.1em] text-[#9d761f]/75">pending</p>
+        </div>
+      </div>
+      {errors.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-border bg-secondary/35 px-4 py-8 text-center text-[11px] text-muted-foreground">
+          No pending error reasons.
+        </div>
+      ) : (
+        <div className="mt-6 space-y-4">
+          {errors.map((error) => {
+            const percent = formatPercent(error.count, pendingCount);
+            const width = Math.max(3, Math.round((error.count / maxCount) * 100));
+            return (
+              <div key={error.name}>
+                <div className="mb-2 flex items-start justify-between gap-4 text-[10px]">
+                  <span className="min-w-0 leading-4 text-foreground">{error.name}</span>
+                  <span className="shrink-0 font-mono-ui font-semibold text-muted-foreground">{percent}% · {formatNumber(error.count)}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#f1e7cd]">
+                  <div className="h-full rounded-full bg-[#d2a94b] transition-all" style={{ width: `${width}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -93,10 +145,10 @@ export default function Overview() {
   const downloads = useListCkycDownloadRequests({ query: { queryKey: getListCkycDownloadRequestsQueryKey() } });
   const data = summary.data;
   const recent = requests.data?.slice(0, 7) ?? [];
-  const awaiting = Math.max(0, (data?.generatedRequests ?? 0) - (data?.responsesUploaded ?? 0));
-  const responseCoverage = data?.generatedRequests ? Math.round(((data.responsesUploaded ?? 0) / data.generatedRequests) * 100) : 0;
-  const activityBars = [...recent].reverse();
-  const maxRecords = Math.max(...activityBars.map((request) => request.recordCount), 1);
+  const totalClients = data?.totalClients ?? 0;
+  const finalCkycUpdated = data?.finalCkycUpdated ?? 0;
+  const requestIdUpdated = data?.requestIdUpdated ?? 0;
+  const recordsPending = data?.recordsPending ?? 0;
   const dateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
   return (
@@ -137,66 +189,6 @@ export default function Overview() {
             )}
           </section>
 
-          <section className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
-              <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
-                <div>
-                  <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Request activity</p>
-                  <h3 className="mt-1 font-display text-[22px] font-semibold tracking-[-.025em] text-foreground">Files processed this week</h3>
-                </div>
-                <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-[10px] font-semibold text-muted-foreground" type="button">
-                  This week <ChevronDown size={13} />
-                </button>
-              </div>
-              {requests.isError ? <div className="p-5"><QueryError onRetry={() => requests.refetch()} /></div> : requests.isLoading ? <div className="h-[260px] animate-pulse bg-muted/50" /> : (
-                <div className="p-5 sm:p-6">
-                  <div className="flex h-[190px] items-end gap-2 border-b border-border px-1 sm:gap-4">
-                    {(activityBars.length ? activityBars : Array.from({ length: 7 }, () => null)).map((request, index) => {
-                      const height = request ? Math.max(28, Math.round((request.recordCount / maxRecords) * 100)) : 18;
-                      return (
-                        <div className="group flex h-full flex-1 flex-col justify-end gap-2" key={request?.id ?? `empty-${index}`}>
-                          <div className={`relative w-full rounded-t-lg ${request?.status === 'response_uploaded' ? 'bg-[#ae75e4]' : 'bg-[#3ca9dc]'} transition-all group-hover:brightness-95`} style={{ height: `${height}%` }}>
-                            {request && <span className="absolute -top-5 left-1/2 -translate-x-1/2 font-mono-ui text-[8px] text-muted-foreground">{request.recordCount.toLocaleString('en-IN')}</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#3ca9dc]" /> Requests generated</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#ae75e4]" /> Response received</span>
-                    </div>
-                    <span className="font-mono-ui text-[10px] font-semibold text-primary">{recent.length} files visible</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
-              <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
-                <div>
-                  <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Gateway response health</p>
-                  <h3 className="mt-1 font-display text-[22px] font-semibold tracking-[-.025em] text-foreground">CKYC handoff status</h3>
-                </div>
-                <span className="rounded-full bg-[#dcf3e9] px-2.5 py-1 font-mono-ui text-[9px] font-semibold text-[#428c6c]">Online</span>
-              </div>
-              <div className="p-5 sm:p-6">
-                <div className="rounded-2xl bg-[#f5f9fc] p-4">
-                  <div className="flex h-[112px] items-end gap-2">
-                    {[46, 64, 54, 76, 61, 82, 69, 88, 74, 91].map((height, index) => <div key={index} className="flex-1 rounded-t-full bg-[#a8d9f0]" style={{ height: `${height}%` }} />)}
-                  </div>
-                  <div className="mt-3 flex justify-between font-mono-ui text-[8px] uppercase tracking-[.1em] text-muted-foreground"><span>Gateway</span><span>Latest sync</span></div>
-                </div>
-                <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-                  <div><p className="font-display text-[24px] font-semibold">{data?.responsesUploaded ?? 0}</p><p className="mt-1 text-[9px] text-muted-foreground">Response uploaded</p></div>
-                  <div><p className="font-display text-[24px] font-semibold">{awaiting}</p><p className="mt-1 text-[9px] text-muted-foreground">Awaiting response</p></div>
-                  <div><p className="font-display text-[24px] font-semibold text-[#428c6c]">0</p><p className="mt-1 text-[9px] text-muted-foreground">Failed tracked</p></div>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <section className="mt-5 grid gap-5 xl:grid-cols-[1.18fr_.82fr]">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
               <div className="flex items-start justify-between border-b border-border px-5 py-4 sm:px-6">
@@ -234,9 +226,9 @@ export default function Overview() {
                 <BarChart3 size={18} className="text-primary" />
               </div>
               <div className="mt-6 flex justify-around gap-3">
-                <ProgressRing value={data?.totalClients ? 100 : 0} label="Records loaded" color="#ae75e4" />
-                <ProgressRing value={responseCoverage} label="Responses matched" color="#4a9bd2" />
-                <ProgressRing value={data?.generatedRequests ? Math.round((awaiting / data.generatedRequests) * 100) : 0} label="Queue remaining" color="#5ec4c3" />
+                <ProgressRing value={formatPercent(finalCkycUpdated, totalClients)} count={finalCkycUpdated} label="Final CKYC update" color="#ae75e4" />
+                <ProgressRing value={formatPercent(requestIdUpdated, totalClients)} count={requestIdUpdated} label="Request ID updated" color="#4a9bd2" />
+                <ProgressRing value={formatPercent(recordsPending, totalClients)} count={recordsPending} label="Records pending" color="#d2a94b" />
               </div>
               <div className="mt-7 grid grid-cols-2 gap-2">
                 <div className="rounded-xl bg-[#272733] p-4 text-white">
@@ -254,6 +246,10 @@ export default function Overview() {
                 <ShieldCheck size={14} className="text-primary" /> Last activity {formatDate(data?.lastActivityAt)}
               </div>
             </div>
+          </section>
+
+          <section className="mt-5">
+            <PendingErrorChart errors={data?.pendingErrors ?? []} pendingCount={recordsPending} />
           </section>
         </>
       )}
