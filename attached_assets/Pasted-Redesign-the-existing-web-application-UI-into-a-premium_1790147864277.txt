@@ -1,0 +1,195 @@
+Redesign the existing web application UI into a premium, modern, AI-era interface.
+
+IMPORTANT:
+
+UI/UX ONLY.
+
+Do NOT change backend, APIs, database, authentication, business logic, or existing functionality.
+
+Preserve all existing features and content.
+
+Only improve the visual design, layout, usability, responsiveness, and interactions.
+
+Design Style
+
+Create a modern 2026-quality interface that feels:
+
+Premium
+
+Minimal
+
+Clean
+
+Intelligent
+
+Fast
+
+Professional
+
+Elegant
+
+AI-native
+
+Use:
+
+Modern typography
+
+Strong visual hierarchy
+
+Perfect spacing
+
+Clean cards
+
+Subtle borders
+
+Soft shadows
+
+Refined gradients
+
+Minimal glass effects
+
+Modern icons
+
+Smooth micro-interactions
+
+Beautiful hover/focus/active states
+
+Avoid excessive gradients, excessive glassmorphism, unnecessary animations, and visual clutter.
+
+UX
+
+Make every screen intuitive and easy to understand.
+
+Improve:
+
+Navigation
+
+Sidebar
+
+Header
+
+Dashboard
+
+Cards
+
+Forms
+
+Tables
+
+Search
+
+Filters
+
+Settings
+
+Modals
+
+Empty states
+
+Loading states
+
+Error states
+
+Success states
+
+Make primary actions immediately visible and reduce unnecessary clicks.
+
+AI-Era UI
+
+Where relevant, introduce modern AI-native UI patterns such as:
+
+Smart suggestions
+
+Contextual actions
+
+Command/search bar
+
+Intelligent empty states
+
+Quick actions
+
+Inline recommendations
+
+Natural-language input UI
+
+AI assistant panel
+
+Do not make the product look like a generic chatbot or add AI UI where it is unnecessary.
+
+Responsive
+
+Make the UI fully responsive for:
+
+Desktop
+
+Laptop
+
+Tablet
+
+Mobile
+
+Create proper mobile layouts instead of simply shrinking the desktop UI.
+
+Dark Mode
+
+Add a polished dark mode with proper contrast, hierarchy, borders, and readable typography.
+
+Design System
+
+Create consistent reusable styles for:
+
+Buttons
+
+Inputs
+
+Dropdowns
+
+Cards
+
+Tables
+
+Tabs
+
+Badges
+
+Modals
+
+Tooltips
+
+Alerts
+
+Toasts
+
+Navigation
+
+Loading skeletons
+
+Animation
+
+Use subtle, fast and premium micro-interactions for:
+
+Hover
+
+Click
+
+Page transitions
+
+Dropdowns
+
+Modals
+
+Loading
+
+Success feedback
+
+Never over-animate.
+
+Accessibility
+
+Ensure good contrast, keyboard navigation, visible focus states, readable typography, proper labels, and touch-friendly controls.
+
+Final Goal
+
+The result should look like a premium, modern AI-native product designed in 2026 — clean, sophisticated, highly usable, responsive, and visually impressive.
+
+First analyze the existing UI, identify the biggest UX and visual problems, then redesign it systematically without breaking existing functionality.
