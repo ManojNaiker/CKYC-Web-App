@@ -31,7 +31,12 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       db
         .select({ count: sql<number>`count(*)` })
         .from(clientsTable)
-        .where(isNotNull(clientsTable.ckycResponseId)),
+        .where(
+          and(
+            isNotNull(clientsTable.ckycResponseId),
+            isNull(clientsTable.ckycNumber),
+          ),
+        ),
       db
         .select({ count: sql<number>`count(*)` })
         .from(clientsTable)
