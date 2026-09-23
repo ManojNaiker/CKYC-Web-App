@@ -56,3 +56,17 @@ mtime_ms = 1790148815904
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/4862ad44-cba5-454c-975b-50fa97ade540/3664ceed-c522-4c79-b1b2-395e680b69cd"
 storage_version_token = "1790148826011857"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "N0WaSKZ-85ckNKuQT3GrT"
+uri = "file://screenshots/light-ckyc-dashboard-with-totals.jpg"
+type = "image"
+title = "Light CKYC Dashboard — Totals Visible"
+description = "Reference-style dashboard sample with workspace totals, gateway health details, request activity count, latest tasks, progress, achievements, and AI Assistant card."
+logical_id = "c15429ba-c67a-4175-b5d5-21738073d50e"
+content_hash = "sha256:dc001fabc3adff061816a640911663eadc33e2e36933373a17ce389eabb16c07"
+size = 70298
+mtime_ms = 1790149353927
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/c15429ba-c67a-4175-b5d5-21738073d50e/3652f825-5be5-4ba3-b79d-41d6e586a36c"
+storage_version_token = "1790149363425940"
+content_type = "image/jpeg"

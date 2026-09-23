@@ -62,6 +62,37 @@ const taskRows = [
   },
 ];
 
+const workspaceTotals = [
+  {
+    label: "LMS clients",
+    value: "96,312",
+    detail: "Imported records",
+    icon: Users,
+    accent: "bg-[#eee6ff] text-[#8557c8]",
+  },
+  {
+    label: "CKYC requests",
+    value: "1",
+    detail: "Request file created",
+    icon: FileClock,
+    accent: "bg-[#e3f2ff] text-[#4b9fda]",
+  },
+  {
+    label: "Responses uploaded",
+    value: "1",
+    detail: "Latest workbook ready",
+    icon: FileSpreadsheet,
+    accent: "bg-[#dff5e8] text-[#4da87c]",
+  },
+  {
+    label: "Download queue",
+    value: "0",
+    detail: "Nothing waiting",
+    icon: FileDown,
+    accent: "bg-[#fff1cf] text-[#d2a22d]",
+  },
+];
+
 function ProgressRing({
   value,
   label,
@@ -173,6 +204,26 @@ export function PremiumDashboard() {
             </div>
           </header>
 
+          <section className="grid gap-2 pt-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Workspace totals">
+            {workspaceTotals.map(({ label, value, detail, icon: Icon, accent }) => (
+              <article
+                key={label}
+                className="flex items-center gap-3 rounded-[18px] border border-white bg-white px-4 py-3 shadow-[0_5px_18px_rgba(43,46,65,0.04)]"
+              >
+                <div className={`grid size-9 shrink-0 place-items-center rounded-xl ${accent}`}>
+                  <Icon size={16} strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-[9px] font-semibold text-[#737984]">{label}</p>
+                    <p className="text-[18px] font-bold leading-none tracking-[-0.04em] text-[#2f333b]">{value}</p>
+                  </div>
+                  <p className="mt-1 truncate text-[8px] text-[#a0a5ad]">{detail}</p>
+                </div>
+              </article>
+            ))}
+          </section>
+
           <div className="grid gap-2 pt-2 xl:grid-cols-[1.32fr_0.88fr]">
             <section className="rounded-[18px] border border-white bg-white p-4 shadow-[0_5px_18px_rgba(43,46,65,0.04)]">
               <div className="flex items-center justify-between">
@@ -200,7 +251,7 @@ export function PremiumDashboard() {
                   <span className="size-2 rounded-full bg-[#39a8e9]" /> Requests generated
                   <span className="ml-2 size-2 rounded-full bg-[#b679ee]" /> Selected day
                 </div>
-                <span className="text-[9px] font-bold text-[#39a8e9]">5:17 today</span>
+                  <span className="text-[9px] font-bold text-[#39a8e9]">5 files today</span>
               </div>
             </section>
 
@@ -210,7 +261,12 @@ export function PremiumDashboard() {
                   <p className="text-[12px] font-bold text-[#31353d]">Gateway response health</p>
                   <p className="mt-1 text-[8px] text-[#a0a5ad]">Response files returned by CKYC</p>
                 </div>
-                <div className="rounded-md bg-[#e7f6ef] px-2 py-1 text-[8px] font-bold text-[#4baf84]">94%</div>
+                <div className="rounded-md bg-[#e7f6ef] px-2 py-1 text-[8px] font-bold text-[#4baf84]">94% healthy</div>
+              </div>
+              <div className="mt-3 flex items-center gap-3 text-[8px] text-[#7f8790]">
+                <span><strong className="text-[#4baf84]">1</strong> response uploaded</span>
+                <span className="size-1 rounded-full bg-[#ccd1d7]" />
+                <span><strong className="text-[#4baf84]">0</strong> failed</span>
               </div>
               <div className="relative mt-5 h-[116px] overflow-hidden rounded-xl bg-[#f7fbfe]">
                 <div className="absolute inset-x-3 top-4 flex justify-between text-[7px] text-[#a2a8b0]">
