@@ -8,10 +8,10 @@
 
 export interface CkycDownloadBatchRequestInput {
   /**
-     * LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file
+     * Optional LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file
      * @minItems 1
      */
-  clientReferences: string[];
+  clientReferences?: string[];
   /**
      * Maximum type 60 rows allowed in each generated CERSAI file
      * @minimum 1

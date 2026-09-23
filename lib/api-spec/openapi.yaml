@@ -1037,7 +1037,7 @@ components:
           minItems: 1
           items:
             type: string
-          description: LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file
+          description: Optional LMS Client IDs, Loan IDs, or CKYC response IDs from the uploaded client file
         maxRows:
           type: number
           minimum: 1
@@ -1067,7 +1067,6 @@ components:
           type: string
           default: IRA010815
       required:
-        - clientReferences
         - maxRows
         - fileDate
         - institutionCode

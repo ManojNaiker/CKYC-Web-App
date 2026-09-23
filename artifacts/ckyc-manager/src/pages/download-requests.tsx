@@ -85,6 +85,7 @@ export default function DownloadRequests() {
   );
   const [responseFileActionFeedback, setResponseFileActionFeedback] = useState("");
   const [responseFeedback, setResponseFeedback] = useState("");
+  const hasDateCriteria = Boolean(disbursementFrom || disbursementTo);
   const historyQuery = useListCkycDownloadRequests({
     query: { queryKey: getListCkycDownloadRequestsQueryKey() },
   });
@@ -142,8 +143,8 @@ export default function DownloadRequests() {
       setGenerateFeedback("Rows per file must be a whole number between 1 and 1,000,000.");
       return;
     }
-    if (!clientReferences.length) {
-      setGenerateFeedback("Upload a client CSV before generating download files.");
+    if (!clientReferences.length && !hasDateCriteria) {
+      setGenerateFeedback("Choose a disbursement date or upload a client CSV before generating download files.");
       return;
     }
     if (
@@ -158,7 +159,7 @@ export default function DownloadRequests() {
     generateBatch.mutate(
       {
         data: {
-          clientReferences,
+          clientReferences: clientReferences.length ? clientReferences : undefined,
           maxRows: rowLimit,
           sourceFileName: clientFileName,
           fileDate,
@@ -288,7 +289,7 @@ export default function DownloadRequests() {
       <PageIntro
         eyebrow="CKYC document retrieval"
         title="Build download requests."
-        description="Generate the portal TXT from saved CKYC response IDs and LMS dates of birth. After processing, upload the portal Excel or final CKYC TXT response; both files are retained and matched to their D request when available."
+        description="Generate the portal TXT from a disbursement date criterion or an uploaded client selection. After processing, upload the portal Excel or final CKYC TXT response; both files are retained and matched to their D request when available."
       />
 
       <div className="space-y-6">
@@ -347,9 +348,8 @@ export default function DownloadRequests() {
                 </label>
               </div>
               <p className="text-[10px] leading-4 text-muted-foreground">
-                Only LMS loans in this range are considered. If one Client ID
-                has multiple loans, it is added only once because its CKYC is
-                the same.
+                A date range is optional when a client file is uploaded. If both
+                are provided, clients matching either condition are included.
               </p>
               <label className="block">
                 <span className="classic-label mb-1.5 block">
@@ -399,17 +399,23 @@ export default function DownloadRequests() {
                 data-testid="status-download-client-file"
               >
                 {clientFileFeedback ||
-                  "Use the client register export to select exactly which clients should be included."}
+                  "Date criteria or a client upload is enough to generate the TXT."}
               </p>
               <div className="rounded-lg border border-border bg-background p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-semibold">Selected clients</span>
+                  <span className="text-[11px] font-semibold">Selection criteria</span>
                   <span className="rounded-full bg-[#e2f2e9] px-2.5 py-1 font-mono-ui text-[10px] font-bold text-[#31734d]">
-                    {clientReferences.length.toLocaleString("en-IN")}
+                    {clientReferences.length
+                      ? `${clientReferences.length.toLocaleString("en-IN")} uploaded`
+                      : hasDateCriteria
+                        ? "Date filter"
+                        : "None"}
                   </span>
                 </div>
                 <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-                  Only uploaded clients with a matched CKYC response ID and no final KYC number are included.
+                  Only clients with a matched CKYC response ID and no final
+                  KYC number are included. If both criteria are used, the
+                  matching sets are combined.
                 </p>
               </div>
               <div className="rounded-lg bg-secondary/65 p-3">
@@ -434,7 +440,8 @@ export default function DownloadRequests() {
               <button
                 onClick={generateFile}
                 disabled={
-                  generateBatch.isPending || clientReferences.length === 0
+                  generateBatch.isPending ||
+                  (!clientReferences.length && !hasDateCriteria)
                 }
                 className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-[12px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
                 data-testid="button-generate-download-request"

@@ -34,6 +34,15 @@ const REFERENCE_HEADER = "ALPHANUMERIC REFERENCE NO";
 const KYC_NUMBER_HEADER = "KYC NUMBER";
 const KYC_NUMBER_UPDATE_BATCH_SIZE = 5_000;
 
+type DownloadClientRow = {
+  id: number;
+  clientId: string;
+  loanid: string;
+  responseId: string | null;
+  dateOfBirth: string;
+  disbursedOnDate: string;
+};
+
 function cellText(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
   if (value instanceof Date) return value.toISOString();
@@ -648,25 +657,52 @@ router.post(
 
     const requestedReferences = [
       ...new Set(
-        parsed.data.clientReferences
+        (parsed.data.clientReferences ?? [])
           .map(normalizeClientReference)
           .filter(Boolean),
       ),
     ];
+    const hasClientSelection = requestedReferences.length > 0;
+    const hasDateCriteria = Boolean(
+      parsed.data.disbursementFrom || parsed.data.disbursementTo,
+    );
+    if (!hasClientSelection && !hasDateCriteria) {
+      res.status(400).json({
+        error: "Provide a disbursement date or upload a client selection CSV.",
+      });
+      return;
+    }
+
+    const disbursementFrom = parsed.data.disbursementFrom
+      ? normalizeDisbursementDate(parsed.data.disbursementFrom)
+      : null;
+    const disbursementTo = parsed.data.disbursementTo
+      ? normalizeDisbursementDate(parsed.data.disbursementTo)
+      : null;
+    if (
+      (parsed.data.disbursementFrom && !isValidDateKey(disbursementFrom)) ||
+      (parsed.data.disbursementTo && !isValidDateKey(disbursementTo))
+    ) {
+      res.status(400).json({
+        error: "Disbursement dates must be valid calendar dates.",
+      });
+      return;
+    }
+    if (
+      disbursementFrom &&
+      disbursementTo &&
+      disbursementFrom > disbursementTo
+    ) {
+      res.status(400).json({
+        error: "Disbursement From date cannot be after the To date.",
+      });
+      return;
+    }
+
     const requestedReferenceKeys = new Set(
       requestedReferences.map(normalizeReference),
     );
-    const matchedById = new Map<
-      number,
-      {
-        id: number;
-        clientId: string;
-        loanid: string;
-        responseId: string | null;
-        dateOfBirth: string;
-        disbursedOnDate: string;
-      }
-    >();
+    const matchedById = new Map<number, DownloadClientRow>();
     const lookupChunkSize = 500;
 
     for (
@@ -709,47 +745,43 @@ router.post(
       for (const row of rows) matchedById.set(row.id, row);
     }
 
-    const disbursementFrom = parsed.data.disbursementFrom
-      ? normalizeDisbursementDate(parsed.data.disbursementFrom)
-      : null;
-    const disbursementTo = parsed.data.disbursementTo
-      ? normalizeDisbursementDate(parsed.data.disbursementTo)
-      : null;
-    if (
-      (parsed.data.disbursementFrom && !isValidDateKey(disbursementFrom)) ||
-      (parsed.data.disbursementTo && !isValidDateKey(disbursementTo))
-    ) {
-      res.status(400).json({
-        error: "Disbursement dates must be valid calendar dates.",
-      });
-      return;
-    }
-    if (
-      disbursementFrom &&
-      disbursementTo &&
-      disbursementFrom > disbursementTo
-    ) {
-      res.status(400).json({
-        error: "Disbursement From date cannot be after the To date.",
-      });
-      return;
-    }
+    if (hasDateCriteria) {
+      const dateMatches = await db
+        .select({
+          id: clientsTable.id,
+          clientId: clientsTable.clientId,
+          loanid: clientsTable.loanid,
+          responseId: clientsTable.ckycResponseId,
+          dateOfBirth: clientsTable.dateOfBirth,
+          disbursedOnDate: clientsTable.disbursedOnDate,
+        })
+        .from(clientsTable)
+        .where(
+          and(
+            eq(clientsTable.ckycResponseStatus, "matched"),
+            isNotNull(clientsTable.ckycResponseId),
+            isNull(clientsTable.ckycNumber),
+          ),
+        )
+        .orderBy(asc(clientsTable.id));
 
-    const dateFilteredMatches = [...matchedById.values()].filter((row) => {
-      if (!disbursementFrom && !disbursementTo) return true;
-      const disbursedDate = normalizeDisbursementDate(row.disbursedOnDate);
-      if (!isValidDateKey(disbursedDate)) return false;
-      return (
-        (!disbursementFrom || disbursedDate >= disbursementFrom) &&
-        (!disbursementTo || disbursedDate <= disbursementTo)
-      );
-    });
+      for (const row of dateMatches) {
+        const disbursedDate = normalizeDisbursementDate(row.disbursedOnDate);
+        if (!isValidDateKey(disbursedDate)) continue;
+        if (
+          (!disbursementFrom || disbursedDate >= disbursementFrom) &&
+          (!disbursementTo || disbursedDate <= disbursementTo)
+        ) {
+          matchedById.set(row.id, row);
+        }
+      }
+    }
 
     const matchesByReference = new Map<
       string,
-      Array<(typeof matchedById extends Map<number, infer Row> ? Row : never)>
+      DownloadClientRow[]
     >();
-    for (const row of dateFilteredMatches) {
+    for (const row of matchedById.values()) {
       for (const value of [row.clientId, row.loanid, row.responseId ?? ""]) {
         const key = normalizeReference(value);
         if (!key || !requestedReferenceKeys.has(key)) continue;
@@ -759,20 +791,27 @@ router.post(
       }
     }
 
-    const orderedMatches: Array<
-      (typeof matchedById extends Map<number, infer Row> ? Row : never)
-    > = [];
+    const orderedMatches: DownloadClientRow[] = [];
     const orderedClientIds = new Set<string>();
     const unmatchedReferences: string[] = [];
-    for (const reference of requestedReferences) {
-      const key = normalizeReference(reference);
-      const matches = matchesByReference.get(key) ?? [];
-      if (!matches.length) {
-        unmatchedReferences.push(reference);
-        continue;
+    if (hasClientSelection) {
+      for (const reference of requestedReferences) {
+        const key = normalizeReference(reference);
+        const matches = matchesByReference.get(key) ?? [];
+        if (!matches.length) {
+          unmatchedReferences.push(reference);
+          continue;
+        }
+        for (const row of matches) {
+          if (orderedClientIds.has(row.clientId)) continue;
+          orderedClientIds.add(row.clientId);
+          orderedMatches.push(row);
+        }
       }
-      for (const row of matches) {
-        if (orderedClientIds.has(row.clientId)) continue;
+    }
+    for (const row of matchedById.values()) {
+      if (orderedClientIds.has(row.clientId)) continue;
+      if (!hasClientSelection || hasDateCriteria) {
         orderedClientIds.add(row.clientId);
         orderedMatches.push(row);
       }
@@ -781,7 +820,7 @@ router.post(
     if (!orderedMatches.length) {
       res.status(400).json({
         error:
-          "No selected clients have matched CKYC response IDs waiting for download.",
+          "No matched CKYC response IDs were found for the selected date or client upload.",
       });
       return;
     }
