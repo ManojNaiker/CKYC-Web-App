@@ -350,91 +350,6 @@ export interface DashboardSummary {
   lastActivityAt: string | null;
 }
 
-export type AppUserRole = typeof AppUserRole[keyof typeof AppUserRole];
-
-
-export const AppUserRole = {
-  admin: 'admin',
-  manager: 'manager',
-  viewer: 'viewer',
-} as const;
-
-export type AppUserStatus = typeof AppUserStatus[keyof typeof AppUserStatus];
-
-
-export const AppUserStatus = {
-  active: 'active',
-  disabled: 'disabled',
-} as const;
-
-export interface AppUser {
-  id: number;
-  clerkUserId: string;
-  email: string;
-  displayName: string;
-  role: AppUserRole;
-  status: AppUserStatus;
-  createdAt: string;
-  updatedAt: string;
-  lastSeenAt: string;
-}
-
-export interface AppUserList {
-  items: AppUser[];
-  total: number;
-}
-
-export type AppUserUpdateInputRole = typeof AppUserUpdateInputRole[keyof typeof AppUserUpdateInputRole];
-
-
-export const AppUserUpdateInputRole = {
-  admin: 'admin',
-  manager: 'manager',
-  viewer: 'viewer',
-} as const;
-
-export type AppUserUpdateInputStatus = typeof AppUserUpdateInputStatus[keyof typeof AppUserUpdateInputStatus];
-
-
-export const AppUserUpdateInputStatus = {
-  active: 'active',
-  disabled: 'disabled',
-} as const;
-
-export interface AppUserUpdateInput {
-  role?: AppUserUpdateInputRole;
-  status?: AppUserUpdateInputStatus;
-}
-
-export type CurrentUser = AppUser & {
-  permissions: string[];
-};
-
-export type AuditLogMetadata = { [key: string]: unknown };
-
-export interface AuditLog {
-  id: number;
-  /** @nullable */
-  actorUserId: number | null;
-  /** @nullable */
-  actorClerkUserId: string | null;
-  actorName: string;
-  action: string;
-  entityType: string;
-  /** @nullable */
-  entityId: string | null;
-  summary: string;
-  metadata: AuditLogMetadata;
-  createdAt: string;
-}
-
-export interface AuditLogList {
-  items: AuditLog[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
 export interface ErrorResponse {
   error: string;
 }
@@ -514,17 +429,5 @@ importId: number;
 
 export type ListCkycDownloadResponseFilesParams = {
 includeArchived?: boolean;
-};
-
-export type ListAuditLogsParams = {
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
-/**
- * @minimum 0
- */
-offset?: number;
 };
 

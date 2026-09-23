@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="Light Finance">
-  <rect width="360" height="96" rx="12" fill="#fff"/>
-  <circle cx="48" cy="48" r="28" fill="#087f9f"/>
-  <path d="M35 57V38h8v11l11-16h9L51 51l13 19h-10L43 54v16h-8z" fill="#fff"/>
-  <text x="94" y="61" fill="#24383d" font-family="Arial, sans-serif" font-size="34" font-weight="700">Light</text>
-</svg>

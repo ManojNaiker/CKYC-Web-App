@@ -11,42 +11,23 @@ import {
   FileUp,
   FolderOpen,
   LayoutDashboard,
-  LogOut,
   Menu,
-  ShieldCheck,
-  UsersRound,
   X,
 } from 'lucide-react';
-import { useClerk } from '@clerk/react';
-import { useGetCurrentUser } from '@workspace/api-client-react';
 import lightFinanceLogo from '@assets/Logo_Light_1788338497887.png';
 
 const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard, permission: undefined },
-  { href: '/clients', label: 'LMS clients', icon: Database, permission: undefined },
-  { href: '/requests', label: 'CKYC requests', icon: FileClock, permission: undefined },
-  { href: '/download-requests', label: 'CKYC download', icon: FileDown, permission: 'workspace:read' },
-  { href: '/ckyc-create-data', label: 'CKYC Create data', icon: FileSpreadsheet, permission: 'workspace:write' },
-  { href: '/audit-logs', label: 'Audit log', icon: ShieldCheck, permission: 'audit:read' },
-  { href: '/users', label: 'User management', icon: UsersRound, permission: 'users:read' },
+  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/clients', label: 'LMS clients', icon: Database },
+  { href: '/requests', label: 'CKYC requests', icon: FileClock },
+  { href: '/download-requests', label: 'CKYC download', icon: FileDown },
+  { href: '/ckyc-create-data', label: 'CKYC Create data', icon: FileSpreadsheet },
 ];
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { signOut } = useClerk();
-  const currentUserQuery = useGetCurrentUser();
-  const current = navItems.find((item) => item.href === location) ?? navItems.find((item) => item.href !== '/' && location.startsWith(item.href));
-  const permissions = currentUserQuery.data?.permissions ?? [];
-  const visibleNavItems = navItems.filter((item) => !item.permission || permissions.includes(item.permission));
-  const displayName = currentUserQuery.data?.displayName ?? 'Operations desk';
-  const role = currentUserQuery.data?.role ?? 'secure workspace';
-  const initials = displayName
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const current = navItems.find((item) => item.href === location);
 
   return (
     <div className="min-h-[100dvh] bg-background">
@@ -69,7 +50,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         <div className="px-4 pt-7">
           <p className="mb-3 px-2 font-mono-ui text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Workspace</p>
           <nav className="space-y-1">
-            {visibleNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const active = location === item.href || (item.href !== '/' && location.startsWith(item.href));
               return (
@@ -99,20 +80,12 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <p className="mt-1 font-mono-ui text-[10px] text-sidebar-foreground/45">Last checked just now</p>
           </div>
           <div className="mt-5 flex items-center gap-3 border-t border-sidebar-border pt-4">
-             <div className="grid size-8 place-items-center rounded-full bg-[#d2a94b] text-[11px] font-bold text-[#24383d]">{initials || 'OP'}</div>
+            <div className="grid size-8 place-items-center rounded-full bg-[#d2a94b] text-[11px] font-bold text-[#24383d]">OP</div>
             <div className="min-w-0">
-               <p className="truncate text-[12px] font-semibold text-white">{displayName}</p>
-               <p className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40">{role}</p>
+              <p className="truncate text-[12px] font-semibold text-white">Operations desk</p>
+              <p className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40">Maker / checker</p>
             </div>
-             <button
-               type="button"
-               onClick={() => void signOut({ redirectUrl: '/' })}
-               className="ml-auto rounded-md p-1.5 text-sidebar-foreground/40 transition hover:bg-sidebar-accent hover:text-white"
-               aria-label="Sign out"
-               data-testid="button-sign-out"
-             >
-               <LogOut size={14} />
-             </button>
+            <ArrowUpRight size={14} className="ml-auto text-sidebar-foreground/40" />
           </div>
         </div>
       </aside>
