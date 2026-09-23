@@ -28,3 +28,17 @@ mtime_ms = 1789992183972
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/d09c0396-4603-4c0f-badd-5ffef9c52890/df2488c2-d179-4aed-b054-5d14856cbbc6"
 storage_version_token = "1789992191290764"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "9VmazS_EPWET8uHWxK5S3"
+uri = "file://screenshots/light-ckyc-premium-dashboard-sample.jpg"
+type = "image"
+title = "Light CKYC Premium Dashboard Sample"
+description = "Visual sample of the proposed premium CKYC dashboard redesign using the existing Light Finance identity and current CKYC workflow concepts."
+logical_id = "93aefe0d-cfbe-4844-98d8-d872e6c0d811"
+content_hash = "sha256:5de3942871538e9147c4a56a8abbd5379fa35fa03f954af9e307fc0850785ed7"
+size = 71525
+mtime_ms = 1790148144815
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/93aefe0d-cfbe-4844-98d8-d872e6c0d811/7843744f-a3a0-4064-8ad7-3a59c3865abd"
+storage_version_token = "1790148155190270"
+content_type = "image/jpeg"
