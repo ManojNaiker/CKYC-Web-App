@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap");
+
+.ckyc-premium-dashboard {
+  --ink: #1a2930;
+  --muted: #718087;
+  --line: #dfe6e1;
+  --canvas: #f5f7f3;
+  --card: #ffffff;
+  --mint: #dff3ec;
+  --mint-strong: #1c9a83;
+  --gold: #e6c86a;
+  --navy: #172b35;
+  font-family: "DM Sans", Inter, sans-serif;
+  color: var(--ink);
+}
+
+.ckyc-premium-dashboard .display {
+  font-family: "Newsreader", Georgia, serif;
+}
+
+.ckyc-premium-dashboard .mono {
+  font-family: "DM Mono", ui-monospace, monospace;
+}
+
+.ckyc-premium-dashboard .grid-paper {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.ckyc-premium-dashboard button,
+.ckyc-premium-dashboard a {
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.ckyc-premium-dashboard button:focus-visible,
+.ckyc-premium-dashboard a:focus-visible {
+  outline: 3px solid rgba(28, 154, 131, 0.32);
+  outline-offset: 3px;
+}
