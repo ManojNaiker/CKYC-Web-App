@@ -20,6 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppUser,
+  AppUserList,
+  AppUserUpdateInput,
+  AuditLogList,
   CkycCreateDataBatch,
   CkycCreateDataImportInput,
   CkycCreateDataImportResult,
@@ -39,12 +43,14 @@ import type {
   CkycResponseInput,
   ClientImportInput,
   ClientList,
+  CurrentUser,
   DashboardSummary,
   ErrorResponse,
   ExportCkycCreateDataParams,
   ExportClientsParams,
   HealthStatus,
   ImportResult,
+  ListAuditLogsParams,
   ListCkycCreateDataParams,
   ListCkycDownloadResponseFilesParams,
   ListClientsParams
@@ -149,12 +155,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
-
-
-
-
-
-
 export const getGetDashboardSummaryUrl = () => {
 
 
@@ -225,13 +225,6 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-
-
 export const getExportClientsUrl = (params?: ExportClientsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -1830,4 +1823,314 @@ export const useGenerateCkycDownloadRequestBatch = <TError = ErrorType<ErrorResp
       > => {
       return useMutation(getGenerateCkycDownloadRequestBatchMutationOptions(options));
     }
+
+export const getGetCurrentUserUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * @summary Get the signed-in application user
+ */
+export const getCurrentUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<CurrentUser> => {
+
+  return customFetch<CurrentUser>(getGetCurrentUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/api/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the signed-in application user
+ */
+
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAppUsersUrl = () => {
+
+
+
+
+  return `/api/users`
+}
+
+/**
+ * @summary List application users
+ */
+export const listAppUsers = async ( options?: Parameters<typeof customFetch>[1]): Promise<AppUserList> => {
+
+  return customFetch<AppUserList>(getListAppUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAppUsersQueryKey = () => {
+    return [
+    `/api/users`
+    ] as const;
+    }
+
+
+export const getListAppUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAppUsers>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAppUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAppUsers>>> = ({ signal }) => listAppUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAppUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAppUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAppUsers>>>
+export type ListAppUsersQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List application users
+ */
+
+export function useListAppUsers<TData = Awaited<ReturnType<typeof listAppUsers>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAppUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAppUserUrl = (id: number,) => {
+
+
+
+
+  return `/api/users/${id}`
+}
+
+/**
+ * @summary Update an application user's role or status
+ */
+export const updateAppUser = async (id: number,
+    appUserUpdateInput: AppUserUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<AppUser> => {
+
+  return customFetch<AppUser>(getUpdateAppUserUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(appUserUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAppUserMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAppUser>>, TError,{id: number;data: BodyType<AppUserUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAppUser>>, TError,{id: number;data: BodyType<AppUserUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateAppUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAppUser>>, {id: number;data: BodyType<AppUserUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAppUser(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAppUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateAppUser>>>
+    export type UpdateAppUserMutationBody = BodyType<AppUserUpdateInput>
+    export type UpdateAppUserMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update an application user's role or status
+ */
+export const useUpdateAppUser = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAppUser>>, TError,{id: number;data: BodyType<AppUserUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAppUser>>,
+        TError,
+        {id: number;data: BodyType<AppUserUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAppUserMutationOptions(options));
+    }
+
+export const getListAuditLogsUrl = (params?: ListAuditLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/audit-logs?${stringifiedParams}` : `/api/audit-logs`
+}
+
+/**
+ * @summary List recent audit events
+ */
+export const listAuditLogs = async (params?: ListAuditLogsParams, options?: Parameters<typeof customFetch>[1]): Promise<AuditLogList> => {
+
+  return customFetch<AuditLogList>(getListAuditLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAuditLogsQueryKey = (params?: ListAuditLogsParams,) => {
+    return [
+    `/api/audit-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof listAuditLogs>>, TError = ErrorType<ErrorResponse>>(params?: ListAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAuditLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLogs>>> = ({ signal }) => listAuditLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listAuditLogs>>>
+export type ListAuditLogsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List recent audit events
+ */
+
+export function useListAuditLogs<TData = Awaited<ReturnType<typeof listAuditLogs>>, TError = ErrorType<ErrorResponse>>(
+ params?: ListAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
