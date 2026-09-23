@@ -3,7 +3,9 @@ import { Link, useLocation } from 'wouter';
 import {
   Activity,
   ArrowUpRight,
+  Bell,
   ChevronRight,
+  ChevronDown,
   Database,
   FileClock,
   FileDown,
@@ -12,6 +14,8 @@ import {
   FolderOpen,
   LayoutDashboard,
   Menu,
+  Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import lightFinanceLogo from '@assets/Logo_Light_1788338497887.png';
@@ -31,10 +35,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] bg-background">
-      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-[82px] items-center justify-between border-b border-sidebar-border px-6">
+      <aside className={`fixed inset-y-0 left-0 z-40 flex w-[224px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex h-[82px] items-center justify-between border-b border-sidebar-border px-5">
           <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
-            <span className="flex h-11 w-[190px] items-center rounded-md bg-white px-2.5 shadow-sm">
+            <span className="flex h-11 w-[174px] items-center rounded-xl bg-white px-2.5 shadow-[0_6px_18px_rgba(38,39,51,.08)]">
               <img
                 src={lightFinanceLogo}
                 alt="Light Finance"
@@ -47,9 +51,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <div className="px-4 pt-7">
-          <p className="mb-3 px-2 font-mono-ui text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Workspace</p>
-          <nav className="space-y-1">
+        <div className="px-3 pt-7">
+          <p className="mb-3 px-3 font-mono-ui text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/40">Workspace</p>
+          <nav className="space-y-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = location === item.href || (item.href !== '/' && location.startsWith(item.href));
@@ -59,30 +63,30 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   onClick={() => setMobileOpen(false)}
                   data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}
-                  className={`group flex items-center gap-3 border-l-2 px-3 py-2.5 text-[13px] font-semibold transition-colors ${active ? 'border-sidebar-primary bg-sidebar-accent text-white' : 'border-transparent text-sidebar-foreground/65 hover:bg-sidebar-accent/70 hover:text-white'}`}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-semibold transition-all ${active ? 'bg-[#272733] text-white shadow-[0_7px_16px_rgba(39,39,51,.16)]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
-                  <Icon size={17} strokeWidth={active ? 2.3 : 1.8} className={active ? 'text-sidebar-primary' : ''} />
+                  <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-[#a878e8]' : ''} />
                   <span className="flex-1">{item.label}</span>
-                  {active && <ChevronRight size={14} className="text-sidebar-primary" />}
+                  {active ? <ChevronRight size={14} className="text-[#b48cf0]" /> : <ChevronDown size={13} className="text-sidebar-foreground/35" />}
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        <div className="mt-auto px-4 pb-5">
-          <div className="rounded-md border border-sidebar-border bg-sidebar-accent/50 p-4">
+        <div className="mt-auto px-3 pb-4">
+          <div className="rounded-2xl border border-[#e5dcf3] bg-[#f0e9fb] p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-mono-ui text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/50">System status</span>
-              <span className="size-2 rounded-full bg-sidebar-primary shadow-[0_0_0_4px_hsl(var(--sidebar-primary)/.12)]" />
+              <span className="font-mono-ui text-[9px] uppercase tracking-[0.18em] text-[#80699a]">Workspace focus</span>
+              <Sparkles size={14} className="text-[#986bd2]" />
             </div>
-            <p className="text-[12px] font-medium text-sidebar-foreground/80">CKYC gateway online</p>
-            <p className="mt-1 font-mono-ui text-[10px] text-sidebar-foreground/45">Last checked just now</p>
+            <p className="text-[12px] font-semibold text-[#5c4778]">Keep the trail complete.</p>
+            <Link href="/requests" className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-[#8256bd] hover:text-[#5a3b85]" data-testid="link-workspace-focus">Review requests <ArrowUpRight size={12} /></Link>
           </div>
-          <div className="mt-5 flex items-center gap-3 border-t border-sidebar-border pt-4">
+          <div className="mt-4 flex items-center gap-3 border-t border-sidebar-border pt-4">
             <div className="grid size-8 place-items-center rounded-full bg-[#d2a94b] text-[11px] font-bold text-[#24383d]">OP</div>
             <div className="min-w-0">
-              <p className="truncate text-[12px] font-semibold text-white">Operations desk</p>
+              <p className="truncate text-[12px] font-semibold text-sidebar-foreground">Operations desk</p>
               <p className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40">Maker / checker</p>
             </div>
             <ArrowUpRight size={14} className="ml-auto text-sidebar-foreground/40" />
@@ -92,8 +96,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
       {mobileOpen && <button className="fixed inset-0 z-30 bg-[#13272d]/45 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" data-testid="button-overlay-menu" />}
 
-      <main className="min-h-[100dvh] lg:pl-[248px]">
-        <header className="sticky top-0 z-20 flex h-[70px] items-center justify-between border-b border-border/80 bg-background/95 px-5 sm:px-8">
+      <main className="min-h-[100dvh] lg:pl-[224px]">
+        <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border/80 bg-white/90 px-5 backdrop-blur-xl sm:px-8">
           <div className="flex items-center gap-3">
             <button className="rounded-lg border border-border bg-card p-2 text-foreground/70 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-menu">
               <Menu size={18} />
@@ -103,15 +107,20 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               <h1 className="mt-0.5 font-display text-[19px] font-semibold tracking-[-0.015em] text-foreground">{current?.label ?? 'Workspace'}</h1>
             </div>
           </div>
-          <div className="hidden items-center gap-4 sm:flex">
-            <div className="flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              <Activity size={14} className="text-primary" /> Live workspace
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground shadow-xs md:flex">
+              <Search size={14} />
+              Search workspace
+              <span className="ml-3 rounded-md bg-secondary px-1.5 py-0.5 font-mono-ui text-[9px] text-muted-foreground">⌘K</span>
             </div>
-            <div className="h-5 w-px bg-border" />
-            <div className="grid size-8 place-items-center rounded-full bg-secondary font-mono-ui text-[10px] font-bold text-secondary-foreground">OP</div>
+            <button className="relative grid size-9 place-items-center rounded-xl border border-border bg-card text-muted-foreground hover:bg-secondary" aria-label="Notifications" data-testid="button-notifications">
+              <Bell size={15} />
+              <span className="absolute right-2 top-2 size-1.5 rounded-full bg-primary" />
+            </button>
+            <div className="grid size-9 place-items-center rounded-full bg-[#e6c86a] font-mono-ui text-[10px] font-bold text-[#24383d]">OP</div>
           </div>
         </header>
-        <div className="mx-auto max-w-[1500px] p-5 sm:p-8">{children}</div>
+        <div className="mx-auto max-w-[1560px] p-5 sm:p-8">{children}</div>
       </main>
     </div>
   );

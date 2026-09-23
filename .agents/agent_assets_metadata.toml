@@ -70,3 +70,17 @@ mtime_ms = 1790149353927
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/c15429ba-c67a-4175-b5d5-21738073d50e/3652f825-5be5-4ba3-b79d-41d6e586a36c"
 storage_version_token = "1790149363425940"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "R0I9_zBIugMhaUuERLh96"
+uri = "file://screenshots/ckyc-manager-after-ui-update.jpg"
+type = "image"
+title = "CKYC Manager — Updated UI"
+description = "Production app dashboard after applying the approved reference-style UI: compact light sidebar, workspace totals, request activity, gateway health, latest tasks, and workspace rhythm using live CKYC data."
+logical_id = "583b0001-b03f-4221-859b-b3cff9543ab7"
+content_hash = "sha256:0584007bc17343e4b7dad9672aec136667f8d9e7d7961acb84116f0a81427636"
+size = 75765
+mtime_ms = 1790155777898
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/583b0001-b03f-4221-859b-b3cff9543ab7/9cdb850c-c654-4527-aebb-579f0bafbd97"
+storage_version_token = "1790155808017508"
+content_type = "image/jpeg"
