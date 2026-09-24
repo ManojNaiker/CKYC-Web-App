@@ -10,6 +10,7 @@ export interface ClientInput {
   loanid: string;
   ClientID: string;
   disbursedon_date: string;
+  /** Raw UID from the LMS import; only XXXXXXXX plus the final four digits are stored */
   Client_UID: string;
   Client_VID: string;
   Client_PAN: string;

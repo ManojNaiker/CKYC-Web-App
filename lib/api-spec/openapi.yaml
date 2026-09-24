@@ -592,6 +592,7 @@ components:
           type: string
         Client_UID:
           type: string
+          description: Returned masked as XXXXXXXX plus the final four UID digits
         Client_VID:
           type: string
         Client_PAN:
@@ -670,6 +671,7 @@ components:
           type: string
         Client_UID:
           type: string
+          description: Raw UID from the LMS import; only XXXXXXXX plus the final four digits are stored
         Client_VID:
           type: string
         Client_PAN:

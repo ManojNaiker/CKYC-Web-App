@@ -13,6 +13,7 @@ export interface Client {
   loanid: string;
   ClientID: string;
   disbursedon_date: string;
+  /** Returned masked as XXXXXXXX plus the final four UID digits */
   Client_UID: string;
   Client_VID: string;
   Client_PAN: string;

@@ -222,6 +222,13 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.ok(asha);
     assert.ok(bharat);
     assert.equal(asha.ClientName, "Asha Rao");
+    assert.equal(asha.Client_UID, "XXXXXXXX9012");
+    assert.equal(bharat.Client_UID, "XXXXXXXX1098");
+    assert.equal(
+      clientList.items.find((client) => client.loanid.endsWith("-3"))
+        ?.Client_UID,
+      "",
+    );
 
     const defaults = {
       fileDate: "02092026",
