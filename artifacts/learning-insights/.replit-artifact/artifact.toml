@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/learning-insights/"
+title = "Learning Insights Dashboard"
+description = "A team learning analytics dashboard for tracking active programs, skill growth, department performance, training spend, learning time, and completion progress."
+version = "1.0.0"
+id = "artifacts/learning-insights"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/learning-insights/" ]
+localPort = 24482
+
+[services.development]
+run = "pnpm --filter @workspace/learning-insights run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/learning-insights", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/learning-insights/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24482"
+BASE_PATH = "/learning-insights/"
