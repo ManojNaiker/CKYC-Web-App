@@ -300,6 +300,15 @@ function normalizeName(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+function maskUid(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return "";
+
+  const digits = normalized.replace(/\D/g, "");
+  const visibleSuffix = digits.slice(-4).padStart(4, "X");
+  return `XXXXXXXX${visibleSuffix}`;
+}
+
 function hasValue(value: string) {
   return value.trim().length > 0;
 }
@@ -480,7 +489,7 @@ router.post("/clients", async (req, res): Promise<void> => {
     loanid: row.loanid,
     clientId: row.ClientID,
     disbursedOnDate: row.disbursedon_date,
-    clientUid: row.Client_UID,
+    clientUid: maskUid(row.Client_UID),
     clientVid: row.Client_VID,
     clientPan: row.Client_PAN,
     clientName: normalizeName(row.ClientName),
