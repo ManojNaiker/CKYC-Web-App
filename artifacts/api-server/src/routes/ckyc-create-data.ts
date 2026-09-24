@@ -25,6 +25,7 @@ import {
 
 const router: IRouter = Router();
 const INSERT_BATCH_SIZE = 5_000;
+const CLIENT_UPDATE_BATCH_SIZE = 500;
 
 type ParsedRow = {
   refId: string;
@@ -260,6 +261,50 @@ async function parseCreateDataFile(
     );
   }
   return { rows, skipped };
+}
+
+function getFinalCkycUpdates(rows: ParsedRow[]) {
+  const updates = new Map<string, string>();
+  const conflictingClientIds = new Set<string>();
+
+  for (const row of rows) {
+    if (
+      row.status.trim().toLowerCase() !== "success" ||
+      !row.uploadedCkycNumber ||
+      conflictingClientIds.has(row.clientId)
+    ) {
+      continue;
+    }
+
+    const existing = updates.get(row.clientId);
+    if (existing && existing !== row.uploadedCkycNumber) {
+      updates.delete(row.clientId);
+      conflictingClientIds.add(row.clientId);
+      continue;
+    }
+    updates.set(row.clientId, row.uploadedCkycNumber);
+  }
+
+  return [...updates.entries()];
+}
+
+async function updateBlankClientCkycNumbers(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  rows: ParsedRow[],
+) {
+  const updates = getFinalCkycUpdates(rows);
+  for (let index = 0; index < updates.length; index += CLIENT_UPDATE_BATCH_SIZE) {
+    const values = updates
+      .slice(index, index + CLIENT_UPDATE_BATCH_SIZE)
+      .map(([clientId, ckycNumber]) => sql`(${clientId}, ${ckycNumber})`);
+    await tx.execute(sql`
+      update ${clientsTable} as client
+      set ${sql.identifier("ckyc_number")} = incoming.ckyc_number
+      from (values ${sql.join(values, sql`, `)}) as incoming(client_id, ckyc_number)
+      where client.${sql.identifier("client_id")} = incoming.client_id
+        and client.${sql.identifier("ckyc_number")} is null
+    `);
+  }
 }
 
 function toResponse(
@@ -561,6 +606,7 @@ router.post("/ckyc/create-data", async (req, res): Promise<void> => {
           })),
       );
     }
+    await updateBlankClientCkycNumbers(tx, parsedFile.rows);
     return imported;
   });
 

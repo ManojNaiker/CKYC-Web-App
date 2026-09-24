@@ -8,3 +8,4 @@
 - [CKYC response name status](ckyc-response-name-status.md) — derive report match status from the saved response row so legacy responses are covered without migration
 - [CKYC uploaded response visibility](ckyc-uploaded-response-visibility.md) — uploaded response files can be valid even without a D request number and must remain visible/downloadable
 - [CKYC response file archival](ckyc-response-file-archival.md) — manual archival hides old uploads without deleting content, downloads, or request associations
+- [CKYC Create final-number updates](ckyc-create-final-number-updates.md) — successful Create results fill blank LMS Final CKYC values without replacing existing ones
