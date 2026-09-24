@@ -11,7 +11,7 @@ import {
   sql,
   eq,
 } from "drizzle-orm";
-import { db, clientsTable } from "@workspace/db";
+import { ckycCreateDataTable, db, clientsTable } from "@workspace/db";
 import {
   ExportClientsQueryParams,
   ImportClientsBody,
@@ -62,11 +62,13 @@ type ClientExportRow = {
   ckycResponseMatchedBy: string | null;
   ckycResponseRequestLine: string | null;
   ckycResponseMatchedRow: string | null;
+  ckycCreateMatched?: boolean;
 };
 
 export type CkycResponseMatchStatus =
   | "Properly Match"
   | "Match"
+  | "Match via Create CKYC"
   | "Not Match";
 
 function formatReportDate(value: string) {
