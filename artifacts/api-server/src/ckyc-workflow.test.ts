@@ -125,6 +125,7 @@ describe("CKYC file workflow", () => {
   let downloadRequestId: number | undefined;
   const batchDownloadRequestIds: number[] = [];
   const downloadResponseRecordIds: number[] = [];
+  const createDataImportIds: number[] = [];
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
   const downloadReference = `IN${String(process.pid).padStart(12, "0")}`;
@@ -164,6 +165,16 @@ describe("CKYC file workflow", () => {
       await pool.query(
         "DELETE FROM ckyc_download_response_records WHERE id = ANY($1::int[])",
         [downloadResponseRecordIds],
+      );
+    }
+    if (createDataImportIds.length) {
+      await pool.query(
+        "DELETE FROM ckyc_create_data WHERE import_id = ANY($1::int[])",
+        [createDataImportIds],
+      );
+      await pool.query(
+        "DELETE FROM ckyc_create_data_imports WHERE id = ANY($1::int[])",
+        [createDataImportIds],
       );
     }
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
@@ -1082,6 +1093,113 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       duplicateClients.items.find((client) => client.loanid.endsWith("-2"))
         ?.ckycNumber,
       "O50009293913726",
+    );
+  });
+
+  it("fills blank LMS Final CKYC values from a batched Create upload without overwriting or accepting conflicts", async () => {
+    // The 501st successful client must be applied by the second update batch.
+    const fillCount = 501;
+    const clientId = (suffix: string | number) => `CLI-${runId}-create-${suffix}`;
+    const loanid = (suffix: string | number) => `${loanPrefix}-create-${suffix}`;
+    const makeClient = (suffix: string | number): ClientInput => ({
+      loanid: loanid(suffix),
+      ClientID: clientId(suffix),
+      disbursedon_date: "01-01-2026",
+      Client_UID: "",
+      Client_VID: "",
+      Client_PAN: "",
+      ClientName: `Create Client ${suffix}`,
+      mobile_no: "9876543210",
+      alternate_mobile_no: "",
+      Gender: "F",
+      date_of_birth: "01-01-1990",
+    });
+    const clients = [
+      ...Array.from({ length: fillCount }, (_, index) => makeClient(index)),
+      makeClient("existing"),
+      makeClient("conflict"),
+      makeClient("rejected"),
+    ];
+    const fileName = `${loanPrefix}-create-clients.csv`;
+    const importedClients = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName, headers: LMS_HEADERS, rows: clients }),
+    });
+    assert.equal(importedClients.imported, clients.length);
+    assert.equal(importedClients.skipped, 0);
+
+    await pool.query(
+      "UPDATE clients SET ckyc_number = $1 WHERE loanid = $2 AND client_id = $3",
+      ["EXISTING-CKYC", loanid("existing"), clientId("existing")],
+    );
+
+    const expectedNumber = (index: number) =>
+      `600461${String(index).padStart(8, "0")}`;
+    const createRows = [
+      ...Array.from({ length: fillCount }, (_, index) => [
+        `uploadMFITransactionId20260924*${clientId(index)}*`,
+        clientId(index),
+        expectedNumber(index),
+        " SUCCESS ",
+      ]),
+      [`ref-existing`, clientId("existing"), "REPLACEMENT-CKYC", "success"],
+      [`ref-conflict-1`, clientId("conflict"), "CONFLICT-A", "success"],
+      [`ref-conflict-2`, clientId("conflict"), "CONFLICT-B", "success"],
+      [`ref-rejected`, clientId("rejected"), "REJECTED-CKYC", "reject"],
+    ];
+    const csv = [
+      "ref ID,Client ID,CKYC No,status",
+      ...createRows.map((row) => row.join(",")),
+    ].join("\n");
+    const sourceFileName = `${loanPrefix}-create-results.csv`;
+    const uploaded = await requestJson<{
+      importId: number;
+      imported: number;
+      skipped: number;
+      unmatchedClientIds: string[];
+    }>(baseUrl, "/ckyc/create-data", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sourceFileName,
+        fileContentBase64: Buffer.from(csv).toString("base64"),
+      }),
+    });
+    createDataImportIds.push(uploaded.importId);
+    assert.equal(uploaded.imported, createRows.length);
+    assert.equal(uploaded.skipped, 0);
+    assert.deepEqual(uploaded.unmatchedClientIds, []);
+
+    const { rows: saved } = await pool.query<{
+      client_id: string;
+      ckyc_number: string | null;
+    }>(
+      "SELECT client_id, ckyc_number FROM clients WHERE loanid LIKE $1",
+      [`${loanPrefix}-create-%`],
+    );
+    assert.equal(saved.length, clients.length);
+    const numbers = new Map(
+      saved.map((row) => [row.client_id, row.ckyc_number]),
+    );
+    for (let index = 0; index < fillCount; index += 1) {
+      assert.equal(
+        numbers.get(clientId(index)),
+        expectedNumber(index),
+        `Create row ${index}`,
+      );
+    }
+    assert.equal(numbers.get(clientId("existing")), "EXISTING-CKYC");
+    assert.equal(numbers.get(clientId("conflict")), null);
+    assert.equal(numbers.get(clientId("rejected")), null);
+
+    const clientList = await requestJson<{ items: ClientRecord[] }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanid(500))}&pageSize=10`,
+    );
+    assert.equal(
+      clientList.items.find((row) => row.loanid === loanid(500))?.ckycNumber,
+      expectedNumber(500),
     );
   });
 
