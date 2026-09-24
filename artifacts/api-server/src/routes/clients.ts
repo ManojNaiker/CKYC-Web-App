@@ -47,6 +47,8 @@ const REQUIRED_LMS_VALUES = [
 ] as const;
 
 type ClientExportRow = {
+  id?: number;
+  sourceClientId?: string;
   clientId: string;
   loanid: string;
   clientName: string;
@@ -64,6 +66,14 @@ type ClientExportRow = {
   ckycResponseMatchedRow: string | null;
   ckycCreateMatched?: boolean;
 };
+
+type ClientCkycNumberCandidate = {
+  id: number;
+  clientId: string;
+  ckycNumber: string | null;
+};
+
+const CREATE_DATA_QUERY_BATCH_SIZE = 500;
 
 export type CkycResponseMatchStatus =
   | "Properly Match"
@@ -284,11 +294,13 @@ export function createClientsCsv(rows: ClientExportRow[]) {
         : "Awaiting response",
     row.ckycResponseError,
     row.ckycResponseMatchedBy,
-    getCkycResponseMatchStatus(
-      row.clientName,
-      row.ckycResponseMatchedRow,
-      row.ckycResponseId,
-    ),
+    row.ckycCreateMatched
+      ? "Match via Create CKYC"
+      : getCkycResponseMatchStatus(
+          row.clientName,
+          row.ckycResponseMatchedRow,
+          row.ckycResponseId,
+        ),
     row.ckycResponseRequestLine,
     row.ckycResponseMatchedRow,
   ]);
@@ -325,7 +337,61 @@ function getImportIdentity(loanid: string, clientId: string) {
     .digest("hex");
 }
 
-function toClientResponse(client: typeof clientsTable.$inferSelect) {
+async function getCkycCreateMatchedClientIds(
+  clients: ClientCkycNumberCandidate[],
+) {
+  const clientIds = [...new Set(clients.map((client) => client.clientId))];
+  const successfulNumberByClientId = new Map<string, string>();
+
+  for (
+    let index = 0;
+    index < clientIds.length;
+    index += CREATE_DATA_QUERY_BATCH_SIZE
+  ) {
+    const batch = clientIds.slice(
+      index,
+      index + CREATE_DATA_QUERY_BATCH_SIZE,
+    );
+    const successfulRows = await db
+      .select({
+        clientId: ckycCreateDataTable.clientId,
+        ckycNumber: sql<string>`min(trim(${ckycCreateDataTable.uploadedCkycNumber}))`,
+        numberCount: sql<number>`count(distinct trim(${ckycCreateDataTable.uploadedCkycNumber}))::int`,
+      })
+      .from(ckycCreateDataTable)
+      .where(
+        and(
+          inArray(ckycCreateDataTable.clientId, batch),
+          sql`lower(trim(${ckycCreateDataTable.status})) = 'success'`,
+          isNotNull(ckycCreateDataTable.uploadedCkycNumber),
+          sql`trim(${ckycCreateDataTable.uploadedCkycNumber}) <> ''`,
+        ),
+      )
+      .groupBy(ckycCreateDataTable.clientId);
+
+    for (const row of successfulRows) {
+      if (row.numberCount === 1 && row.ckycNumber.trim()) {
+        successfulNumberByClientId.set(row.clientId, row.ckycNumber.trim());
+      }
+    }
+  }
+
+  return new Set(
+    clients
+      .filter(
+        (client) =>
+          Boolean(client.ckycNumber?.trim()) &&
+          successfulNumberByClientId.get(client.clientId) ===
+            client.ckycNumber?.trim(),
+      )
+      .map((client) => client.id),
+  );
+}
+
+function toClientResponse(
+  client: typeof clientsTable.$inferSelect,
+  ckycCreateMatched = false,
+) {
   return {
     id: client.id,
     loanid: client.loanid,
@@ -335,11 +401,13 @@ function toClientResponse(client: typeof clientsTable.$inferSelect) {
     Client_VID: client.clientVid,
     Client_PAN: client.clientPan,
     ClientName: client.clientName,
-    ckycResponseMatchStatus: getCkycResponseMatchStatus(
-      client.clientName,
-      client.ckycResponseMatchedRow,
-      client.ckycResponseId,
-    ),
+    ckycResponseMatchStatus: ckycCreateMatched
+      ? "Match via Create CKYC"
+      : getCkycResponseMatchStatus(
+          client.clientName,
+          client.ckycResponseMatchedRow,
+          client.ckycResponseId,
+        ),
     mobile_no: client.mobileNo,
     alternate_mobile_no: client.alternateMobileNo,
     Gender: client.gender,
@@ -423,9 +491,18 @@ router.get("/clients", async (req, res): Promise<void> => {
       .from(clientsTable)
       .where(filter),
   ]);
+  const createMatchedClientIds = await getCkycCreateMatchedClientIds(
+    rows.map((client) => ({
+      id: client.id,
+      clientId: client.clientId,
+      ckycNumber: client.ckycNumber,
+    })),
+  );
 
   res.json({
-    items: rows.map(toClientResponse),
+    items: rows.map((client) =>
+      toClientResponse(client, createMatchedClientIds.has(client.id)),
+    ),
     total: Number(countRows[0]?.count ?? 0),
     page,
     pageSize,
@@ -443,6 +520,8 @@ router.get("/clients/export", async (req, res): Promise<void> => {
   const filter = getClientFilter(search, status);
   const rows = await db
     .select({
+      id: clientsTable.id,
+      sourceClientId: clientsTable.clientId,
       clientId: clientsTable.clientId,
       loanid: clientsTable.loanid,
       clientName: clientsTable.clientName,
@@ -463,6 +542,18 @@ router.get("/clients/export", async (req, res): Promise<void> => {
     .where(filter)
     .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id));
 
+  const createMatchedClientIds = await getCkycCreateMatchedClientIds(
+    rows.map((client) => ({
+      id: client.id,
+      clientId: client.sourceClientId,
+      ckycNumber: client.ckycNumber,
+    })),
+  );
+  const exportRows = rows.map((client) => ({
+    ...client,
+    ckycCreateMatched: createMatchedClientIds.has(client.id),
+  }));
+
   const date = new Date().toISOString().slice(0, 10);
   res
     .status(200)
@@ -470,7 +561,7 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       "content-type": "text/csv; charset=utf-8",
       "content-disposition": `attachment; filename="ckyc-client-results-${date}.csv"`,
     })
-    .send(createClientsCsv(rows));
+    .send(createClientsCsv(exportRows));
 });
 
 router.post("/clients", async (req, res): Promise<void> => {

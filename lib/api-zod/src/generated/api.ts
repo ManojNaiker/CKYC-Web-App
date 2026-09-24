@@ -86,7 +86,7 @@ export const ListClientsResponse = zod.object({
   "ckycResponseStatus": zod.union([zod.literal('matched'),zod.literal('error'),zod.literal(null)]).nullable(),
   "ckycResponseError": zod.string().nullable(),
   "ckycResponseMatchedBy": zod.string().nullable(),
-  "ckycResponseMatchStatus": zod.union([zod.literal('Properly Match'),zod.literal('Match'),zod.literal('Not Match'),zod.literal(null)]).nullable(),
+  "ckycResponseMatchStatus": zod.union([zod.literal('Properly Match'),zod.literal('Match'),zod.literal('Match via Create CKYC'),zod.literal('Not Match'),zod.literal(null)]).nullable(),
   "ckycResponseRequestLine": zod.string().nullable(),
   "ckycResponseMatchedRow": zod.string().nullable(),
   "ckycResponseFileName": zod.string().nullable(),

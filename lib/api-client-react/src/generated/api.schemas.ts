@@ -29,6 +29,7 @@ export type ClientCkycResponseMatchStatus = typeof ClientCkycResponseMatchStatus
 export const ClientCkycResponseMatchStatus = {
   Properly_Match: 'Properly Match',
   Match: 'Match',
+  Match_via_Create_CKYC: 'Match via Create CKYC',
   Not_Match: 'Not Match',
 } as const;
 

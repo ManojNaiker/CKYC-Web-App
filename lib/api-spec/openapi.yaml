@@ -623,7 +623,7 @@ components:
           type: ["string", "null"]
         ckycResponseMatchStatus:
           type: ["string", "null"]
-          enum: ["Properly Match", "Match", "Not Match", null]
+          enum: ["Properly Match", "Match", "Match via Create CKYC", "Not Match", null]
         ckycResponseRequestLine:
           type: ["string", "null"]
         ckycResponseMatchedRow:
