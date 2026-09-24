@@ -497,8 +497,39 @@
     width: 100%;
     height: auto;
     flex-direction: row;
+    align-items: center;
+    gap: 8px;
     padding: 8px 12px;
     box-shadow: 0 5px 18px hsl(221 37% 18% / 0.12);
+  }
+
+  .dashboard-rail > button:first-child {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+  }
+
+  .dashboard-rail > nav {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .dashboard-rail > nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-rail .rail-button {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-rail > button:last-child {
+    flex: 0 0 auto;
   }
 
   .rail-label,
