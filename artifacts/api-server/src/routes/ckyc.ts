@@ -259,30 +259,42 @@ router.post("/ckyc/requests", async (req, res): Promise<void> => {
   const requestedClients: Array<{
     id: number;
     responseStatus: string | null;
+    responseId: string | null;
+    ckycNumber: string | null;
   }> = [];
   for (let index = 0; index < requestedClientIds.length; index += 500) {
     const chunk = await db
       .select({
         id: clientsTable.id,
         responseStatus: clientsTable.ckycResponseStatus,
+        responseId: clientsTable.ckycResponseId,
+        ckycNumber: clientsTable.ckycNumber,
       })
       .from(clientsTable)
       .where(inArray(clientsTable.id, requestedClientIds.slice(index, index + 500)));
     requestedClients.push(...chunk);
   }
-  const awaitingClientIds = new Set(
+  const eligibleClientIds = new Set(
     requestedClients
-      .filter((client) => client.responseStatus === null)
+      .filter(
+        (client) =>
+          client.responseId === null &&
+          client.ckycNumber === null &&
+          (client.responseStatus === null ||
+            (data.reprocessPending && client.responseStatus === "error")),
+      )
       .map((client) => client.id),
   );
   const eligibleRows = data.clients
-    .filter((client) => awaitingClientIds.has(client.clientId))
+    .filter((client) => eligibleClientIds.has(client.clientId))
     .map((client, index) => ({ ...client, sequence: index + 1 }));
 
   if (!eligibleRows.length) {
     res.status(400).json({
       error:
-        "All selected clients already have a CKYC response or error and are excluded from repeat requests.",
+        data.reprocessPending
+          ? "No pending clients without a CKYC response ID were selected."
+          : "No new clients are available. Enable reprocessing to include clients with previous errors.",
     });
     return;
   }

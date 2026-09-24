@@ -13,4 +13,5 @@ export const ListClientsStatus = {
   matched: 'matched',
   error: 'error',
   awaiting: 'awaiting',
+  pending: 'pending',
 } as const;

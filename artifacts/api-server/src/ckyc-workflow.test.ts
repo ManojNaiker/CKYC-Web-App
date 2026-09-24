@@ -121,7 +121,7 @@ async function requestJson<T>(
 describe("CKYC file workflow", () => {
   let server: Server;
   let baseUrl: string;
-  let requestId: number | undefined;
+  const requestIds: number[] = [];
   let downloadRequestId: number | undefined;
   const batchDownloadRequestIds: number[] = [];
   const downloadResponseRecordIds: number[] = [];
@@ -144,8 +144,10 @@ describe("CKYC file workflow", () => {
 
   after(async () => {
     await closeServer(server);
-    if (requestId !== undefined) {
-      await pool.query("DELETE FROM ckyc_requests WHERE id = $1", [requestId]);
+    if (requestIds.length) {
+      await pool.query("DELETE FROM ckyc_requests WHERE id = ANY($1::int[])", [
+        requestIds,
+      ]);
     }
     if (downloadRequestId !== undefined) {
       await pool.query("DELETE FROM ckyc_download_requests WHERE id = $1", [
@@ -282,7 +284,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
         ],
       }),
     });
-    requestId = generated.id;
+    requestIds.push(generated.id);
 
     assert.match(
       generated.fileName,
@@ -414,6 +416,82 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.ok(noIdentifier);
 
+    const pendingClients = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&status=pending&pageSize=10`,
+    );
+    assert.equal(pendingClients.total, 2);
+    assert.ok(
+      pendingClients.items.some((client) => client.id === bharat.id),
+      "pending filter should include clients with a previous error and no response ID",
+    );
+    assert.ok(
+      pendingClients.items.some((client) => client.id === noIdentifier.id),
+    );
+    assert.ok(
+      pendingClients.items.every((client) => client.id !== asha.id),
+      "pending filter should exclude clients with a CKYC response ID",
+    );
+
+    const reprocessWithoutFlag = await fetch(`${baseUrl}/ckyc/requests`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileDate: "02092026",
+        version: "V1.1",
+        institutionCode: "IN2884",
+        documentSetName: "10022",
+        rowCount: "1",
+        clients: [
+          {
+            clientId: bharat.id,
+            name: bharat.ClientName,
+            dateOfBirth: "1988-08-15",
+            gender: "M",
+            searchType: "E",
+            searchValue: "1098",
+            sequence: 1,
+          },
+        ],
+      }),
+    });
+    assert.equal(reprocessWithoutFlag.status, 400);
+
+    const reprocessed = await requestJson<CkycFile>(
+      baseUrl,
+      "/ckyc/requests",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileDate: "02092026",
+          version: "V1.1",
+          institutionCode: "IN2884",
+          documentSetName: "10022",
+          rowCount: "1",
+          reprocessPending: true,
+          clients: [
+            {
+              clientId: bharat.id,
+              name: bharat.ClientName,
+              dateOfBirth: "1988-08-15",
+              gender: "M",
+              searchType: "E",
+              searchValue: "1098",
+              sequence: 1,
+            },
+          ],
+        }),
+      },
+    );
+    requestIds.push(reprocessed.id);
+    assert.equal(reprocessed.recordCount, 1);
+    assert.equal(reprocessed.status, "generated");
+    assert.match(reprocessed.content, /\r\n20\|1\|E\|1098\|Bharat Kumar\|/);
+
     await requestJson<CkycFile>(
       baseUrl,
       `/ckyc/requests/${generated.id}/response`,
@@ -482,7 +560,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.equal(
       summaryBeforeFinalResponse.requestIdUpdated,
-      summaryBeforeImport.requestIdUpdated + 3,
+      summaryBeforeImport.requestIdUpdated + 2,
     );
     assert.equal(
       summaryBeforeFinalResponse.recordsPending,
@@ -678,7 +756,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.equal(
       summaryAfterFinalResponse.requestIdUpdated,
-      summaryBeforeFinalResponse.requestIdUpdated,
+      summaryBeforeFinalResponse.requestIdUpdated - 2,
     );
     assert.equal(
       summaryAfterFinalResponse.recordsPending,

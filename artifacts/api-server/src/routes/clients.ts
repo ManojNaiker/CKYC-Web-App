@@ -374,6 +374,8 @@ function getStatusFilter(status?: string) {
         isNull(clientsTable.ckycResponseId),
         isNull(clientsTable.ckycResponseStatus),
       );
+    case "pending":
+      return isNull(clientsTable.ckycResponseId);
     default:
       return undefined;
   }

@@ -22,10 +22,10 @@ import lightFinanceLogo from '@assets/Logo_Light_1788338497887.png';
 
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/clients', label: 'LMS clients', icon: Database },
-  { href: '/requests', label: 'CKYC requests', icon: FileClock },
-  { href: '/download-requests', label: 'CKYC download', icon: FileDown },
-  { href: '/ckyc-create-data', label: 'CKYC Create data', icon: FileSpreadsheet },
+  { href: '/clients', label: 'LMS Clients', icon: Database },
+  { href: '/requests', label: 'CKYC Requests', icon: FileClock },
+  { href: '/download-requests', label: 'CKYC Downloads', icon: FileDown },
+  { href: '/ckyc-create-data', label: 'CKYC Create Data', icon: FileSpreadsheet },
 ];
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
@@ -63,7 +63,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   onClick={() => setMobileOpen(false)}
                   data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-semibold transition-all ${active ? 'bg-[#272733] text-white shadow-[0_7px_16px_rgba(39,39,51,.16)]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition-all ${active ? 'bg-[#272733] text-white shadow-[0_7px_16px_rgba(39,39,51,.16)]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
                   <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-[#a878e8]' : ''} />
                   <span className="flex-1">{item.label}</span>

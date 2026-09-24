@@ -15,7 +15,7 @@ search?: string;
  */
 clientId?: number;
 /**
- * Filter clients by CKYC response status
+ * Filter clients by CKYC response status; pending includes clients without a CKYC response ID
  */
 status?: ListClientsStatus;
 /**

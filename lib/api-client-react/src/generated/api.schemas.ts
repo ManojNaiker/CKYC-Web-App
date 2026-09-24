@@ -213,6 +213,8 @@ export interface CkycRequestInput {
   documentSetName: string;
   /** Number of data rows written to the request file */
   rowCount: string;
+  /** Allow clients with a previous error and no CKYC response ID to be searched again */
+  reprocessPending?: boolean;
   /** @minItems 1 */
   clients: CkycClientInput[];
 }
@@ -366,7 +368,7 @@ export interface ErrorResponse {
 export type ExportClientsParams = {
 search?: string;
 /**
- * Filter clients by CKYC response status
+ * Filter clients by CKYC response status; pending includes clients without a CKYC response ID
  */
 status?: ExportClientsStatus;
 };
@@ -378,6 +380,7 @@ export const ExportClientsStatus = {
   matched: 'matched',
   error: 'error',
   awaiting: 'awaiting',
+  pending: 'pending',
 } as const;
 
 export type ListClientsParams = {
@@ -388,7 +391,7 @@ search?: string;
  */
 clientId?: number;
 /**
- * Filter clients by CKYC response status
+ * Filter clients by CKYC response status; pending includes clients without a CKYC response ID
  */
 status?: ListClientsStatus;
 /**
@@ -409,6 +412,7 @@ export const ListClientsStatus = {
   matched: 'matched',
   error: 'error',
   awaiting: 'awaiting',
+  pending: 'pending',
 } as const;
 
 export type ListCkycCreateDataParams = {

@@ -41,7 +41,7 @@ export const GetDashboardSummaryResponse = zod.object({
  */
 export const ExportClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
-  "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status')
+  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC response status; pending includes clients without a CKYC response ID')
 })
 
 export const ExportClientsResponse = zod.unknown()
@@ -61,7 +61,7 @@ export const listClientsQueryPageSizeMax = 1000000;
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clientId": zod.coerce.number().min(1).optional().describe('Filter to one stored client record by database ID'),
-  "status": zod.enum(['matched', 'error', 'awaiting']).optional().describe('Filter clients by CKYC response status'),
+  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC response status; pending includes clients without a CKYC response ID'),
   "page": zod.coerce.number().min(1).default(listClientsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listClientsQueryPageSizeMax).default(listClientsQueryPageSizeDefault)
 })
@@ -161,6 +161,7 @@ export const GenerateCkycRequestBody = zod.object({
   "iraCode": zod.string().default(generateCkycRequestBodyIraCodeDefault).describe('Legacy compatibility field; the type 10 field 4 is the generated record count'),
   "documentSetName": zod.string().default(generateCkycRequestBodyDocumentSetNameDefault).describe('Legacy compatibility field; not written to the current bulk-search header'),
   "rowCount": zod.string().describe('Number of data rows written to the request file'),
+  "reprocessPending": zod.boolean().optional().describe('Allow clients with a previous error and no CKYC response ID to be searched again'),
   "clients": zod.array(zod.object({
   "clientId": zod.number(),
   "name": zod.string(),

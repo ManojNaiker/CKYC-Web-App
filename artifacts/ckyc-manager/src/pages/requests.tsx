@@ -101,12 +101,13 @@ function splitIntoRequestBatches(clients: Client[]) {
 function CreateRequest({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [clientPage, setClientPage] = useState(1);
+  const [reprocessPending, setReprocessPending] = useState(false);
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
   const [version, setVersion] = useState("V1.1");
   const [institutionCode, setInstitutionCode] = useState("IN2884");
   const [feedback, setFeedback] = useState("");
   const clientParams = {
-    status: "awaiting" as const,
+    status: reprocessPending ? ("pending" as const) : ("awaiting" as const),
     page: 1,
     pageSize: MAX_CKYC_SEARCH_ROWS,
   };
@@ -179,6 +180,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
             institutionCode,
             documentSetName: "10022",
             rowCount: String(batch.length),
+            reprocessPending,
             clients: batch,
           };
           await generate.mutateAsync({ data: payload });
@@ -197,7 +199,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
         setFeedback(
           error instanceof Error && error.message
             ? error.message
-            : "The file could not be generated. Review the request details and retry.",
+            : "The file could not be generated. Review the request details and try again.",
         );
       }
     })();
@@ -242,7 +244,7 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
             <button
               onClick={() =>
                 setSelected(
-                  selected.length === clients.length
+                  selected.length > 0 && selected.length === clients.length
                     ? []
                     : clients.map((client) => client.id),
                 )
@@ -250,9 +252,34 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
               className="text-[11px] font-bold text-primary hover:underline"
               data-testid="button-select-all-clients"
             >
-              {selected.length === clients.length ? "Clear all" : "Select all"}
+              {selected.length > 0 && selected.length === clients.length
+                ? "Clear all"
+                : "Select all"}
             </button>
           </div>
+          <label className="mb-3 flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background p-3">
+            <input
+              type="checkbox"
+              checked={reprocessPending}
+              onChange={(event) => {
+                setReprocessPending(event.target.checked);
+                setSelected([]);
+                setClientPage(1);
+                setFeedback("");
+              }}
+              className="mt-0.5 size-4 shrink-0 accent-primary"
+              data-testid="checkbox-reprocess-pending-clients"
+            />
+            <span>
+              <span className="block text-[12px] font-semibold text-foreground">
+                Reprocess pending CKYC clients
+              </span>
+              <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">
+                Includes previous request errors. Clients with a CKYC response
+                ID remain excluded.
+              </span>
+            </span>
+          </label>
           {clientsQuery.isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3, 4].map((item) => (
@@ -261,8 +288,9 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
             </div>
           ) : clients.length === 0 ? (
             <p className="rounded-lg bg-secondary p-4 text-[12px] text-muted-foreground">
-              No awaiting clients are available. Clients with a CKYC ID or a
-              completed error response are excluded from repeat requests.
+              {reprocessPending
+                ? "No pending clients without a CKYC response ID are available."
+                : "No new clients are awaiting a CKYC response. Enable reprocessing to include previous errors."}
             </p>
           ) : (
              <>
@@ -288,8 +316,15 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
                       {client.ClientName}
                     </span>
                     <span className="mt-0.5 block font-mono-ui text-[10px] text-muted-foreground">
-                      {client.ClientID} · {client.Client_UID ? "Aadhaar" : "No Aadhaar"} ·{" "}
-                      {[client.Client_VID, client.Client_PAN].filter(Boolean).length} B docs
+                      {client.ClientID} ·{" "}
+                      {client.ckycResponseStatus === "error"
+                        ? "Previous request error"
+                        : "Awaiting response"}{" "}
+                      · {client.Client_UID ? "Aadhaar" : "No Aadhaar"} ·{" "}
+                      {
+                        [client.Client_VID, client.Client_PAN].filter(Boolean)
+                          .length
+                      } B identifiers
                     </span>
                   </span>
                 </button>

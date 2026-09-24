@@ -18,6 +18,8 @@ export interface CkycRequestInput {
   documentSetName: string;
   /** Number of data rows written to the request file */
   rowCount: string;
+  /** Allow clients with a previous error and no CKYC response ID to be searched again */
+  reprocessPending?: boolean;
   /** @minItems 1 */
   clients: CkycClientInput[];
 }
