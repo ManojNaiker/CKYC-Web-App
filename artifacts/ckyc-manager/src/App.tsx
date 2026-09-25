@@ -11,6 +11,7 @@ import Requests from '@/pages/requests';
 import RequestDetail from '@/pages/request-detail';
 import DownloadRequests from '@/pages/download-requests';
 import CkycCreateData from '@/pages/ckyc-create-data';
+import FinfluxUpdate from '@/pages/finflux-update';
 import { WorkspaceShell } from '@/components/workspace-shell';
 import {
   Route,
@@ -35,6 +36,7 @@ function Router() {
           <Route path="/requests" component={Requests} />
           <Route path="/download-requests" component={DownloadRequests} />
           <Route path="/ckyc-create-data" component={CkycCreateData} />
+          <Route path="/finflux-update" component={FinfluxUpdate} />
           <Route component={NotFound} />
         </Switch>
       </WorkspaceShell>

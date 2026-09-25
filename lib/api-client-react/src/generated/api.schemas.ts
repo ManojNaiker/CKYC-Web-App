@@ -364,6 +364,134 @@ export interface DashboardSummary {
   lastActivityAt: string | null;
 }
 
+export interface FinfluxCredentialInput {
+  /**
+     * @minLength 1
+     * @maxLength 250
+     */
+  username: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  password: string;
+}
+
+export interface FinfluxCkycUpdateRecordInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  clientId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  ckycNumber: string;
+}
+
+export interface FinfluxCkycUpdateJobInput {
+  credentials: FinfluxCredentialInput;
+  /**
+     * @minItems 1
+     * @maxItems 1000
+     */
+  records: FinfluxCkycUpdateRecordInput[];
+}
+
+export interface FinfluxCkycImportPreviewInput {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  fileName: string;
+  /**
+     * @minLength 1
+     * @maxLength 20971520
+     */
+  fileContentBase64: string;
+}
+
+export interface FinfluxCkycImportPreviewRow {
+  rowNumber: number;
+  /** @nullable */
+  clientId: string | null;
+  /** @nullable */
+  ckycNumber: string | null;
+  valid: boolean;
+  /** @nullable */
+  error: string | null;
+}
+
+export interface FinfluxCkycImportPreviewResponse {
+  fileName: string;
+  totalRows: number;
+  validCount: number;
+  invalidCount: number;
+  rows: FinfluxCkycImportPreviewRow[];
+}
+
+export type FinfluxCkycUpdateJobAcceptedStatus = typeof FinfluxCkycUpdateJobAcceptedStatus[keyof typeof FinfluxCkycUpdateJobAcceptedStatus];
+
+
+export const FinfluxCkycUpdateJobAcceptedStatus = {
+  queued: 'queued',
+  running: 'running',
+} as const;
+
+export interface FinfluxCkycUpdateJobAccepted {
+  id: string;
+  status: FinfluxCkycUpdateJobAcceptedStatus;
+  total: number;
+}
+
+export type FinfluxCkycUpdateResultStatus = typeof FinfluxCkycUpdateResultStatus[keyof typeof FinfluxCkycUpdateResultStatus];
+
+
+export const FinfluxCkycUpdateResultStatus = {
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+export interface FinfluxCkycUpdateResult {
+  rowNumber: number;
+  clientId: string;
+  ckycNumber: string;
+  status: FinfluxCkycUpdateResultStatus;
+  message: string;
+  /** @nullable */
+  statusCode: number | null;
+  /** @nullable */
+  durationMs: number | null;
+}
+
+export type FinfluxCkycUpdateJobStatus = typeof FinfluxCkycUpdateJobStatus[keyof typeof FinfluxCkycUpdateJobStatus];
+
+
+export const FinfluxCkycUpdateJobStatus = {
+  queued: 'queued',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface FinfluxCkycUpdateJob {
+  id: string;
+  status: FinfluxCkycUpdateJobStatus;
+  total: number;
+  processed: number;
+  successCount: number;
+  failureCount: number;
+  results: FinfluxCkycUpdateResult[];
+  createdAt: string;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  /** @nullable */
+  error: string | null;
+}
+
 export interface ErrorResponse {
   error: string;
 }
@@ -417,6 +545,13 @@ export const ListClientsStatus = {
   awaiting: 'awaiting',
   pending: 'pending',
 } as const;
+
+export type GetFinfluxCkycUpdateJobParams = {
+/**
+ * @minLength 1
+ */
+jobId: string;
+};
 
 export type ListCkycCreateDataParams = {
 search?: string;

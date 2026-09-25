@@ -139,6 +139,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /finflux/ckyc-import/preview:
+    post:
+      operationId: previewFinfluxCkycImport
+      tags: [finflux]
+      summary: Preview a Finflux CKYC update spreadsheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinfluxCkycImportPreviewInput"
+      responses:
+        "200":
+          description: Parsed rows ready for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinfluxCkycImportPreviewResponse"
+        "400":
+          description: Invalid file or missing columns
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /finflux/ckyc-update-jobs:
+    post:
+      operationId: createFinfluxCkycUpdateJob
+      tags: [finflux]
+      summary: Authenticate with Finflux and start a CKYC identifier update job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinfluxCkycUpdateJobInput"
+      responses:
+        "202":
+          description: Update job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinfluxCkycUpdateJobAccepted"
+        "400":
+          description: Invalid update records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Finflux authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many active Finflux update jobs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Finflux is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: getFinfluxCkycUpdateJob
+      tags: [finflux]
+      summary: Get Finflux CKYC update job progress and results
+      parameters:
+        - name: jobId
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Current update job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinfluxCkycUpdateJob"
+        "404":
+          description: Update job not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /ckyc/requests:
     get:
       operationId: listCkycRequests
@@ -1244,6 +1334,186 @@ components:
         - pendingErrors
         - lastImportFile
         - lastActivityAt
+    FinfluxCredentialInput:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 250
+        password:
+          type: string
+          minLength: 1
+          maxLength: 500
+          writeOnly: true
+      required:
+        - username
+        - password
+    FinfluxCkycUpdateRecordInput:
+      type: object
+      properties:
+        clientId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        ckycNumber:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - clientId
+        - ckycNumber
+    FinfluxCkycUpdateJobInput:
+      type: object
+      properties:
+        credentials:
+          $ref: "#/components/schemas/FinfluxCredentialInput"
+        records:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/FinfluxCkycUpdateRecordInput"
+      required:
+        - credentials
+        - records
+    FinfluxCkycImportPreviewInput:
+      type: object
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        fileContentBase64:
+          type: string
+          minLength: 1
+          maxLength: 20971520
+      required:
+        - fileName
+        - fileContentBase64
+    FinfluxCkycImportPreviewRow:
+      type: object
+      properties:
+        rowNumber:
+          type: number
+        clientId:
+          type: ["string", "null"]
+        ckycNumber:
+          type: ["string", "null"]
+        valid:
+          type: boolean
+        error:
+          type: ["string", "null"]
+      required:
+        - rowNumber
+        - clientId
+        - ckycNumber
+        - valid
+        - error
+    FinfluxCkycImportPreviewResponse:
+      type: object
+      properties:
+        fileName:
+          type: string
+        totalRows:
+          type: number
+        validCount:
+          type: number
+        invalidCount:
+          type: number
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinfluxCkycImportPreviewRow"
+      required:
+        - fileName
+        - totalRows
+        - validCount
+        - invalidCount
+        - rows
+    FinfluxCkycUpdateJobAccepted:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running]
+        total:
+          type: number
+      required:
+        - id
+        - status
+        - total
+    FinfluxCkycUpdateResult:
+      type: object
+      properties:
+        rowNumber:
+          type: number
+        clientId:
+          type: string
+        ckycNumber:
+          type: string
+        status:
+          type: string
+          enum: [success, failed]
+        message:
+          type: string
+        statusCode:
+          type: ["number", "null"]
+        durationMs:
+          type: ["number", "null"]
+      required:
+        - rowNumber
+        - clientId
+        - ckycNumber
+        - status
+        - message
+        - statusCode
+        - durationMs
+    FinfluxCkycUpdateJob:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        total:
+          type: number
+        processed:
+          type: number
+        successCount:
+          type: number
+        failureCount:
+          type: number
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinfluxCkycUpdateResult"
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        error:
+          type: ["string", "null"]
+      required:
+        - id
+        - status
+        - total
+        - processed
+        - successCount
+        - failureCount
+        - results
+        - createdAt
+        - startedAt
+        - completedAt
+        - error
     ErrorResponse:
       type: object
       properties:

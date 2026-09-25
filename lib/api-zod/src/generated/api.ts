@@ -132,6 +132,101 @@ export const ImportClientsResponse = zod.object({
 
 
 /**
+ * @summary Preview a Finflux CKYC update spreadsheet
+ */
+export const previewFinfluxCkycImportBodyFileNameMax = 255;
+
+export const previewFinfluxCkycImportBodyFileContentBase64Max = 20971520;
+
+
+
+export const PreviewFinfluxCkycImportBody = zod.object({
+  "fileName": zod.string().min(1).max(previewFinfluxCkycImportBodyFileNameMax),
+  "fileContentBase64": zod.string().min(1).max(previewFinfluxCkycImportBodyFileContentBase64Max)
+})
+
+export const PreviewFinfluxCkycImportResponse = zod.object({
+  "fileName": zod.string(),
+  "totalRows": zod.number(),
+  "validCount": zod.number(),
+  "invalidCount": zod.number(),
+  "rows": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "clientId": zod.string().nullable(),
+  "ckycNumber": zod.string().nullable(),
+  "valid": zod.boolean(),
+  "error": zod.string().nullable()
+}))
+})
+
+
+/**
+ * @summary Authenticate with Finflux and start a CKYC identifier update job
+ */
+export const createFinfluxCkycUpdateJobBodyCredentialsUsernameMax = 250;
+
+export const createFinfluxCkycUpdateJobBodyCredentialsPasswordMax = 500;
+
+export const createFinfluxCkycUpdateJobBodyRecordsItemClientIdMax = 100;
+
+export const createFinfluxCkycUpdateJobBodyRecordsItemCkycNumberMax = 100;
+
+export const createFinfluxCkycUpdateJobBodyRecordsMax = 1000;
+
+
+
+export const CreateFinfluxCkycUpdateJobBody = zod.object({
+  "credentials": zod.object({
+  "username": zod.string().min(1).max(createFinfluxCkycUpdateJobBodyCredentialsUsernameMax),
+  "password": zod.string().min(1).max(createFinfluxCkycUpdateJobBodyCredentialsPasswordMax)
+}),
+  "records": zod.array(zod.object({
+  "clientId": zod.string().min(1).max(createFinfluxCkycUpdateJobBodyRecordsItemClientIdMax),
+  "ckycNumber": zod.string().min(1).max(createFinfluxCkycUpdateJobBodyRecordsItemCkycNumberMax)
+})).min(1).max(createFinfluxCkycUpdateJobBodyRecordsMax)
+})
+
+export const CreateFinfluxCkycUpdateJobResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['queued', 'running']),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Get Finflux CKYC update job progress and results
+ */
+
+
+
+export const GetFinfluxCkycUpdateJobQueryParams = zod.object({
+  "jobId": zod.coerce.string().min(1)
+})
+
+export const GetFinfluxCkycUpdateJobResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "total": zod.number(),
+  "processed": zod.number(),
+  "successCount": zod.number(),
+  "failureCount": zod.number(),
+  "results": zod.array(zod.object({
+  "rowNumber": zod.number(),
+  "clientId": zod.string(),
+  "ckycNumber": zod.string(),
+  "status": zod.enum(['success', 'failed']),
+  "message": zod.string(),
+  "statusCode": zod.number().nullable(),
+  "durationMs": zod.number().nullable()
+})),
+  "createdAt": zod.coerce.date(),
+  "startedAt": zod.coerce.date().nullable(),
+  "completedAt": zod.coerce.date().nullable(),
+  "error": zod.string().nullable()
+})
+
+
+/**
  * @summary List generated CKYC files
  */
 export const ListCkycRequestsResponseItem = zod.object({

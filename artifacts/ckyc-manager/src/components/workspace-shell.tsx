@@ -26,6 +26,7 @@ const navItems = [
   { href: '/requests', label: 'CKYC Requests', icon: FileClock },
   { href: '/download-requests', label: 'CKYC Downloads', icon: FileDown },
   { href: '/ckyc-create-data', label: 'CKYC Create Data', icon: FileSpreadsheet },
+  { href: '/finflux-update', label: 'Finflux Update', icon: FileUp },
 ];
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {

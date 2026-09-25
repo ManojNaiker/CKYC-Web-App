@@ -8,7 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx --test --test-concurrency=1 ./src/ckyc-workflow.test.ts ./src/clients-response-status.test.ts"
+    "test": "tsx --test --test-concurrency=1 ./src/ckyc-workflow.test.ts ./src/clients-response-status.test.ts ./src/finflux.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

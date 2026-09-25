@@ -43,6 +43,12 @@ import type {
   ErrorResponse,
   ExportCkycCreateDataParams,
   ExportClientsParams,
+  FinfluxCkycImportPreviewInput,
+  FinfluxCkycImportPreviewResponse,
+  FinfluxCkycUpdateJob,
+  FinfluxCkycUpdateJobAccepted,
+  FinfluxCkycUpdateJobInput,
+  GetFinfluxCkycUpdateJobParams,
   HealthStatus,
   ImportResult,
   ListCkycCreateDataParams,
@@ -470,6 +476,232 @@ export const useImportClients = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getImportClientsMutationOptions(options));
     }
+
+export const getPreviewFinfluxCkycImportUrl = () => {
+
+
+
+
+  return `/api/finflux/ckyc-import/preview`
+}
+
+/**
+ * @summary Preview a Finflux CKYC update spreadsheet
+ */
+export const previewFinfluxCkycImport = async (finfluxCkycImportPreviewInput: FinfluxCkycImportPreviewInput, options?: Parameters<typeof customFetch>[1]): Promise<FinfluxCkycImportPreviewResponse> => {
+
+  return customFetch<FinfluxCkycImportPreviewResponse>(getPreviewFinfluxCkycImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(finfluxCkycImportPreviewInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewFinfluxCkycImportMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, TError,{data: BodyType<FinfluxCkycImportPreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, TError,{data: BodyType<FinfluxCkycImportPreviewInput>}, TContext> => {
+
+const mutationKey = ['previewFinfluxCkycImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, {data: BodyType<FinfluxCkycImportPreviewInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewFinfluxCkycImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewFinfluxCkycImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewFinfluxCkycImport>>>
+    export type PreviewFinfluxCkycImportMutationBody = BodyType<FinfluxCkycImportPreviewInput>
+    export type PreviewFinfluxCkycImportMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Preview a Finflux CKYC update spreadsheet
+ */
+export const usePreviewFinfluxCkycImport = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, TError,{data: BodyType<FinfluxCkycImportPreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewFinfluxCkycImport>>,
+        TError,
+        {data: BodyType<FinfluxCkycImportPreviewInput>},
+        TContext
+      > => {
+      return useMutation(getPreviewFinfluxCkycImportMutationOptions(options));
+    }
+
+export const getCreateFinfluxCkycUpdateJobUrl = () => {
+
+
+
+
+  return `/api/finflux/ckyc-update-jobs`
+}
+
+/**
+ * @summary Authenticate with Finflux and start a CKYC identifier update job
+ */
+export const createFinfluxCkycUpdateJob = async (finfluxCkycUpdateJobInput: FinfluxCkycUpdateJobInput, options?: Parameters<typeof customFetch>[1]): Promise<FinfluxCkycUpdateJobAccepted> => {
+
+  return customFetch<FinfluxCkycUpdateJobAccepted>(getCreateFinfluxCkycUpdateJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(finfluxCkycUpdateJobInput)
+  }
+);}
+
+
+
+
+
+export const getCreateFinfluxCkycUpdateJobMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, TError,{data: BodyType<FinfluxCkycUpdateJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, TError,{data: BodyType<FinfluxCkycUpdateJobInput>}, TContext> => {
+
+const mutationKey = ['createFinfluxCkycUpdateJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, {data: BodyType<FinfluxCkycUpdateJobInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createFinfluxCkycUpdateJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFinfluxCkycUpdateJobMutationResult = NonNullable<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>>
+    export type CreateFinfluxCkycUpdateJobMutationBody = BodyType<FinfluxCkycUpdateJobInput>
+    export type CreateFinfluxCkycUpdateJobMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Authenticate with Finflux and start a CKYC identifier update job
+ */
+export const useCreateFinfluxCkycUpdateJob = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, TError,{data: BodyType<FinfluxCkycUpdateJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>,
+        TError,
+        {data: BodyType<FinfluxCkycUpdateJobInput>},
+        TContext
+      > => {
+      return useMutation(getCreateFinfluxCkycUpdateJobMutationOptions(options));
+    }
+
+export const getGetFinfluxCkycUpdateJobUrl = (params: GetFinfluxCkycUpdateJobParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/finflux/ckyc-update-jobs?${stringifiedParams}` : `/api/finflux/ckyc-update-jobs`
+}
+
+/**
+ * @summary Get Finflux CKYC update job progress and results
+ */
+export const getFinfluxCkycUpdateJob = async (params: GetFinfluxCkycUpdateJobParams, options?: Parameters<typeof customFetch>[1]): Promise<FinfluxCkycUpdateJob> => {
+
+  return customFetch<FinfluxCkycUpdateJob>(getGetFinfluxCkycUpdateJobUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFinfluxCkycUpdateJobQueryKey = (params?: GetFinfluxCkycUpdateJobParams,) => {
+    return [
+    `/api/finflux/ckyc-update-jobs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFinfluxCkycUpdateJobQueryOptions = <TData = Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError = ErrorType<ErrorResponse>>(params: GetFinfluxCkycUpdateJobParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFinfluxCkycUpdateJobQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>> = ({ signal }) => getFinfluxCkycUpdateJob(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFinfluxCkycUpdateJobQueryResult = NonNullable<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>>
+export type GetFinfluxCkycUpdateJobQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get Finflux CKYC update job progress and results
+ */
+
+export function useGetFinfluxCkycUpdateJob<TData = Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError = ErrorType<ErrorResponse>>(
+ params: GetFinfluxCkycUpdateJobParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFinfluxCkycUpdateJobQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListCkycRequestsUrl = () => {
 
