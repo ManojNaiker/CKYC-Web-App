@@ -196,7 +196,7 @@ export default function Overview() {
                   <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Latest tasks</p>
                   <h3 className="mt-1 font-display text-[22px] font-semibold tracking-[-.025em] text-foreground">Files to review in your workspace</h3>
                 </div>
-                <Link href="/requests" className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary hover:underline" data-testid="link-view-all-requests">View all <ArrowRight size={13} /></Link>
+                <Link href="/requests" className="inline-flex whitespace-nowrap items-center gap-1 text-[10px] font-semibold text-primary hover:underline" data-testid="link-view-all-requests">View all <ArrowRight size={13} /></Link>
               </div>
               {recent.length === 0 ? <div className="p-5"><EmptyState icon={FileClock} title="No request files yet" detail="Import client rows, then create your first CKYC search file." action={<Link href="/clients" className="text-[12px] font-bold text-primary underline underline-offset-4" data-testid="link-empty-import">Go to clients</Link>} /></div> : (
                 <div className="divide-y divide-border">

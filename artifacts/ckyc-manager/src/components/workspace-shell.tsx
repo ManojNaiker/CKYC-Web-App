@@ -34,7 +34,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const current = navItems.find((item) => item.href === location);
 
   return (
-    <div className="min-h-[100dvh] bg-background">
+    <div className="ckyc-readable-type min-h-[100dvh] bg-background">
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-[224px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-[82px] items-center justify-between border-b border-sidebar-border px-5">
           <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
@@ -63,7 +63,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   onClick={() => setMobileOpen(false)}
                   data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] font-semibold transition-all ${active ? 'bg-[#272733] text-white shadow-[0_7px_16px_rgba(39,39,51,.16)]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[12px] font-semibold transition-all ${active ? 'bg-[#272733] text-white shadow-[0_7px_16px_rgba(39,39,51,.16)]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
                   <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-[#a878e8]' : ''} />
                   <span className="flex-1">{item.label}</span>
