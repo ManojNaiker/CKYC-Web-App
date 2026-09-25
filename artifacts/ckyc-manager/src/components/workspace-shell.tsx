@@ -120,7 +120,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <div className="grid size-9 place-items-center rounded-full bg-[#e6c86a] font-mono-ui text-[10px] font-bold text-[#24383d]">OP</div>
           </div>
         </header>
-        <div className="mx-auto max-w-[1560px] p-5 sm:p-8">{children}</div>
+        <div className="w-full max-w-none p-5 sm:p-8">{children}</div>
       </main>
     </div>
   );
