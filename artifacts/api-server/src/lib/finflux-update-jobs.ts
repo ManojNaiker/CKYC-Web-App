@@ -17,7 +17,18 @@ const JOB_RETENTION_MS = 60 * 60 * 1000;
 interface StoredJob extends FinfluxCkycUpdateJob {
   accessToken: string | null;
   records: FinfluxCkycUpdateRecordInput[];
+  persistSuccessfulRecords: PersistSuccessfulRecords;
 }
+
+export interface FinfluxSuccessfulUpdate {
+  clientId: string;
+  ckycNumber: string;
+  statusCode: number;
+}
+
+type PersistSuccessfulRecords = (
+  records: FinfluxSuccessfulUpdate[],
+) => Promise<void>;
 
 const jobs = new Map<string, StoredJob>();
 
@@ -114,30 +125,52 @@ async function processJob(job: StoredJob): Promise<void> {
       }
     }
 
-    if (job.status !== "failed") job.status = "completed";
-    job.completedAt = new Date();
-    logger.info(
-      {
-        jobId: job.id,
-        total: job.total,
-        successCount: job.successCount,
-        failureCount: job.failureCount,
-      },
-      "Finflux CKYC update job finished",
-    );
   } catch {
     job.error = "The Finflux update job stopped unexpectedly.";
     job.status = "failed";
-    job.completedAt = new Date();
     logger.error({ jobId: job.id }, "Finflux CKYC update job stopped");
-  } finally {
-    job.accessToken = null;
   }
+
+  try {
+    const successfulUpdates = job.results
+      .filter((result) => result.status === "success")
+      .map((result) => ({
+        clientId: result.clientId,
+        ckycNumber: result.ckycNumber,
+        statusCode: result.statusCode ?? 200,
+      }));
+    if (successfulUpdates.length > 0) {
+      await job.persistSuccessfulRecords(successfulUpdates);
+    }
+  } catch {
+    job.error =
+      "Finflux accepted some records, but their local update status could not be saved. Check the row results before retrying.";
+    job.status = "failed";
+    logger.error(
+      { jobId: job.id },
+      "Finflux CKYC update status persistence failed",
+    );
+  }
+
+  if (job.status !== "failed") job.status = "completed";
+  job.completedAt = new Date();
+  job.accessToken = null;
+  logger.info(
+    {
+      jobId: job.id,
+      total: job.total,
+      successCount: job.successCount,
+      failureCount: job.failureCount,
+      status: job.status,
+    },
+    "Finflux CKYC update job finished",
+  );
 }
 
 export async function createFinfluxCkycUpdateJob(
   credentials: FinfluxCredentials,
   records: FinfluxCkycUpdateRecordInput[],
+  persistSuccessfulRecords: PersistSuccessfulRecords = async () => {},
 ): Promise<FinfluxCkycUpdateJobAccepted> {
   pruneExpiredJobs();
   const activeJobCount = [...jobs.values()].filter(
@@ -161,6 +194,7 @@ export async function createFinfluxCkycUpdateJob(
     error: null,
     accessToken: null,
     records: records.map((record) => ({ ...record })),
+    persistSuccessfulRecords,
   };
   jobs.set(id, job);
 

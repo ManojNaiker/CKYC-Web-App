@@ -14,6 +14,8 @@ export interface DashboardSummary {
   finalCkycUpdated: number;
   requestIdUpdated: number;
   recordsPending: number;
+  finfluxUpdated: number;
+  finfluxPending: number;
   pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;

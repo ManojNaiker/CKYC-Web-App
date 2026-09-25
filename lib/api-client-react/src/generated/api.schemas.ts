@@ -70,6 +70,8 @@ export interface Client {
   ckycResponseRequestId: number | null;
   /** @nullable */
   ckycResponseAt: string | null;
+  /** @nullable */
+  finfluxCkycUpdatedAt: string | null;
 }
 
 export interface ClientInput {
@@ -357,6 +359,8 @@ export interface DashboardSummary {
   finalCkycUpdated: number;
   requestIdUpdated: number;
   recordsPending: number;
+  finfluxUpdated: number;
+  finfluxPending: number;
   pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;
@@ -502,6 +506,10 @@ search?: string;
  * Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither
  */
 status?: ExportClientsStatus;
+/**
+ * Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+ */
+finfluxGroup?: ExportClientsFinfluxGroup;
 };
 
 export type ExportClientsStatus = typeof ExportClientsStatus[keyof typeof ExportClientsStatus];
@@ -512,6 +520,15 @@ export const ExportClientsStatus = {
   error: 'error',
   awaiting: 'awaiting',
   pending: 'pending',
+} as const;
+
+export type ExportClientsFinfluxGroup = typeof ExportClientsFinfluxGroup[keyof typeof ExportClientsFinfluxGroup];
+
+
+export const ExportClientsFinfluxGroup = {
+  finalCkyc: 'finalCkyc',
+  requestIdUpdated: 'requestIdUpdated',
+  recordsPending: 'recordsPending',
 } as const;
 
 export type ListClientsParams = {

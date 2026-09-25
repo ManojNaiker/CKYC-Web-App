@@ -62,6 +62,13 @@ paths:
           schema:
             type: string
             enum: [matched, error, awaiting, pending]
+        - name: finfluxGroup
+          in: query
+          required: false
+          description: Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+          schema:
+            type: string
+            enum: [finalCkyc, requestIdUpdated, recordsPending]
       responses:
         "200":
           description: CSV report of matching clients and their CKYC results
@@ -725,6 +732,9 @@ components:
         ckycResponseAt:
           type: ["string", "null"]
           format: date-time
+        finfluxCkycUpdatedAt:
+          type: ["string", "null"]
+          format: date-time
       required:
         - id
         - loanid
@@ -750,6 +760,7 @@ components:
         - ckycResponseFileName
         - ckycResponseRequestId
         - ckycResponseAt
+        - finfluxCkycUpdatedAt
     ClientInput:
       type: object
       properties:
@@ -1308,6 +1319,10 @@ components:
           type: number
         recordsPending:
           type: number
+        finfluxUpdated:
+          type: number
+        finfluxPending:
+          type: number
         pendingErrors:
           type: array
           items:
@@ -1331,6 +1346,8 @@ components:
         - finalCkycUpdated
         - requestIdUpdated
         - recordsPending
+        - finfluxUpdated
+        - finfluxPending
         - pendingErrors
         - lastImportFile
         - lastActivityAt

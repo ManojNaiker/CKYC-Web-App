@@ -27,6 +27,8 @@ export const GetDashboardSummaryResponse = zod.object({
   "finalCkycUpdated": zod.number(),
   "requestIdUpdated": zod.number(),
   "recordsPending": zod.number(),
+  "finfluxUpdated": zod.number(),
+  "finfluxPending": zod.number(),
   "pendingErrors": zod.array(zod.object({
   "name": zod.string(),
   "count": zod.number()
@@ -41,7 +43,8 @@ export const GetDashboardSummaryResponse = zod.object({
  */
 export const ExportClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
-  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither')
+  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither'),
+  "finfluxGroup": zod.enum(['finalCkyc', 'requestIdUpdated', 'recordsPending']).optional().describe('Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.')
 })
 
 export const ExportClientsResponse = zod.unknown()
@@ -91,7 +94,8 @@ export const ListClientsResponse = zod.object({
   "ckycResponseMatchedRow": zod.string().nullable(),
   "ckycResponseFileName": zod.string().nullable(),
   "ckycResponseRequestId": zod.number().nullable(),
-  "ckycResponseAt": zod.coerce.date().nullable()
+  "ckycResponseAt": zod.coerce.date().nullable(),
+  "finfluxCkycUpdatedAt": zod.coerce.date().nullable()
 })),
   "total": zod.number(),
   "page": zod.number(),

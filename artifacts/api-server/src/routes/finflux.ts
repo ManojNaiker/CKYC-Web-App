@@ -1,4 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
+import { and, eq, or } from "drizzle-orm";
+import { db, finfluxCkycUpdatesTable } from "@workspace/db";
 import {
   CreateFinfluxCkycUpdateJobBody,
   CreateFinfluxCkycUpdateJobResponse,
@@ -20,6 +22,7 @@ import {
   FinfluxJobsBusyError,
   getFinfluxCkycUpdateJob,
 } from "../lib/finflux-update-jobs";
+import { persistFinfluxSuccessfulUpdates } from "../lib/finflux-update-status";
 
 const router: IRouter = Router();
 
@@ -43,7 +46,55 @@ router.post("/finflux/ckyc-import/preview", async (req, res): Promise<void> => {
       parsed.data.fileName.trim(),
       parsed.data.fileContentBase64,
     );
-    res.json(PreviewFinfluxCkycImportResponse.parse(preview));
+    const eligibleRows = preview.rows.filter(
+      (row) => row.valid && row.clientId && row.ckycNumber,
+    );
+    const updatedRows =
+      eligibleRows.length === 0
+        ? []
+        : await db
+            .select({
+              clientId: finfluxCkycUpdatesTable.clientId,
+              ckycNumber: finfluxCkycUpdatesTable.ckycNumber,
+            })
+            .from(finfluxCkycUpdatesTable)
+            .where(
+              or(
+                ...eligibleRows.map((row) =>
+                  and(
+                    eq(finfluxCkycUpdatesTable.clientId, row.clientId!),
+                    eq(finfluxCkycUpdatesTable.ckycNumber, row.ckycNumber!),
+                  ),
+                ),
+              ),
+            );
+    const updatedKeys = new Set(
+      updatedRows.map((row) => JSON.stringify([row.clientId, row.ckycNumber])),
+    );
+    const rows = preview.rows.map((row) => {
+      if (
+        !row.valid ||
+        !row.clientId ||
+        !row.ckycNumber ||
+        !updatedKeys.has(JSON.stringify([row.clientId, row.ckycNumber]))
+      ) {
+        return row;
+      }
+      return {
+        ...row,
+        valid: false,
+        error: "This ClientID and CKYC number have already been updated in Finflux.",
+      };
+    });
+    const validCount = rows.filter((row) => row.valid).length;
+    res.json(
+      PreviewFinfluxCkycImportResponse.parse({
+        ...preview,
+        rows,
+        validCount,
+        invalidCount: rows.length - validCount,
+      }),
+    );
   } catch (error) {
     if (error instanceof FinfluxImportError) {
       sendError(res, 400, error.message);
@@ -87,7 +138,11 @@ router.post("/finflux/ckyc-update-jobs", async (req, res): Promise<void> => {
   }
 
   try {
-    const accepted = await createFinfluxCkycUpdateJob(credentials, records);
+    const accepted = await createFinfluxCkycUpdateJob(
+      credentials,
+      records,
+      persistFinfluxSuccessfulUpdates,
+    );
     res.status(202).json(CreateFinfluxCkycUpdateJobResponse.parse(accepted));
   } catch (error) {
     if (error instanceof FinfluxAuthenticationError) {

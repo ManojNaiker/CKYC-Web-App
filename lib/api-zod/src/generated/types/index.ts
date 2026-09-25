@@ -39,6 +39,7 @@ export * from './dashboardSummary';
 export * from './dashboardSummaryPendingErrorsItem';
 export * from './errorResponse';
 export * from './exportCkycCreateDataParams';
+export * from './exportClientsFinfluxGroup';
 export * from './exportClientsParams';
 export * from './exportClientsStatus';
 export * from './finfluxCkycImportPreviewInput';
