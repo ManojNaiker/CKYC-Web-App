@@ -506,10 +506,6 @@ search?: string;
  * Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither
  */
 status?: ExportClientsStatus;
-/**
- * Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
- */
-finfluxGroup?: ExportClientsFinfluxGroup;
 };
 
 export type ExportClientsStatus = typeof ExportClientsStatus[keyof typeof ExportClientsStatus];
@@ -520,15 +516,6 @@ export const ExportClientsStatus = {
   error: 'error',
   awaiting: 'awaiting',
   pending: 'pending',
-} as const;
-
-export type ExportClientsFinfluxGroup = typeof ExportClientsFinfluxGroup[keyof typeof ExportClientsFinfluxGroup];
-
-
-export const ExportClientsFinfluxGroup = {
-  finalCkyc: 'finalCkyc',
-  requestIdUpdated: 'requestIdUpdated',
-  recordsPending: 'recordsPending',
 } as const;
 
 export type ListClientsParams = {
@@ -542,6 +529,10 @@ clientId?: number;
  * Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither
  */
 status?: ListClientsStatus;
+/**
+ * Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+ */
+finfluxGroup?: ListClientsFinfluxGroup;
 /**
  * @minimum 1
  */
@@ -561,6 +552,15 @@ export const ListClientsStatus = {
   error: 'error',
   awaiting: 'awaiting',
   pending: 'pending',
+} as const;
+
+export type ListClientsFinfluxGroup = typeof ListClientsFinfluxGroup[keyof typeof ListClientsFinfluxGroup];
+
+
+export const ListClientsFinfluxGroup = {
+  finalCkyc: 'finalCkyc',
+  requestIdUpdated: 'requestIdUpdated',
+  recordsPending: 'recordsPending',
 } as const;
 
 export type GetFinfluxCkycUpdateJobParams = {

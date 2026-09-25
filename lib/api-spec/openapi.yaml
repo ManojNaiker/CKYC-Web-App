@@ -62,13 +62,6 @@ paths:
           schema:
             type: string
             enum: [matched, error, awaiting, pending]
-        - name: finfluxGroup
-          in: query
-          required: false
-          description: Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
-          schema:
-            type: string
-            enum: [finalCkyc, requestIdUpdated, recordsPending]
       responses:
         "200":
           description: CSV report of matching clients and their CKYC results
@@ -101,6 +94,13 @@ paths:
           schema:
             type: string
             enum: [matched, error, awaiting, pending]
+        - name: finfluxGroup
+          in: query
+          required: false
+          description: Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+          schema:
+            type: string
+            enum: [finalCkyc, requestIdUpdated, recordsPending]
         - name: page
           in: query
           required: false

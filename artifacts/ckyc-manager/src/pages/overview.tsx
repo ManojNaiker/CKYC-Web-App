@@ -85,7 +85,7 @@ function ProgressRing({ value, count, label, color }: { value: number; count: nu
         </div>
       </div>
       <span className="text-center text-[10px] font-semibold text-foreground">{label}</span>
-      <span className="font-mono-ui text-[9px] text-muted-foreground">{formatNumber(count)} records</span>
+      <span className="font-mono-ui text-[9px] text-muted-foreground">{formatNumber(count)} {count === 1 ? 'record' : 'records'}</span>
     </div>
   );
 }
@@ -149,6 +149,9 @@ export default function Overview() {
   const finalCkycUpdated = data?.finalCkycUpdated ?? 0;
   const requestIdUpdated = data?.requestIdUpdated ?? 0;
   const recordsPending = data?.recordsPending ?? 0;
+  const finfluxUpdated = data?.finfluxUpdated ?? 0;
+  const finfluxPending = data?.finfluxPending ?? 0;
+  const finfluxTotal = finfluxUpdated + finfluxPending;
   const dateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
   return (
@@ -229,6 +232,13 @@ export default function Overview() {
                 <ProgressRing value={formatPercent(finalCkycUpdated, totalClients)} count={finalCkycUpdated} label="Final CKYC update" color="#ae75e4" />
                 <ProgressRing value={formatPercent(requestIdUpdated, totalClients)} count={requestIdUpdated} label="Request ID updated" color="#4a9bd2" />
                 <ProgressRing value={formatPercent(recordsPending, totalClients)} count={recordsPending} label="Records pending" color="#d2a94b" />
+              </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">FinFlux record updates</p>
+                <div className="mt-4 flex justify-around gap-3">
+                  <ProgressRing value={formatPercent(finfluxUpdated, finfluxTotal)} count={finfluxUpdated} label="Updated" color="#4aa37e" />
+                  <ProgressRing value={formatPercent(finfluxPending, finfluxTotal)} count={finfluxPending} label="Pending" color="#d2a94b" />
+                </div>
               </div>
               <div className="mt-7 grid grid-cols-2 gap-2">
                 <div className="rounded-xl bg-[#272733] p-4 text-white">

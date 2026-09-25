@@ -1,6 +1,11 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
-import { db, clientsTable, ckycRequestsTable } from "@workspace/db";
+import {
+  db,
+  clientsTable,
+  ckycRequestsTable,
+  finfluxCkycUpdatesTable,
+} from "@workspace/db";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -13,6 +18,8 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     finalCkycCount,
     requestIdCount,
     pendingCount,
+    finfluxUpdatedCount,
+    finfluxPendingCount,
     pendingErrorRows,
     lastClient,
     lastRequest,
@@ -44,6 +51,33 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
           and(
             isNull(clientsTable.ckycResponseId),
             isNull(clientsTable.ckycNumber),
+          ),
+        ),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(clientsTable)
+        .innerJoin(
+          finfluxCkycUpdatesTable,
+          and(
+            eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+            eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+          ),
+        )
+        .where(isNotNull(clientsTable.ckycNumber)),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(clientsTable)
+        .leftJoin(
+          finfluxCkycUpdatesTable,
+          and(
+            eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+            eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+          ),
+        )
+        .where(
+          and(
+            isNotNull(clientsTable.ckycNumber),
+            isNull(finfluxCkycUpdatesTable.id),
           ),
         ),
       db
@@ -93,6 +127,8 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       finalCkycUpdated: Number(finalCkycCount[0]?.count ?? 0),
       requestIdUpdated: Number(requestIdCount[0]?.count ?? 0),
       recordsPending: Number(pendingCount[0]?.count ?? 0),
+      finfluxUpdated: Number(finfluxUpdatedCount[0]?.count ?? 0),
+      finfluxPending: Number(finfluxPendingCount[0]?.count ?? 0),
       pendingErrors: pendingErrorRows.map((row) => ({
         name: row.name?.trim() || "Unknown error",
         count: Number(row.count ?? 0),

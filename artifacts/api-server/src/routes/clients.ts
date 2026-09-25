@@ -7,11 +7,17 @@ import {
   inArray,
   isNull,
   isNotNull,
+  notExists,
   or,
   sql,
   eq,
 } from "drizzle-orm";
-import { ckycCreateDataTable, db, clientsTable } from "@workspace/db";
+import {
+  ckycCreateDataTable,
+  db,
+  clientsTable,
+  finfluxCkycUpdatesTable,
+} from "@workspace/db";
 import {
   ExportClientsQueryParams,
   ImportClientsBody,
@@ -393,6 +399,7 @@ async function getCkycCreateMatchedClientIds(
 function toClientResponse(
   client: typeof clientsTable.$inferSelect,
   ckycCreateMatched = false,
+  finfluxCkycUpdatedAt: Date | null = null,
 ) {
   return {
     id: client.id,
@@ -425,6 +432,7 @@ function toClientResponse(
     ckycResponseFileName: client.ckycResponseFileName,
     ckycResponseRequestId: client.ckycResponseRequestId,
     ckycResponseAt: client.ckycResponseAt,
+    finfluxCkycUpdatedAt,
   };
 }
 
@@ -470,11 +478,50 @@ function getStatusFilter(status?: string) {
   }
 }
 
-function getClientFilter(search?: string, status?: string, clientId?: number) {
+function getFinfluxGroupFilter(finfluxGroup?: string) {
+  switch (finfluxGroup) {
+    case "finalCkyc":
+      return and(
+        isNotNull(clientsTable.ckycNumber),
+        sql`btrim(${clientsTable.ckycNumber}) <> ''`,
+        notExists(
+          db
+            .select({ id: finfluxCkycUpdatesTable.id })
+            .from(finfluxCkycUpdatesTable)
+            .where(
+              and(
+                eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+                eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+              ),
+            ),
+        ),
+      );
+    case "requestIdUpdated":
+      return and(
+        isNotNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
+      );
+    case "recordsPending":
+      return and(
+        isNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
+      );
+    default:
+      return undefined;
+  }
+}
+
+function getClientFilter(
+  search?: string,
+  status?: string,
+  clientId?: number,
+  finfluxGroup?: string,
+) {
   const searchFilter = getSearchFilter(search);
   const statusFilter = getStatusFilter(status);
   const clientIdFilter = clientId ? eq(clientsTable.id, clientId) : undefined;
-  return and(searchFilter, statusFilter, clientIdFilter);
+  const finfluxFilter = getFinfluxGroupFilter(finfluxGroup);
+  return and(searchFilter, statusFilter, clientIdFilter, finfluxFilter);
 }
 
 router.get("/clients", async (req, res): Promise<void> => {
@@ -484,14 +531,25 @@ router.get("/clients", async (req, res): Promise<void> => {
     return;
   }
 
-  const { search, status, clientId, page, pageSize } = parsed.data;
+  const { search, status, clientId, finfluxGroup, page, pageSize } =
+    parsed.data;
   const offset = (page - 1) * pageSize;
-  const filter = getClientFilter(search, status, clientId);
+  const filter = getClientFilter(search, status, clientId, finfluxGroup);
 
   const [rows, countRows] = await Promise.all([
     db
-      .select()
+      .select({
+        client: clientsTable,
+        finfluxCkycUpdatedAt: finfluxCkycUpdatesTable.updatedAt,
+      })
       .from(clientsTable)
+      .leftJoin(
+        finfluxCkycUpdatesTable,
+        and(
+          eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+          eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+        ),
+      )
       .where(filter)
       .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id))
       .limit(pageSize)
@@ -502,7 +560,7 @@ router.get("/clients", async (req, res): Promise<void> => {
       .where(filter),
   ]);
   const createMatchedClientIds = await getCkycCreateMatchedClientIds(
-    rows.map((client) => ({
+    rows.map(({ client }) => ({
       id: client.id,
       clientId: client.clientId,
       ckycNumber: client.ckycNumber,
@@ -510,8 +568,12 @@ router.get("/clients", async (req, res): Promise<void> => {
   );
 
   res.json({
-    items: rows.map((client) =>
-      toClientResponse(client, createMatchedClientIds.has(client.id)),
+    items: rows.map(({ client, finfluxCkycUpdatedAt }) =>
+      toClientResponse(
+        client,
+        createMatchedClientIds.has(client.id),
+        finfluxCkycUpdatedAt,
+      ),
     ),
     total: Number(countRows[0]?.count ?? 0),
     page,

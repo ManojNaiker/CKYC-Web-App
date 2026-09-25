@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ExportClientsFinfluxGroup = typeof ExportClientsFinfluxGroup[keyof typeof ExportClientsFinfluxGroup];
+export type ListClientsFinfluxGroup = typeof ListClientsFinfluxGroup[keyof typeof ListClientsFinfluxGroup];
 
 
-export const ExportClientsFinfluxGroup = {
+export const ListClientsFinfluxGroup = {
   finalCkyc: 'finalCkyc',
   requestIdUpdated: 'requestIdUpdated',
   recordsPending: 'recordsPending',

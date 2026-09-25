@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListClientsFinfluxGroup } from './listClientsFinfluxGroup';
 import type { ListClientsStatus } from './listClientsStatus';
 
 export type ListClientsParams = {
@@ -18,6 +19,10 @@ clientId?: number;
  * Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither
  */
 status?: ListClientsStatus;
+/**
+ * Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+ */
+finfluxGroup?: ListClientsFinfluxGroup;
 /**
  * @minimum 1
  */

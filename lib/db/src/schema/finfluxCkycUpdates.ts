@@ -6,6 +6,8 @@ import {
   timestamp,
   unique,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod/v4";
 
 export const finfluxCkycUpdatesTable = pgTable(
   "finflux_ckyc_updates",
@@ -25,3 +27,12 @@ export const finfluxCkycUpdatesTable = pgTable(
     ),
   ],
 );
+
+export const insertFinfluxCkycUpdateSchema = createInsertSchema(
+  finfluxCkycUpdatesTable,
+).omit({ id: true, updatedAt: true });
+
+export type InsertFinfluxCkycUpdate = z.infer<
+  typeof insertFinfluxCkycUpdateSchema
+>;
+export type FinfluxCkycUpdate = typeof finfluxCkycUpdatesTable.$inferSelect;

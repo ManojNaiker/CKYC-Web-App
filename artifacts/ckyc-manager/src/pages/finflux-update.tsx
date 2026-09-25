@@ -1,4 +1,5 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   ChevronLeft,
@@ -35,6 +36,7 @@ import { EmptyState, PageIntro, QueryError } from '@/components/workspace-shell'
 
 type Mode = 'clients' | 'file';
 type SelectedRecord = { clientId: string; ckycNumber: string; clientName?: string };
+type FinfluxGroup = 'finalCkyc' | 'requestIdUpdated' | 'recordsPending';
 
 const PAGE_SIZE = 8;
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
@@ -69,6 +71,12 @@ function initials(name: string) {
 function isAuthError(error: unknown) {
   const message = errorMessage(error).toLowerCase();
   return message.includes('401') || message.includes('unauthor') || message.includes('credential') || message.includes('password') || message.includes('login');
+}
+
+function isNotFoundError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const value = error as { status?: unknown; response?: { status?: unknown } };
+  return value.status === 404 || value.response?.status === 404;
 }
 
 function formatDate(value: string | null | undefined) {
@@ -209,6 +217,7 @@ function FilePreview({ preview, onClear }: { preview: FinfluxCkycImportPreviewRe
 export default function FinfluxUpdate() {
   const [mode, setMode] = useState<Mode>('clients');
   const [search, setSearch] = useState('');
+  const [finfluxGroup, setFinfluxGroup] = useState<FinfluxGroup>('finalCkyc');
   const [page, setPage] = useState(1);
   const [selectedRecords, setSelectedRecords] = useState<Record<string, SelectedRecord>>({});
   const [fileName, setFileName] = useState('');
@@ -218,8 +227,9 @@ export default function FinfluxUpdate() {
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [jobId, setJobId] = useState(getSavedJobId);
+  const queryClient = useQueryClient();
 
-  const clientParams = useMemo(() => ({ search: search.trim() || undefined, page, pageSize: PAGE_SIZE }), [page, search]);
+  const clientParams = useMemo(() => ({ search: search.trim() || undefined, page, pageSize: PAGE_SIZE, finfluxGroup }), [finfluxGroup, page, search]);
   const clientsQuery = useListClients(clientParams, { query: { queryKey: getListClientsQueryKey(clientParams) } });
   const clients = clientsQuery.data?.items ?? [];
   const total = clientsQuery.data?.total ?? 0;
@@ -227,7 +237,8 @@ export default function FinfluxUpdate() {
   const selectedList = useMemo(() => Object.values(selectedRecords), [selectedRecords]);
   const validSelected = useMemo(() => selectedList.filter((record) => record.clientId.trim() && record.ckycNumber.trim()), [selectedList]);
   const validPreview = useMemo(() => (preview?.rows ?? []).filter((row) => row.valid && row.clientId?.trim() && row.ckycNumber?.trim()), [preview]);
-  const currentPageSelected = clients.length > 0 && clients.every((client) => Boolean(selectedRecords[client.ClientID]));
+  const canEditSelectedRecords = finfluxGroup === 'finalCkyc';
+  const currentPageSelected = canEditSelectedRecords && clients.length > 0 && clients.every((client) => Boolean(selectedRecords[client.ClientID]));
 
   const previewMutation = usePreviewFinfluxCkycImport();
   const createJobMutation = useCreateFinfluxCkycUpdateJob();
@@ -245,6 +256,20 @@ export default function FinfluxUpdate() {
     },
   );
   const job = jobQuery.data;
+  useEffect(() => {
+    if (isNotFoundError(jobQuery.error)) {
+      setJobId('');
+      try {
+        window.sessionStorage.removeItem(JOB_STORAGE_KEY);
+      } catch {
+        // The job monitor can still recover on this page if storage is unavailable.
+      }
+      return;
+    }
+    if (job?.status === 'completed' || job?.status === 'failed') {
+      void queryClient.invalidateQueries();
+    }
+  }, [job?.status, jobQuery.error, queryClient]);
   const records = mode === 'clients'
     ? validSelected.map(({ clientId, ckycNumber }) => ({ clientId, ckycNumber }))
     : validPreview.map((row) => ({ clientId: row.clientId as string, ckycNumber: row.ckycNumber as string }));
@@ -252,6 +277,7 @@ export default function FinfluxUpdate() {
   const canSubmit = Boolean(username.trim() && password && records.length > 0 && records.length <= 1000 && !createJobMutation.isPending);
 
   const toggleClient = (client: Client) => {
+    if (!canEditSelectedRecords) return;
     setSelectedRecords((current) => {
       if (current[client.ClientID]) {
         const next = { ...current };
@@ -263,10 +289,12 @@ export default function FinfluxUpdate() {
   };
 
   const updateClientNumber = (client: Client, value: string) => {
+    if (!canEditSelectedRecords) return;
     setSelectedRecords((current) => ({ ...current, [client.ClientID]: { clientId: client.ClientID, ckycNumber: value, clientName: client.ClientName } }));
   };
 
   const toggleCurrentPage = () => {
+    if (!canEditSelectedRecords) return;
     setSelectedRecords((current) => {
       const next = { ...current };
       if (currentPageSelected) {
@@ -357,17 +385,18 @@ export default function FinfluxUpdate() {
             <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs" aria-label="Select LMS clients">
               <div className="border-b border-border px-5 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Source register</p><h3 className="mt-1 font-display text-[20px] font-semibold">Choose client records</h3><p className="mt-1 text-[11px] text-muted-foreground">Outgoing client ID: LMS ClientID. Database IDs are not sent.</p></div><div className="rounded-lg bg-secondary px-3 py-2 text-right"><p className="font-mono-ui text-[9px] uppercase tracking-[.12em] text-muted-foreground">Selected</p><p className="font-mono-ui text-[18px] font-semibold text-primary">{selectedList.length}</p></div></div>
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"><label className="relative min-w-0 flex-1"><Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><span className="sr-only">Search clients</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search name, loan ID or ClientID" className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-search-finflux-clients" /></label><button onClick={toggleCurrentPage} disabled={!clients.length} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-page"><ListChecks size={14} /> {currentPageSelected ? 'Clear page' : 'Select page'}</button></div>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"><label className="sm:w-[225px]"><span className="sr-only">Filter CKYC readiness group</span><select value={finfluxGroup} onChange={(event) => { setFinfluxGroup(event.target.value as FinfluxGroup); setSelectedRecords({}); setPage(1); }} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="select-finflux-group"><option value="finalCkyc">Final CKYC update</option><option value="requestIdUpdated">Request ID updated</option><option value="recordsPending">Records pending</option></select></label><label className="relative min-w-0 flex-1"><Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><span className="sr-only">Search clients</span><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search name, loan ID or ClientID" className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-search-finflux-clients" /></label><button onClick={toggleCurrentPage} disabled={!clients.length || !canEditSelectedRecords} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-page"><ListChecks size={14} /> {currentPageSelected ? 'Clear page' : 'Select page'}</button></div>{!canEditSelectedRecords && <p className="mt-3 rounded-lg border border-[#eadcae] bg-[#fff8e5] px-3 py-2 text-[10px] leading-5 text-[#81651c]">These clients do not have a final CKYC number yet, so they are view-only and cannot be sent to FinFlux.</p>}
               </div>
               {clientsQuery.isError ? <div className="p-5"><QueryError onRetry={() => clientsQuery.refetch()} /></div> : clientsQuery.isLoading ? <div className="space-y-3 p-5">{[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-[72px] animate-pulse rounded-lg bg-muted" />)}</div> : clients.length === 0 ? <EmptyState icon={Database} title={search ? 'No clients match this search' : 'No LMS clients available'} detail={search ? 'Try a ClientID, name or loan ID with fewer terms.' : 'Import LMS rows before preparing a Finflux update.'} /> : (
                 <>
-                  <div className="overflow-x-auto"><table className="data-table w-full min-w-[700px] text-left"><thead className="bg-secondary/45"><tr className="border-b border-border text-muted-foreground"><th className="w-12 px-5 py-3"><span className="sr-only">Select</span></th><th className="px-3 py-3">Client</th><th className="px-3 py-3">Loan ID</th><th className="px-3 py-3">Outgoing CKYC number</th></tr></thead><tbody className="divide-y divide-border">{clients.map((client) => {
+                  <div className="overflow-x-auto"><table className="data-table w-full min-w-[780px] text-left"><thead className="bg-secondary/45"><tr className="border-b border-border text-muted-foreground"><th className="w-12 px-5 py-3"><span className="sr-only">Select</span></th><th className="px-3 py-3">Client</th><th className="px-3 py-3">Loan ID</th><th className="px-3 py-3">FinFlux status</th><th className="px-3 py-3">Outgoing CKYC number</th></tr></thead><tbody className="divide-y divide-border">{clients.map((client) => {
                     const selected = selectedRecords[client.ClientID];
                     return <tr key={client.id} className={`transition-colors ${selected ? 'bg-[#f4faf8]' : 'hover:bg-secondary/30'}`} data-testid={`row-finflux-client-${client.id}`}>
-                      <td className="px-5 py-4"><input type="checkbox" checked={Boolean(selected)} onChange={() => toggleClient(client)} aria-label={`Select ${client.ClientName}`} className="size-4 accent-[hsl(var(--primary))]" data-testid={`checkbox-finflux-client-${client.id}`} /></td>
+                      <td className="px-5 py-4"><input type="checkbox" checked={Boolean(selected)} disabled={!canEditSelectedRecords} onChange={() => toggleClient(client)} aria-label={`Select ${client.ClientName}`} className="size-4 accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-40" data-testid={`checkbox-finflux-client-${client.id}`} /></td>
                       <td className="px-3 py-4"><div className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#dcefeb] font-mono-ui text-[9px] font-semibold text-primary">{initials(client.ClientName)}</span><div><p className="text-[12px] font-semibold">{client.ClientName}</p><p className="mt-0.5 font-mono-ui text-[10px] text-muted-foreground">{client.ClientID}</p></div></div></td>
                       <td className="px-3 py-4 font-mono-ui text-[10px] text-muted-foreground">{client.loanid}</td>
-                      <td className="px-3 py-4"><label><span className="sr-only">CKYC number for {client.ClientName}</span><input value={selected?.ckycNumber ?? client.ckycNumber ?? ''} onChange={(event) => updateClientNumber(client, event.target.value)} placeholder="Enter CKYC number" className={`h-9 w-full max-w-[205px] rounded-md border bg-background px-2.5 font-mono-ui text-[11px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 ${selected && !selected.ckycNumber.trim() ? 'border-[#d2a94b]' : 'border-input'}`} data-testid={`input-finflux-ckyc-${client.id}`} /></label>{client.ckycNumber && <p className="mt-1 text-[9px] text-primary">Saved final CKYC prefilled</p>}</td>
+                      <td className="px-3 py-4">{client.finfluxCkycUpdatedAt ? <span className="inline-flex rounded-full bg-[#dcf3e9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#31734d]">Updated</span> : client.ckycNumber ? <span className="inline-flex rounded-full bg-[#fff0c9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#9d761f]">Pending</span> : <span className="inline-flex rounded-full bg-secondary px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-muted-foreground">Final CKYC required</span>}</td>
+                      <td className="px-3 py-4"><label><span className="sr-only">CKYC number for {client.ClientName}</span><input value={selected?.ckycNumber ?? client.ckycNumber ?? ''} disabled={!canEditSelectedRecords} onChange={(event) => updateClientNumber(client, event.target.value)} placeholder="Enter CKYC number" className={`h-9 w-full max-w-[205px] rounded-md border bg-background px-2.5 font-mono-ui text-[11px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 ${selected && !selected.ckycNumber.trim() ? 'border-[#d2a94b]' : 'border-input'}`} data-testid={`input-finflux-ckyc-${client.id}`} /></label>{client.ckycNumber && <p className="mt-1 text-[9px] text-primary">Saved final CKYC prefilled</p>}</td>
                     </tr>;
                   })}</tbody></table></div>
                   <div className="flex items-center justify-between border-t border-border px-5 py-3"><p className="font-mono-ui text-[10px] text-muted-foreground">{total ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}` : '0 clients'}</p><div className="flex items-center gap-1"><button disabled={page <= 1} onClick={() => setPage((current) => current - 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Previous client page" data-testid="button-finflux-previous-page"><ChevronLeft size={15} /></button><span className="px-2 font-mono-ui text-[10px] text-muted-foreground">{page} / {pageCount}</span><button disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Next client page" data-testid="button-finflux-next-page"><ChevronRight size={15} /></button></div></div>

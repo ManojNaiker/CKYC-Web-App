@@ -43,8 +43,7 @@ export const GetDashboardSummaryResponse = zod.object({
  */
 export const ExportClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
-  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither'),
-  "finfluxGroup": zod.enum(['finalCkyc', 'requestIdUpdated', 'recordsPending']).optional().describe('Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.')
+  "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither')
 })
 
 export const ExportClientsResponse = zod.unknown()
@@ -65,6 +64,7 @@ export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clientId": zod.coerce.number().min(1).optional().describe('Filter to one stored client record by database ID'),
   "status": zod.enum(['matched', 'error', 'awaiting', 'pending']).optional().describe('Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither'),
+  "finfluxGroup": zod.enum(['finalCkyc', 'requestIdUpdated', 'recordsPending']).optional().describe('Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.'),
   "page": zod.coerce.number().min(1).default(listClientsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listClientsQueryPageSizeMax).default(listClientsQueryPageSizeDefault)
 })
