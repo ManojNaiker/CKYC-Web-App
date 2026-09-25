@@ -12,6 +12,20 @@ function DetailItem({ label, value }: { label: string; value: string | null | un
   );
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+}
+
 export default function ClientDetail() {
   const params = useParams<{ clientId: string }>();
   const clientId = decodeURIComponent(params.clientId ?? '');
@@ -32,6 +46,7 @@ export default function ClientDetail() {
   const isCreateMatch = client.ckycResponseMatchStatus === 'Match via Create CKYC';
   const isUnresolvedResponseError =
     client.ckycResponseStatus === 'error' && !hasFinalCkyc;
+  const isFinfluxUpdated = Boolean(client.finfluxCkycUpdatedAt);
   const responseStatus = hasFinalCkyc
     ? isCreateMatch
       ? 'Final CKYC saved from Create data'
@@ -104,6 +119,34 @@ export default function ClientDetail() {
               <DetailItem label="Response file" value={client.ckycResponseFileName} />
               {client.ckycResponseError && <DetailItem label={hasFinalCkyc ? 'Previous response message' : 'Response message'} value={client.ckycResponseError} />}
             </div>
+          </section>
+          <section
+            className="rounded-xl border border-border bg-card p-5 shadow-xs"
+            data-testid="finflux-client-status"
+            aria-label="FinFlux update status"
+          >
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.17em] text-muted-foreground">FinFlux update status</p>
+            <div className="mt-5 flex items-start gap-3">
+              <span className={`grid size-9 place-items-center rounded-lg ${isFinfluxUpdated ? 'bg-[#e2f2e9] text-[#31734d]' : hasFinalCkyc ? 'bg-[#fff1d6] text-[#9b6915]' : 'bg-secondary text-muted-foreground'}`}>
+                {isFinfluxUpdated ? <CheckCircle2 size={17} /> : <Clock3 size={17} />}
+              </span>
+              <div>
+                <p className="text-[13px] font-bold">{isFinfluxUpdated ? 'Updated' : hasFinalCkyc ? 'Pending' : 'Final CKYC required'}</p>
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  {isFinfluxUpdated
+                    ? 'The saved Final CKYC number was confirmed in FinFlux.'
+                    : hasFinalCkyc
+                      ? 'A Final CKYC number is saved, but this identifier has not been confirmed in FinFlux.'
+                      : 'Save a Final CKYC number before sending this record to FinFlux.'}
+                </p>
+              </div>
+            </div>
+            {client.finfluxCkycUpdatedAt && (
+              <div className="mt-4 border-t border-border pt-3">
+                <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Status recorded in manager</p>
+                <p className="mt-1 text-[11px] font-semibold text-foreground">{formatDate(client.finfluxCkycUpdatedAt)}</p>
+              </div>
+            )}
           </section>
         </aside>
       </div>
