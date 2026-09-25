@@ -1234,7 +1234,7 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"ABCDE1234F"/);
     assert.match(csv, /"02-01-2026"/);
     assert.match(csv, /"'60046100000000"/);
-    assert.match(csv, /"Matched"/);
+    assert.match(csv, /"Final CKYC available"/);
     assert.match(csv, /"Matched by UID"/);
     assert.match(csv, /"Match"/);
     assert.match(csv, /"20\|1\|E\|1234\|Asha\|02-01-2026\|F\|"/);

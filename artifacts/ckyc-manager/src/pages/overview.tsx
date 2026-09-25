@@ -105,7 +105,7 @@ function PendingErrorChart({
         <div>
           <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Pending records</p>
           <h3 className="mt-1 font-display text-[22px] font-semibold tracking-[-.025em] text-foreground">Why records are pending</h3>
-          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">Error share is calculated against all records still waiting for a CKYC response ID.</p>
+          <p className="mt-2 text-[11px] leading-5 text-muted-foreground">Pending records have neither a response ID nor a Final CKYC number.</p>
         </div>
         <div className="rounded-xl bg-[#fff0c9] px-3 py-2 text-right">
           <p className="font-mono-ui text-[18px] font-semibold leading-none text-[#9d761f]">{formatNumber(pendingCount)}</p>

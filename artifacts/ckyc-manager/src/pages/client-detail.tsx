@@ -28,8 +28,14 @@ export default function ClientDetail() {
   }
   if (query.isError || !client) return <QueryError onRetry={() => query.refetch()} />;
 
-  const responseStatus = client.ckycNumber
-    ? 'Final CKYC saved'
+  const hasFinalCkyc = Boolean(client.ckycNumber?.trim());
+  const isCreateMatch = client.ckycResponseMatchStatus === 'Match via Create CKYC';
+  const isUnresolvedResponseError =
+    client.ckycResponseStatus === 'error' && !hasFinalCkyc;
+  const responseStatus = hasFinalCkyc
+    ? isCreateMatch
+      ? 'Final CKYC saved from Create data'
+      : 'Final CKYC saved'
     : client.ckycResponseId
       ? 'CKYC response ID received'
       : client.ckycResponseStatus === 'error'
@@ -86,17 +92,17 @@ export default function ClientDetail() {
           <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
             <p className="font-mono-ui text-[9px] uppercase tracking-[.17em] text-muted-foreground">CKYC status</p>
             <div className="mt-5 flex items-start gap-3">
-              <span className={`grid size-9 place-items-center rounded-lg ${client.ckycResponseStatus === 'error' ? 'bg-[#fff1d6] text-[#9b6915]' : client.ckycResponseId || client.ckycNumber ? 'bg-[#e2f2e9] text-[#31734d]' : 'bg-secondary text-primary'}`}>
-                {client.ckycResponseStatus === 'error' ? <Clock3 size={17} /> : <CheckCircle2 size={17} />}
+              <span className={`grid size-9 place-items-center rounded-lg ${isUnresolvedResponseError ? 'bg-[#fff1d6] text-[#9b6915]' : client.ckycResponseId || client.ckycNumber ? 'bg-[#e2f2e9] text-[#31734d]' : 'bg-secondary text-primary'}`}>
+                {isUnresolvedResponseError ? <Clock3 size={17} /> : <CheckCircle2 size={17} />}
               </span>
-              <div><p className="text-[13px] font-bold">{responseStatus}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Matched by {client.ckycResponseMatchedBy || '—'}</p></div>
+              <div><p className="text-[13px] font-bold">{responseStatus}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{isCreateMatch ? 'Source: CKYC Create data' : `Matched by ${client.ckycResponseMatchedBy || '—'}`}</p></div>
             </div>
             <div className="mt-5 space-y-3 border-t border-border pt-4">
               <DetailItem label="CKYC response ID" value={client.ckycResponseId} />
               <DetailItem label="Response match status" value={client.ckycResponseMatchStatus} />
               <DetailItem label="Final CKYC number" value={client.ckycNumber} />
               <DetailItem label="Response file" value={client.ckycResponseFileName} />
-              {client.ckycResponseError && <DetailItem label="Response message" value={client.ckycResponseError} />}
+              {client.ckycResponseError && <DetailItem label={hasFinalCkyc ? 'Previous response message' : 'Response message'} value={client.ckycResponseError} />}
             </div>
           </section>
         </aside>

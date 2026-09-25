@@ -8,3 +8,9 @@ Successful CKYC Create rows with a valid CKYC number should fill matching LMS cl
 **Why:** CKYC Create uploads were originally stored only as reconciliation batches, leaving thousands of confirmed numbers absent from the LMS register. Existing numbers may come from an earlier verified workflow and must not be silently overwritten.
 
 **How to apply:** Match by Client ID, accept only successful portal rows with non-blank CKYC numbers, deduplicate identical values, reject conflicts, and use bounded bulk updates for large uploads.
+
+A client with a nonblank Final CKYC number is operationally resolved even if an earlier response-file lookup failed. Preserve that old error as audit history, but do not treat it as a current pending/error state.
+
+**Why:** Create results can resolve the final CKYC after a failed identity search; rewriting the saved response would erase valid history, while counting it as pending misstates the current client state.
+
+**How to apply:** Keep the raw response status and message unchanged, derive active status and pending/error filters from whether a Final CKYC number exists, and label retained errors as previous response messages.

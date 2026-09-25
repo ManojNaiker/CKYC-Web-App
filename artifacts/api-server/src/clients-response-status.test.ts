@@ -89,6 +89,10 @@ describe("CKYC response match status", () => {
   });
 
   it("prefers safe Create matches in the list and export without changing other classifications", async () => {
+    const dashboardBefore = await requestJson<{
+      recordsPending: number;
+      pendingErrors: Array<{ name: string; count: number }>;
+    }>(baseUrl, "/dashboard/summary");
     const rows: ClientInput[] = [
       {
         loanid: `${loanPrefix}-create-match`,
@@ -159,11 +163,13 @@ describe("CKYC response match status", () => {
 
     await pool.query(
       `UPDATE clients
-       SET ckyc_number = $1, ckyc_response_id = $2, ckyc_response_matched_row = $3
+       SET ckyc_number = $1, ckyc_response_id = NULL,
+           ckyc_response_status = 'error', ckyc_response_error = $2,
+           ckyc_response_matched_row = $3
        WHERE loanid = $4`,
       [
         createNumber,
-        `RESPONSE-${runId}-CREATE`,
+        `Create-resolved-response-error-${runId}`,
         matchedRow(`RESPONSE-${runId}-CREATE`, "UNRELATED PERSON"),
         `${loanPrefix}-create-match`,
       ],
@@ -180,11 +186,13 @@ describe("CKYC response match status", () => {
     );
     await pool.query(
       `UPDATE clients
-       SET ckyc_number = $1, ckyc_response_id = $2, ckyc_response_matched_row = $3
+       SET ckyc_number = $1, ckyc_response_id = NULL,
+           ckyc_response_status = 'error', ckyc_response_error = $2,
+           ckyc_response_matched_row = $3
        WHERE loanid = $4`,
       [
         ambiguousNumberA,
-        `RESPONSE-${runId}-AMBIGUOUS`,
+        `Ambiguous-create-error-${runId}`,
         matchedRow(`RESPONSE-${runId}-AMBIGUOUS`, "UNRELATED PERSON"),
         `${loanPrefix}-ambiguous`,
       ],
@@ -251,6 +259,7 @@ describe("CKYC response match status", () => {
       items: Array<{
         loanid: string;
         ckycResponseMatchStatus: string | null;
+        ckycResponseStatus: "matched" | "error" | null;
       }>;
     }>(
       baseUrl,
@@ -272,32 +281,81 @@ describe("CKYC response match status", () => {
     );
     assert.equal(listStatusByLoanId.get(`${loanPrefix}-ambiguous`), "Not Match");
     assert.equal(listStatusByLoanId.get(`${loanPrefix}-rejected`), null);
+    assert.equal(
+      clientList.items.find(
+        (client) => client.loanid === `${loanPrefix}-create-match`,
+      )?.ckycResponseStatus,
+      "error",
+      "the saved response error remains available as history",
+    );
+
+    const pendingClients = await requestJson<{ total: number }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&status=pending`,
+    );
+    const errorClients = await requestJson<{ total: number }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&status=error`,
+    );
+    const matchedClients = await requestJson<{ total: number }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&status=matched`,
+    );
+    assert.equal(pendingClients.total, 0);
+    assert.equal(errorClients.total, 0);
+    assert.equal(matchedClients.total, 4);
+
+    const dashboardAfter = await requestJson<{
+      recordsPending: number;
+      pendingErrors: Array<{ name: string; count: number }>;
+    }>(baseUrl, "/dashboard/summary");
+    assert.equal(dashboardAfter.recordsPending, dashboardBefore.recordsPending);
+    assert.equal(
+      dashboardAfter.pendingErrors.some(
+        (error) =>
+          error.name === `Create-resolved-response-error-${runId}` ||
+          error.name === `Ambiguous-create-error-${runId}`,
+      ),
+      false,
+    );
 
     const exportResponse = await fetch(
       `${baseUrl}/clients/export?search=${encodeURIComponent(loanPrefix)}`,
     );
     assert.equal(exportResponse.status, 200);
     const csv = await exportResponse.text();
-    const exportedStatuses = new Map(
+    const exportedRowsByLoanId = new Map(
       csv
         .trim()
         .split(/\r?\n/)
         .slice(1)
         .map((line) => line.split(","))
-        .map((columns) => [columns[1]?.replaceAll('"', ""), columns[13]]),
+        .map((columns) => [
+          columns[1]?.replaceAll('"', "") ?? "",
+          columns,
+        ] as const),
     );
     assert.equal(
-      exportedStatuses.get(`${loanPrefix}-create-match`),
+      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[10],
+      '"Final CKYC available"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[13],
       '"Match via Create CKYC"',
     );
     assert.equal(
-      exportedStatuses.get(`${loanPrefix}-legacy-match`),
+      exportedRowsByLoanId.get(`${loanPrefix}-legacy-match`)?.[13],
       '"Properly Match"',
     );
     assert.equal(
-      exportedStatuses.get(`${loanPrefix}-ambiguous`),
+      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[10],
+      '"Final CKYC available"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[13],
       '"Not Match"',
     );
-    assert.equal(exportedStatuses.get(`${loanPrefix}-rejected`), '""');
+    assert.equal(exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[10], '"Final CKYC available"');
+    assert.equal(exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[13], '""');
   });
 });

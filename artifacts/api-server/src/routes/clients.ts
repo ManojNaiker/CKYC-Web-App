@@ -287,11 +287,13 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     formatReportDate(row.disbursedOnDate),
     row.ckycResponseId,
     row.ckycNumber,
-    row.ckycResponseStatus === "matched"
-      ? "Matched"
-      : row.ckycResponseStatus === "error"
-        ? "Error"
-        : "Awaiting response",
+    row.ckycNumber?.trim()
+      ? "Final CKYC available"
+      : row.ckycResponseStatus === "matched"
+        ? "Matched"
+        : row.ckycResponseStatus === "error"
+          ? "Error"
+          : "Awaiting response",
     row.ckycResponseError,
     row.ckycResponseMatchedBy,
     row.ckycCreateMatched
@@ -442,19 +444,27 @@ function getSearchFilter(search?: string) {
 function getStatusFilter(status?: string) {
   switch (status) {
     case "matched":
-      return isNotNull(clientsTable.ckycResponseId);
+      return or(
+        isNotNull(clientsTable.ckycResponseId),
+        isNotNull(clientsTable.ckycNumber),
+      );
     case "error":
       return and(
         isNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
         eq(clientsTable.ckycResponseStatus, "error"),
       );
     case "awaiting":
       return and(
         isNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
         isNull(clientsTable.ckycResponseStatus),
       );
     case "pending":
-      return isNull(clientsTable.ckycResponseId);
+      return and(
+        isNull(clientsTable.ckycResponseId),
+        isNull(clientsTable.ckycNumber),
+      );
     default:
       return undefined;
   }

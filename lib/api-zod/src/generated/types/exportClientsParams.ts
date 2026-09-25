@@ -10,7 +10,7 @@ import type { ExportClientsStatus } from './exportClientsStatus';
 export type ExportClientsParams = {
 search?: string;
 /**
- * Filter clients by CKYC response status; pending includes clients without a CKYC response ID
+ * Filter clients by CKYC progress; matched includes a response ID or final CKYC number, while pending includes neither
  */
 status?: ExportClientsStatus;
 };

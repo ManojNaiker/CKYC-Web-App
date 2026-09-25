@@ -40,7 +40,12 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       db
         .select({ count: sql<number>`count(*)` })
         .from(clientsTable)
-        .where(isNull(clientsTable.ckycResponseId)),
+        .where(
+          and(
+            isNull(clientsTable.ckycResponseId),
+            isNull(clientsTable.ckycNumber),
+          ),
+        ),
       db
         .select({
           name: clientsTable.ckycResponseError,
@@ -50,6 +55,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
         .where(
           and(
             isNull(clientsTable.ckycResponseId),
+            isNull(clientsTable.ckycNumber),
             eq(clientsTable.ckycResponseStatus, "error"),
           ),
         )

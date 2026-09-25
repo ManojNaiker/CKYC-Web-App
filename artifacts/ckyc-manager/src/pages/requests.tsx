@@ -317,9 +317,11 @@ function CreateRequest({ onClose }: { onClose: () => void }) {
                     </span>
                     <span className="mt-0.5 block font-mono-ui text-[10px] text-muted-foreground">
                       {client.ClientID} ·{" "}
-                      {client.ckycResponseStatus === "error"
-                        ? "Previous request error"
-                        : "Awaiting response"}{" "}
+                      {client.ckycNumber
+                        ? "Final CKYC available"
+                        : client.ckycResponseStatus === "error"
+                          ? "Previous request error"
+                          : "Awaiting response"}{" "}
                       · {client.Client_UID ? "Aadhaar" : "No Aadhaar"} ·{" "}
                       {
                         [client.Client_VID, client.Client_PAN].filter(Boolean)
