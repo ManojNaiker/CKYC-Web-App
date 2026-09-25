@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
+
+.ckyc-preview-page {
+  --background: 240 15% 97%;
+  --foreground: 231 18% 19%;
+  --border: 240 13% 89%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 34% 20%;
+  --primary: 163 48% 43%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 260 52% 96%;
+  --secondary-foreground: 231 18% 28%;
+  --muted: 240 15% 94%;
+  --muted-foreground: 231 10% 51%;
+  --accent: 42 82% 63%;
+  --accent-foreground: 231 18% 20%;
+  --destructive: 4 58% 48%;
+  --destructive-foreground: 42 40% 98%;
+  --input: 38 20% 79%;
+  --ring: 198 86% 43%;
+  --font-sans: 'Manrope', sans-serif;
+  --app-font-serif: 'Source Serif 4', Georgia, serif;
+  --app-font-mono: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+.ckyc-typography-surface h1,
+.ckyc-typography-surface h2,
+.ckyc-typography-surface h3,
+.ckyc-typography-surface h4 {
+  font-family: var(--app-font-serif);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+}
+
+.ckyc-typography-surface .font-display {
+  font-family: var(--app-font-serif);
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  font-optical-sizing: auto;
+}
+
+.ckyc-typography-surface .font-mono-ui {
+  font-family: var(--app-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.ckyc-typography-surface .data-table th {
+  font-family: var(--app-font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.105em;
+  text-transform: uppercase;
+}
+
+.ckyc-preview-page.classic {
+  --font-sans: 'Inter', sans-serif;
+  --muted-foreground: 231 12% 43%;
+  font-size: 15px;
+  line-height: 1.65;
+  letter-spacing: 0;
+}

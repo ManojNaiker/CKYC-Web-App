@@ -1,0 +1,35 @@
+.ckyc-preview-page.classic [class~="text-[8px]"] {
+  font-size: 0.625rem;
+  line-height: 1.3;
+}
+
+.ckyc-preview-page.classic [class~="text-[9px]"] {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.ckyc-preview-page.classic [class~="text-[10px]"] {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.ckyc-preview-page.classic [class~="text-[11px]"] {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.ckyc-preview-page.classic [class~="text-[12px]"] {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ckyc-preview-page.classic [class~="text-[13px]"] {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.ckyc-preview-page.classic .data-table th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
