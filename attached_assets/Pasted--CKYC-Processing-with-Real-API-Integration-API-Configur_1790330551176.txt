@@ -1,0 +1,82 @@
+   """CKYC Processing with Real API Integration"""
+    
+    # API Configuration
+    API_BASE_URL = 'https://light.finflux.io/fineract-provider/api'
+    TENANT_ID = 'light'
+    
+    # Document Type ID for CKYC
+    CKYC_DOCUMENT_TYPE = 2274
+    
+    def __init__(self):
+        self.access_token = None
+        self.username = None
+        self.session_start = datetime.now()
+        self.logs = []
+        self.processing_results = []
+    
+    def log(self, level, message, details=None):
+        """Add detailed log entry"""
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        log_entry = {
+            'timestamp': timestamp,
+            'level': level,
+            'message': message,
+            'details': details
+        }
+        self.logs.append(log_entry)
+        
+        # Console output with colors
+        colors = {
+            'SUCCESS': '\033[92m✓',
+            'ERROR': '\033[91m✗',
+            'WARNING': '\033[93m⚠',
+            'INFO': '\033[94mℹ',
+            'ACTIVITY': '\033[95m⚡'
+        }
+        reset = '\033[0m'
+        
+        icon = colors.get(level, '')
+        print(f"{timestamp} {icon} {message}{reset}")
+        if details:
+            print(f"         {details}")
+    
+    def authenticate(self, username, password):
+        """Authenticate and get OAuth2 token"""
+        self.log('INFO', 'Starting authentication', f'User: {username}')
+        
+        try:
+            response = requests.post(
+                f'{self.API_BASE_URL}/oauth/token',
+                headers={'Content-Type': 'application/json'},
+                json={
+                    'client_id': 'access-token-app',
+                    'grant_type': 'password',
+                    'isPasswordEncrypted': 'false',
+                    'username': username,
+                    'password': password
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.access_token = data.get('access_token')
+                self.username = username
+                self.log('SUCCESS', 'Authentication successful', f'Token obtained')
+                return True
+            else:
+                error_msg = response.json().get('error_description', 'Authentication failed')
+                self.log('ERROR', 'Authentication failed', error_msg)
+                return False
+                
+        except Exception as e:
+            self.log('ERROR', 'Authentication error', str(e))
+            return False
+    
+    def get_headers(self):
+        """Get request headers with authentication"""
+        return {
+            'Authorization': f'Bearer {self.access_token}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'fineract-platform-tenantid': self.TENANT_ID

@@ -1,0 +1,257 @@
+def add_ckyc(self, client_id, ckyc_number):
+        """Add CKYC identifier to client"""
+        payload = {
+            'documentTypeId': self.CKYC_DOCUMENT_TYPE,
+            'status': 200,
+            'documentKey': ckyc_number,
+            'locale': 'en',
+            'dateFormat': 'dd MMMM yyyy',
+            'unmask': 'false'
+        }
+        
+        try:
+            response = requests.post(
+                f'{self.API_BASE_URL}/v1/clients/{client_id}/identifiers',
+                headers=self.get_headers(),
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code in [200, 201]:
+                return {'success': True, 'data': response.json(), 'status_code': response.status_code}
+            else:
+                error_data = response.json()
+                error_msg = error_data.get('defaultUserMessage', 
+                           error_data.get('errors', [{}])[0].get('defaultUserMessage', 'Failed to add CKYC'))
+                return {'success': False, 'error': error_msg, 'status_code': response.status_code, 'response': error_data}
+        except Exception as e:
+            return {'success': False, 'error': str(e), 'status_code': None, 'response': None}
+    
+    def process_all_records(self, data):
+        """Process all records from Excel"""
+        self.log('INFO', 'Starting CKYC processing', f'Processing {len(data)} records')
+        print("\n" + "="*80)
+        print("CKYC PROCESSING PHASE")
+        print("="*80 + "\n")
+        
+        self.processing_results = []
+        
+        for idx, row in enumerate(data):
+            client_id = row.get('client_id')
+            ckyc_number = row.get('ckyc_number')
+            
+            # Convert to string and handle None/empty
+            ckyc_number = str(ckyc_number).strip() if ckyc_number is not None and str(ckyc_number).strip().upper() not in ['NONE', 'NAN', ''] else None
+            
+            if not client_id or not ckyc_number:
+                self.log('WARNING', f'Row {idx+1} skipped', 'Missing client ID or CKYC number')
+                self.processing_results.append({
+                    'row_number': idx + 1,
+                    'client_id': client_id,
+                    'ckyc_number': ckyc_number,
+                    'status': 'SKIPPED',
+                    'message': 'Missing client ID or CKYC number',
+                    'response_data': None,
+                    'status_code': None
+                })
+                continue
+            
+            self.log('ACTIVITY', f'[{idx+1}/{len(data)}] Processing Client {client_id}', f'CKYC: {ckyc_number}')
+            
+            start_time = datetime.now()
+            result = self.add_ckyc(client_id, ckyc_number)
+            duration = (datetime.now() - start_time).total_seconds() * 1000
+            
+            if result['success']:
+                self.log('SUCCESS', f'Client {client_id}', f'✓ CKYC added successfully ({duration:.0f}ms)')
+                self.processing_results.append({
+                    'row_number': idx + 1,
+                    'client_id': client_id,
+                    'ckyc_number': ckyc_number,
+                    'status': 'SUCCESS',
+                    'message': 'CKYC added successfully',
+                    'response_data': result.get('data'),
+                    'status_code': result.get('status_code'),
+                    'duration_ms': duration
+                })
+            else:
+                self.log('ERROR', f'Client {client_id}', f'✗ {result["error"]}')
+                self.processing_results.append({
+                    'row_number': idx + 1,
+                    'client_id': client_id,
+                    'ckyc_number': ckyc_number,
+                    'status': 'FAILED',
+                    'message': result['error'],
+                    'response_data': result.get('response'),
+                    'status_code': result.get('status_code'),
+                    'duration_ms': duration
+                })
+        
+        return self.processing_results
+    
+    def show_processing_summary(self):
+        """Display processing summary"""
+        print("\n" + "="*80)
+        print("PROCESSING SUMMARY")
+        print("="*80 + "\n")
+        
+        total = len(self.processing_results)
+        successful = len([r for r in self.processing_results if r['status'] == 'SUCCESS'])
+        failed = len([r for r in self.processing_results if r['status'] == 'FAILED'])
+        skipped = len([r for r in self.processing_results if r['status'] == 'SKIPPED'])
+        
+        summary_data = [
+            ['Total Records', total],
+            ['Successful', successful],
+            ['Failed', failed],
+            ['Skipped', skipped]
+        ]
+        
+        print(tabulate(summary_data, headers=['Category', 'Count'], tablefmt='grid'))
+        
+        # Success rate
+        if total > 0:
+            success_rate = (successful / total) * 100
+            print(f"\n✓ Success Rate: {success_rate:.1f}%")
+        
+        print("\n✓ Detailed results saved in Excel report")
+    
+    def save_reports(self, output_prefix='ckyc_processing'):
+        """Save detailed reports"""
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # Excel Report
+        excel_file = f'{output_prefix}_report_{timestamp}.xlsx'
+        
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = 'CKYC Processing Report'
+        
+        # Headers
+        headers = ['Row Number', 'Client ID', 'CKYC Number', 'Status', 'Message', 'Status Code', 'Duration (ms)', 'Response Data']
+        sheet.append(headers)
+        
+        # Data rows
+        for r in self.processing_results:
+            sheet.append([
+                r['row_number'],
+                r['client_id'],
+                r['ckyc_number'],
+                r['status'],
+                r['message'],
+                r.get('status_code', '-'),
+                r.get('duration_ms', '-'),
+                json.dumps(r.get('response_data')) if r.get('response_data') else '-'
+            ])
+        
+        workbook.save(excel_file)
+        self.log('SUCCESS', 'Excel report saved', excel_file)
+        
+        # JSON Report
+        json_file = f'{output_prefix}_report_{timestamp}.json'
+        
+        json_data = {
+            'session_info': {
+                'username': self.username,
+                'start_time': self.session_start.isoformat(),
+                'end_time': datetime.now().isoformat()
+            },
+            'processing_summary': {
+                'total_records': len(self.processing_results),
+                'successful': len([r for r in self.processing_results if r['status'] == 'SUCCESS']),
+                'failed': len([r for r in self.processing_results if r['status'] == 'FAILED']),
+                'skipped': len([r for r in self.processing_results if r['status'] == 'SKIPPED']),
+                'records': self.processing_results
+            },
+            'logs': self.logs
+        }
+        
+        with open(json_file, 'w') as f:
+            json.dump(json_data, f, indent=2)
+        
+        self.log('SUCCESS', 'JSON report saved', json_file)
+        
+        return excel_file, json_file
+
+
+def main():
+    """Main execution function"""
+    print("\n" + "="*80)
+    print("🚀 CKYC PROCESSING SYSTEM V1.0")
+    print("="*80)
+    print("Workflow: Authentication → Load Excel → Process → Save Reports")
+    print("="*80 + "\n")
+    
+    processor = CKYCProcessor()
+    
+    # Step 1: Authentication
+    print("STEP 1: AUTHENTICATION")
+    print("-" * 80)
+    username = input("Enter username: ")
+    password = getpass.getpass("Enter password: ")
+    
+    if not processor.authenticate(username, password):
+        print("\n❌ Authentication failed. Exiting.")
+        return
+    
+    # Step 2: Load Excel
+    print("\n" + "="*80)
+    print("STEP 2: LOAD EXCEL FILE")
+    print("-" * 80)
+    excel_file = input("Enter Excel file path: ").strip()
+    
+    if not excel_file:
+        print("\n❌ No file path provided. Exiting.")
+        return
+    
+    data = processor.process_excel(excel_file)
+    if data is None:
+        print("\n❌ Failed to load Excel file. Exiting.")
+        return
+    
+    # Step 3: User Confirmation
+    print("\n" + "="*80)
+    print("STEP 3: CONFIRM PROCESSING")
+    print("-" * 80)
+    print(f"\nFound {len(data)} records to process.")
+    print("Column 1: Client ID")
+    print("Column 2: CKYC Number")
+    print("\nFirst few records:")
+    for i, row in enumerate(data[:5], 1):
+        print(f"  {i}. Client ID: {row['client_id']}, CKYC: {row['ckyc_number']}")
+    
+    confirm = input(f"\nProceed with processing {len(data)} records? (yes/no): ").strip().lower()
+    
+    if confirm != 'yes':
+        print("\n❌ Operation cancelled by user.")
+        return
+    
+    # Step 4: Process Records
+    processor.process_all_records(data)
+    
+    # Step 5: Show Summary
+    processor.show_processing_summary()
+    
+    # Step 6: Save Reports
+    print("\n" + "="*80)
+    print("STEP 4: SAVE REPORTS")
+    print("-" * 80)
+    excel_report, json_report = processor.save_reports()
+    
+    print("\n" + "="*80)
+    print("✅ PROCESSING COMPLETE!")
+    print("="*80)
+    print(f"📊 Excel Report: {excel_report}")
+    print(f"📄 JSON Report: {json_report}")
+    print("="*80 + "\n")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Processing interrupted by user.")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {str(e)}")
+        sys.exit(1)
