@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Check,
@@ -22,6 +22,7 @@ import {
 import {
   getGetFinfluxCkycUpdateJobQueryKey,
   getListClientsQueryKey,
+  getFinfluxCkycUpdateJob,
   listClients,
   useCreateFinfluxCkycUpdateJob,
   useGetFinfluxCkycUpdateJob,
@@ -38,9 +39,22 @@ import { EmptyState, PageIntro, QueryError } from '@/components/workspace-shell'
 type Mode = 'clients' | 'file';
 type SelectedRecord = { clientId: string; ckycNumber: string; clientName?: string };
 type FinfluxGroup = 'finalCkyc' | 'requestIdUpdated' | 'recordsPending';
+type BatchProgress = {
+  status: 'running' | 'stopping' | 'completed' | 'stopped' | 'failed';
+  totalRecords: number;
+  totalBatches: number;
+  currentBatch: number;
+  completedRecords: number;
+  successCount: number;
+  failureCount: number;
+  activeJob?: FinfluxCkycUpdateJob;
+  error?: string;
+};
+type BatchReport = { batchCount: number; results: FinfluxCkycUpdateJob['results'] };
 
 const PAGE_SIZE = 8;
 const SELECT_ALL_PAGE_SIZE = 2000;
+const FINFLUX_JOB_LIMIT = 1000;
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const JOB_STORAGE_KEY = 'finflux-ckyc-update-job-id';
 
@@ -94,11 +108,11 @@ function csvCell(value: string | number | null | undefined) {
   return `"${text.replaceAll('"', '""')}"`;
 }
 
-function downloadJobReport(job: FinfluxCkycUpdateJob) {
+function downloadResultsReport(results: FinfluxCkycUpdateJob['results'], fileName: string) {
   const header = ['row_number', 'client_id', 'ckyc_number', 'status', 'message', 'status_code', 'duration_ms'];
   const lines = [
     header.join(','),
-    ...job.results.map((result) =>
+    ...results.map((result) =>
       [
         result.rowNumber,
         result.clientId,
@@ -114,9 +128,13 @@ function downloadJobReport(job: FinfluxCkycUpdateJob) {
   ];
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' }));
-  link.download = `finflux-ckyc-update-${job.id}.csv`;
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function downloadJobReport(job: FinfluxCkycUpdateJob) {
+  downloadResultsReport(job.results, `finflux-ckyc-update-${job.id}.csv`);
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -224,6 +242,8 @@ export default function FinfluxUpdate() {
   const [selectedRecords, setSelectedRecords] = useState<Record<string, SelectedRecord>>({});
   const [selectingAll, setSelectingAll] = useState(false);
   const [selectionError, setSelectionError] = useState('');
+  const [batchProgress, setBatchProgress] = useState<BatchProgress>();
+  const [batchReport, setBatchReport] = useState<BatchReport>();
   const [fileName, setFileName] = useState('');
   const [preview, setPreview] = useState<FinfluxCkycImportPreviewResponse>();
   const [fileError, setFileError] = useState('');
@@ -232,6 +252,10 @@ export default function FinfluxUpdate() {
   const [submitError, setSubmitError] = useState('');
   const [jobId, setJobId] = useState(getSavedJobId);
   const queryClient = useQueryClient();
+  const stopAfterCurrentBatch = useRef(false);
+  useEffect(() => () => {
+    stopAfterCurrentBatch.current = true;
+  }, []);
 
   const clientParams = useMemo(() => ({ search: search.trim() || undefined, page, pageSize: PAGE_SIZE, finfluxGroup }), [finfluxGroup, page, search]);
   const clientsQuery = useListClients(clientParams, { query: { queryKey: getListClientsQueryKey(clientParams) } });
@@ -242,6 +266,8 @@ export default function FinfluxUpdate() {
   const validSelected = useMemo(() => selectedList.filter((record) => record.clientId.trim() && record.ckycNumber.trim()), [selectedList]);
   const validPreview = useMemo(() => (preview?.rows ?? []).filter((row) => row.valid && row.clientId?.trim() && row.ckycNumber?.trim()), [preview]);
   const canEditSelectedRecords = finfluxGroup === 'finalCkyc';
+  const batchIsActive = batchProgress?.status === 'running' || batchProgress?.status === 'stopping';
+  const selectionBusy = selectingAll || batchIsActive;
   const currentPageSelected = canEditSelectedRecords && clients.length > 0 && clients.every((client) => Boolean(selectedRecords[client.ClientID]));
 
   const previewMutation = usePreviewFinfluxCkycImport();
@@ -250,9 +276,10 @@ export default function FinfluxUpdate() {
     { jobId: jobId || 'pending' },
     {
       query: {
-        enabled: Boolean(jobId),
+        enabled: Boolean(jobId) && !batchIsActive,
         queryKey: getGetFinfluxCkycUpdateJobQueryKey({ jobId: jobId || 'pending' }),
         refetchInterval: (query) => {
+          if (batchIsActive) return false;
           const status = query.state.data?.status;
           return status === 'queued' || status === 'running' ? 1800 : false;
         },
@@ -271,14 +298,25 @@ export default function FinfluxUpdate() {
       return;
     }
     if (job?.status === 'completed' || job?.status === 'failed') {
-      void queryClient.invalidateQueries();
+      void queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+      if (!batchIsActive) void queryClient.invalidateQueries();
     }
-  }, [job?.status, jobQuery.error, queryClient]);
+  }, [batchIsActive, job?.status, jobQuery.error, queryClient]);
+  const displayedJob = batchIsActive
+    ? batchProgress?.activeJob ?? job
+    : job || batchProgress?.activeJob;
   const records = mode === 'clients'
     ? validSelected.map(({ clientId, ckycNumber }) => ({ clientId, ckycNumber }))
     : validPreview.map((row) => ({ clientId: row.clientId as string, ckycNumber: row.ckycNumber as string }));
   const invalidSelectedCount = selectedList.length - validSelected.length;
-  const canSubmit = Boolean(username.trim() && password && records.length > 0 && records.length <= 1000 && !createJobMutation.isPending && !selectingAll);
+  const canSubmit = Boolean(
+    username.trim() &&
+    password &&
+    records.length > 0 &&
+    (mode === 'clients' || records.length <= FINFLUX_JOB_LIMIT) &&
+    !createJobMutation.isPending &&
+    !selectionBusy
+  );
 
   const toggleClient = (client: Client) => {
     if (!canEditSelectedRecords) return;
@@ -374,16 +412,171 @@ export default function FinfluxUpdate() {
     reader.readAsDataURL(file);
   };
 
+  const runClientBatches = async (
+    clientRecords: { clientId: string; ckycNumber: string }[],
+    credentials: { username: string; password: string },
+  ) => {
+    const totalBatches = Math.ceil(clientRecords.length / FINFLUX_JOB_LIMIT);
+    const successfulClientIds = new Set<string>();
+    const combinedResults: FinfluxCkycUpdateJob['results'] = [];
+    const reportedBatchIds = new Set<string>();
+    let completedRecords = 0;
+    let successCount = 0;
+    let failureCount = 0;
+    let inFlightRecords = 0;
+    let inFlightSuccessCount = 0;
+    let inFlightFailureCount = 0;
+    let finalStatus: BatchProgress['status'] = 'completed';
+    let finalError: string | undefined;
+    let latestPolledJob: FinfluxCkycUpdateJob | undefined;
+    let currentBatchOffset = 0;
+    const addBatchResults = (job: FinfluxCkycUpdateJob) => {
+      if (reportedBatchIds.has(job.id)) return;
+      reportedBatchIds.add(job.id);
+      combinedResults.push(...job.results.map((result) => ({
+        ...result,
+        rowNumber: currentBatchOffset + result.rowNumber,
+      })));
+    };
+    stopAfterCurrentBatch.current = false;
+    setBatchReport(undefined);
+    setBatchProgress({
+      status: 'running',
+      totalRecords: clientRecords.length,
+      totalBatches,
+      currentBatch: 0,
+      completedRecords: 0,
+      successCount: 0,
+      failureCount: 0,
+    });
+
+    try {
+      for (let offset = 0; offset < clientRecords.length; offset += FINFLUX_JOB_LIMIT) {
+        const batchNumber = Math.floor(offset / FINFLUX_JOB_LIMIT) + 1;
+        if (stopAfterCurrentBatch.current && offset > 0) {
+          finalStatus = 'stopped';
+          break;
+        }
+        inFlightRecords = 0;
+        inFlightSuccessCount = 0;
+        inFlightFailureCount = 0;
+        currentBatchOffset = offset;
+        latestPolledJob = undefined;
+        const batch = clientRecords.slice(offset, offset + FINFLUX_JOB_LIMIT);
+        setBatchProgress((current) => current ? { ...current, currentBatch: batchNumber, activeJob: undefined } : current);
+
+        const accepted = await createJobMutation.mutateAsync({ data: { credentials, records: batch } });
+        setPassword('');
+        setJobId(accepted.id);
+        try {
+          window.sessionStorage.setItem(JOB_STORAGE_KEY, accepted.id);
+        } catch {
+          // The active job can still be monitored while this page remains open.
+        }
+
+        let currentJob: FinfluxCkycUpdateJob;
+        let pollFailures = 0;
+        while (true) {
+          try {
+            currentJob = await getFinfluxCkycUpdateJob({ jobId: accepted.id });
+            pollFailures = 0;
+            latestPolledJob = currentJob;
+          } catch {
+            pollFailures += 1;
+            if (pollFailures >= 5) {
+              throw new Error(`Could not confirm the result of batch ${batchNumber}. Check its job results before retrying.`);
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, 1800));
+            continue;
+          }
+
+          currentJob.results.forEach((result) => {
+            if (result.status === 'success') successfulClientIds.add(result.clientId);
+          });
+          inFlightRecords = currentJob.processed;
+          inFlightSuccessCount = currentJob.successCount;
+          inFlightFailureCount = currentJob.failureCount;
+          setBatchProgress((current) => current ? {
+            ...current,
+            currentBatch: batchNumber,
+            completedRecords: completedRecords + currentJob.processed,
+            successCount: successCount + currentJob.successCount,
+            failureCount: failureCount + currentJob.failureCount,
+            activeJob: currentJob,
+          } : current);
+          if (currentJob.status === 'completed' || currentJob.status === 'failed') break;
+          await new Promise((resolve) => window.setTimeout(resolve, 1800));
+        }
+
+        completedRecords += inFlightRecords;
+        successCount += inFlightSuccessCount;
+        failureCount += inFlightFailureCount;
+        addBatchResults(currentJob);
+        latestPolledJob = undefined;
+        inFlightRecords = 0;
+        inFlightSuccessCount = 0;
+        inFlightFailureCount = 0;
+        if (currentJob.status === 'failed') {
+          finalStatus = 'failed';
+          finalError = currentJob.error || `Batch ${batchNumber} failed. Later batches were not sent.`;
+          break;
+        }
+        if (stopAfterCurrentBatch.current && batchNumber < totalBatches) {
+          finalStatus = 'stopped';
+          break;
+        }
+      }
+    } catch (error) {
+      finalStatus = 'failed';
+      finalError = errorMessage(error);
+      completedRecords += inFlightRecords;
+      successCount += inFlightSuccessCount;
+      failureCount += inFlightFailureCount;
+      if (latestPolledJob) addBatchResults(latestPolledJob);
+    } finally {
+      setPassword('');
+      if (combinedResults.length > 0) {
+        setBatchReport({ batchCount: reportedBatchIds.size, results: combinedResults });
+      }
+      if (successfulClientIds.size > 0) {
+        setSelectedRecords((current) => {
+          const next = { ...current };
+          successfulClientIds.forEach((clientId) => { delete next[clientId]; });
+          return next;
+        });
+      }
+      await queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+      setBatchProgress((current) => current ? {
+        ...current,
+        status: finalStatus,
+        completedRecords,
+        successCount,
+        failureCount,
+        error: finalError,
+      } : current);
+      stopAfterCurrentBatch.current = false;
+    }
+  };
+
   const submit = () => {
     setSubmitError('');
     if (!username.trim()) { setSubmitError('Enter the Finflux username before submitting.'); return; }
     if (!password) { setSubmitError('Enter the Finflux password before submitting.'); return; }
     if (!records.length) { setSubmitError(mode === 'clients' ? 'Select at least one valid client row.' : 'There are no eligible rows in this preview.'); return; }
-    if (records.length > 1000) { setSubmitError('Finflux accepts a maximum of 1,000 records per job.'); return; }
+    if (mode === 'file' && records.length > FINFLUX_JOB_LIMIT) { setSubmitError('File imports are limited to 1,000 records per job. Split the file into smaller imports.'); return; }
+    const usesBatches = mode === 'clients' && records.length > FINFLUX_JOB_LIMIT;
     const confirmed = window.confirm(
-      `Send ${records.length} CKYC identifier${records.length === 1 ? '' : 's'} to Finflux? This uses LMS ClientID and cannot be undone from CKYC Manager. Continue only if the selected records or import preview are correct.`,
+      usesBatches
+        ? `Send ${records.length.toLocaleString('en-IN')} CKYC identifiers to Finflux in ${Math.ceil(records.length / FINFLUX_JOB_LIMIT)} sequential jobs of up to 1,000 records? These writes cannot be undone from CKYC Manager. Keep this page open until all batches finish.`
+        : `Send ${records.length} CKYC identifier${records.length === 1 ? '' : 's'} to Finflux? This uses LMS ClientID and cannot be undone from CKYC Manager. Continue only if the selected records or import preview are correct.`,
     );
     if (!confirmed) return;
+    setBatchProgress(undefined);
+    setBatchReport(undefined);
+    if (usesBatches) {
+      void runClientBatches(records, { username: username.trim(), password });
+      return;
+    }
     createJobMutation.mutate({ data: { credentials: { username: username.trim(), password }, records } }, {
       onSuccess: (accepted) => {
         setPassword('');
@@ -408,11 +601,11 @@ export default function FinfluxUpdate() {
       />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <button onClick={() => setMode('clients')} className={`rounded-xl border p-4 text-left transition-colors ${mode === 'clients' ? 'border-primary/45 bg-[#eef7f4] shadow-xs' : 'border-border bg-card hover:bg-secondary/40'}`} aria-pressed={mode === 'clients'} data-testid="button-mode-clients">
+        <button onClick={() => setMode('clients')} disabled={selectionBusy} className={`rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${mode === 'clients' ? 'border-primary/45 bg-[#eef7f4] shadow-xs' : 'border-border bg-card hover:bg-secondary/40'}`} aria-pressed={mode === 'clients'} data-testid="button-mode-clients">
           <div className="flex items-start justify-between gap-3"><span className={`grid size-9 place-items-center rounded-lg ${mode === 'clients' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}><Database size={17} /></span>{mode === 'clients' && <Check size={16} className="text-primary" />}</div>
           <p className="mt-3 text-[13px] font-semibold">Use saved CKYC results</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Browse the LMS register and edit the outgoing number before selection.</p>
         </button>
-        <button onClick={() => setMode('file')} className={`rounded-xl border p-4 text-left transition-colors ${mode === 'file' ? 'border-primary/45 bg-[#eef7f4] shadow-xs' : 'border-border bg-card hover:bg-secondary/40'}`} aria-pressed={mode === 'file'} data-testid="button-mode-file">
+        <button onClick={() => setMode('file')} disabled={selectionBusy} className={`rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${mode === 'file' ? 'border-primary/45 bg-[#eef7f4] shadow-xs' : 'border-border bg-card hover:bg-secondary/40'}`} aria-pressed={mode === 'file'} data-testid="button-mode-file">
           <div className="flex items-start justify-between gap-3"><span className={`grid size-9 place-items-center rounded-lg ${mode === 'file' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}><FileSpreadsheet size={17} /></span>{mode === 'file' && <Check size={16} className="text-primary" />}</div>
           <p className="mt-3 text-[13px] font-semibold">Preview an import file</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Validate a CSV or XLSX with the exact client_id and ckyc_number headers.</p>
         </button>
@@ -427,7 +620,7 @@ export default function FinfluxUpdate() {
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <label className="sm:w-[225px]">
                     <span className="sr-only">Filter CKYC readiness group</span>
-                    <select value={finfluxGroup} disabled={selectingAll} onChange={(event) => { setFinfluxGroup(event.target.value as FinfluxGroup); setSelectedRecords({}); setSelectionError(''); setPage(1); }} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="select-finflux-group">
+                    <select value={finfluxGroup} disabled={selectionBusy} onChange={(event) => { setFinfluxGroup(event.target.value as FinfluxGroup); setSelectedRecords({}); setSelectionError(''); setPage(1); }} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="select-finflux-group">
                       <option value="finalCkyc">Final CKYC update</option>
                       <option value="requestIdUpdated">Request ID updated</option>
                       <option value="recordsPending">Records pending</option>
@@ -436,16 +629,16 @@ export default function FinfluxUpdate() {
                   <label className="relative min-w-0 flex-1">
                     <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <span className="sr-only">Search clients</span>
-                    <input value={search} disabled={selectingAll} onChange={(event) => { setSearch(event.target.value); setSelectionError(''); setPage(1); }} placeholder="Search name, loan ID or ClientID" className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="input-search-finflux-clients" />
+                    <input value={search} disabled={selectionBusy} onChange={(event) => { setSearch(event.target.value); setSelectionError(''); setPage(1); }} placeholder="Search name, loan ID or ClientID" className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="input-search-finflux-clients" />
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={toggleCurrentPage} disabled={!clients.length || !canEditSelectedRecords || selectingAll} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-page">
+                    <button onClick={toggleCurrentPage} disabled={!clients.length || !canEditSelectedRecords || selectionBusy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 text-[11px] font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-page">
                       <ListChecks size={14} /> {currentPageSelected ? 'Clear page' : 'Select page'}
                     </button>
-                    <button type="button" onClick={() => void selectAllMatching()} disabled={!total || !canEditSelectedRecords || selectingAll} aria-label={`Select all ${total.toLocaleString('en-IN')} matching eligible clients across all pages`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-primary/25 bg-secondary px-3 text-[11px] font-semibold text-primary hover:bg-accent/70 disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-all-clients">
+                    <button type="button" onClick={() => void selectAllMatching()} disabled={!total || !canEditSelectedRecords || selectionBusy} aria-label={`Select all ${total.toLocaleString('en-IN')} matching eligible clients across all pages`} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-primary/25 bg-secondary px-3 text-[11px] font-semibold text-primary hover:bg-accent/70 disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-select-all-clients">
                       <ListChecks size={14} /> {selectingAll ? 'Loading clients…' : `Select all ${total.toLocaleString('en-IN')}`}
                     </button>
-                    {selectedList.length > 0 && <button type="button" disabled={selectingAll} onClick={() => { setSelectedRecords({}); setSelectionError(''); }} className="inline-flex h-10 items-center justify-center rounded-lg px-2 text-[11px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-clear-all-selection">
+                    {selectedList.length > 0 && <button type="button" disabled={selectionBusy} onClick={() => { setSelectedRecords({}); setSelectionError(''); }} className="inline-flex h-10 items-center justify-center rounded-lg px-2 text-[11px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-clear-all-selection">
                       Clear selection
                     </button>}
                   </div>
@@ -458,14 +651,14 @@ export default function FinfluxUpdate() {
                   <div className="overflow-x-auto"><table className="data-table w-full min-w-[780px] text-left"><thead className="bg-secondary/45"><tr className="border-b border-border text-muted-foreground"><th className="w-12 px-5 py-3"><span className="sr-only">Select</span></th><th className="px-3 py-3">Client</th><th className="px-3 py-3">Loan ID</th><th className="px-3 py-3">FinFlux status</th><th className="px-3 py-3">Outgoing CKYC number</th></tr></thead><tbody className="divide-y divide-border">{clients.map((client) => {
                     const selected = selectedRecords[client.ClientID];
                     return <tr key={client.id} className={`transition-colors ${selected ? 'bg-[#f4faf8]' : 'hover:bg-secondary/30'}`} data-testid={`row-finflux-client-${client.id}`}>
-                      <td className="px-5 py-4"><input type="checkbox" checked={Boolean(selected)} disabled={!canEditSelectedRecords || selectingAll} onChange={() => toggleClient(client)} aria-label={`Select ${client.ClientName}`} className="size-4 accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-40" data-testid={`checkbox-finflux-client-${client.id}`} /></td>
+                      <td className="px-5 py-4"><input type="checkbox" checked={Boolean(selected)} disabled={!canEditSelectedRecords || selectionBusy} onChange={() => toggleClient(client)} aria-label={`Select ${client.ClientName}`} className="size-4 accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-40" data-testid={`checkbox-finflux-client-${client.id}`} /></td>
                       <td className="px-3 py-4"><div className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#dcefeb] font-mono-ui text-[9px] font-semibold text-primary">{initials(client.ClientName)}</span><div><p className="text-[12px] font-semibold">{client.ClientName}</p><p className="mt-0.5 font-mono-ui text-[10px] text-muted-foreground">{client.ClientID}</p></div></div></td>
                       <td className="px-3 py-4 font-mono-ui text-[10px] text-muted-foreground">{client.loanid}</td>
                       <td className="px-3 py-4">{client.finfluxCkycUpdatedAt ? <span className="inline-flex rounded-full bg-[#dcf3e9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#31734d]">Updated</span> : client.ckycNumber ? <span className="inline-flex rounded-full bg-[#fff0c9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#9d761f]">Pending</span> : <span className="inline-flex rounded-full bg-secondary px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-muted-foreground">Final CKYC required</span>}</td>
-                      <td className="px-3 py-4"><label><span className="sr-only">CKYC number for {client.ClientName}</span><input value={selected?.ckycNumber ?? client.ckycNumber ?? ''} disabled={!canEditSelectedRecords || selectingAll} onChange={(event) => updateClientNumber(client, event.target.value)} placeholder="Enter CKYC number" className={`h-9 w-full max-w-[205px] rounded-md border bg-background px-2.5 font-mono-ui text-[11px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 ${selected && !selected.ckycNumber.trim() ? 'border-[#d2a94b]' : 'border-input'}`} data-testid={`input-finflux-ckyc-${client.id}`} /></label>{client.ckycNumber && <p className="mt-1 text-[9px] text-primary">Saved final CKYC prefilled</p>}</td>
+                      <td className="px-3 py-4"><label><span className="sr-only">CKYC number for {client.ClientName}</span><input value={selected?.ckycNumber ?? client.ckycNumber ?? ''} disabled={!canEditSelectedRecords || selectionBusy} onChange={(event) => updateClientNumber(client, event.target.value)} placeholder="Enter CKYC number" className={`h-9 w-full max-w-[205px] rounded-md border bg-background px-2.5 font-mono-ui text-[11px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 ${selected && !selected.ckycNumber.trim() ? 'border-[#d2a94b]' : 'border-input'}`} data-testid={`input-finflux-ckyc-${client.id}`} /></label>{client.ckycNumber && <p className="mt-1 text-[9px] text-primary">Saved final CKYC prefilled</p>}</td>
                     </tr>;
                   })}</tbody></table></div>
-                  <div className="flex items-center justify-between border-t border-border px-5 py-3"><p className="font-mono-ui text-[10px] text-muted-foreground">{total ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}` : '0 clients'}</p><div className="flex items-center gap-1"><button disabled={page <= 1 || selectingAll} onClick={() => setPage((current) => current - 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Previous client page" data-testid="button-finflux-previous-page"><ChevronLeft size={15} /></button><span className="px-2 font-mono-ui text-[10px] text-muted-foreground">{page} / {pageCount}</span><button disabled={page >= pageCount || selectingAll} onClick={() => setPage((current) => current + 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Next client page" data-testid="button-finflux-next-page"><ChevronRight size={15} /></button></div></div>
+                  <div className="flex items-center justify-between border-t border-border px-5 py-3"><p className="font-mono-ui text-[10px] text-muted-foreground">{total ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}` : '0 clients'}</p><div className="flex items-center gap-1"><button disabled={page <= 1 || selectionBusy} onClick={() => setPage((current) => current - 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Previous client page" data-testid="button-finflux-previous-page"><ChevronLeft size={15} /></button><span className="px-2 font-mono-ui text-[10px] text-muted-foreground">{page} / {pageCount}</span><button disabled={page >= pageCount || selectionBusy} onClick={() => setPage((current) => current + 1)} className="grid size-8 place-items-center rounded-md border border-border hover:bg-secondary disabled:opacity-30" aria-label="Next client page" data-testid="button-finflux-next-page"><ChevronRight size={15} /></button></div></div>
                 </>
               )}
             </section>
@@ -478,7 +671,67 @@ export default function FinfluxUpdate() {
             </section>
           )}
           {mode === 'file' && preview && <FilePreview preview={preview} onClear={() => { setPreview(undefined); setFileName(''); setFileError(''); }} />}
-          <JobPanel job={job} onDownload={() => job && downloadJobReport(job)} onRetry={() => jobQuery.refetch()} />
+          {batchProgress && (
+            <section className="rounded-xl border border-primary/20 bg-[#eef7f4] p-4" aria-live="polite" data-testid="panel-finflux-batch-progress">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Sequential batch run</p>
+                  <p className="mt-1 text-[13px] font-semibold text-foreground">
+                    {batchProgress.status === 'running' || batchProgress.status === 'stopping'
+                      ? `Batch ${Math.max(1, batchProgress.currentBatch)} of ${batchProgress.totalBatches}`
+                      : batchProgress.status === 'completed'
+                        ? 'All batches finished'
+                        : batchProgress.status === 'stopped'
+                          ? 'Stopped after the current batch'
+                          : 'Batch run stopped'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {batchReport && (
+                    <button
+                      type="button"
+                      onClick={() => downloadResultsReport(batchReport.results, `finflux-ckyc-batch-run-${batchReport.batchCount}-jobs.csv`)}
+                      className="rounded-lg border border-border bg-card px-3 py-2 text-[10px] font-semibold text-foreground hover:bg-secondary"
+                      data-testid="button-download-finflux-batch-report"
+                    >
+                      <Download size={13} className="mr-1.5 inline" /> Download {batchReport.results.length.toLocaleString('en-IN')} results
+                    </button>
+                  )}
+                  {(batchProgress.status === 'running' || batchProgress.status === 'stopping') && (
+                    <button
+                      type="button"
+                      disabled={batchProgress.status === 'stopping'}
+                      onClick={() => {
+                        stopAfterCurrentBatch.current = true;
+                        setBatchProgress((current) => current ? { ...current, status: 'stopping' } : current);
+                      }}
+                      className="rounded-lg border border-border bg-card px-3 py-2 text-[10px] font-semibold text-foreground hover:bg-secondary disabled:opacity-50"
+                      data-testid="button-stop-finflux-batches"
+                    >
+                      {batchProgress.status === 'stopping' ? 'Stopping after this batch…' : 'Stop after this batch'}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between font-mono-ui text-[10px] text-muted-foreground">
+                <span>{batchProgress.completedRecords.toLocaleString('en-IN')} / {batchProgress.totalRecords.toLocaleString('en-IN')} processed</span>
+                <span>{batchProgress.totalRecords ? Math.round((batchProgress.completedRecords / batchProgress.totalRecords) * 100) : 0}%</span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#d9e8e3]">
+                <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${batchProgress.totalRecords ? Math.min(100, (batchProgress.completedRecords / batchProgress.totalRecords) * 100) : 0}%` }} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono-ui text-[10px]">
+                <span className="text-primary">Accepted {batchProgress.successCount.toLocaleString('en-IN')}</span>
+                <span className="text-destructive">Rejected {batchProgress.failureCount.toLocaleString('en-IN')}</span>
+                <span className="text-muted-foreground">Each job is limited to 1,000 records</span>
+              </div>
+              {batchProgress.error && <p className="mt-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-[11px] leading-5 text-destructive" role="alert">{batchProgress.error}</p>}
+              {batchProgress.status === 'stopped' && batchProgress.completedRecords < batchProgress.totalRecords && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">The remaining selected records were not sent. You can review the current job and start another run for the remaining rows.</p>}
+              {batchProgress.status === 'failed' && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Later batches were not sent. Check the current job results before retrying.</p>}
+              <p className="mt-2 text-[10px] leading-4 text-muted-foreground">The detailed result table below shows the current or most recent batch.</p>
+            </section>
+          )}
+          <JobPanel job={displayedJob} onDownload={() => displayedJob && downloadJobReport(displayedJob)} onRetry={() => jobQuery.refetch()} />
           {jobQuery.isError && <QueryError onRetry={() => jobQuery.refetch()} />}
         </div>
 
@@ -488,12 +741,13 @@ export default function FinfluxUpdate() {
             className="rounded-xl border border-border bg-card p-5 shadow-xs"
             aria-label="Finflux credentials and submission"
           >
-            <div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#fff4db] text-[#8c641d]"><KeyRound size={18} /></span><div><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-[#8c641d]">Step 02 / Authenticate</p><h3 className="mt-1 font-display text-[20px] font-semibold">Authorize the write</h3><p className="mt-1 text-[11px] leading-5 text-muted-foreground">Finflux credentials are sent only with this job request and cleared from the password field once accepted.</p></div></div>
-            <div className="mt-5 space-y-3"><label className="block"><span className="classic-label">Finflux username</span><input name="username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" className="mt-1.5 h-10 w-full rounded-lg border border-input bg-background px-3 text-[12px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-finflux-username" /></label><label className="block"><span className="classic-label">Finflux password</span><input name="password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" className="mt-1.5 h-10 w-full rounded-lg border border-input bg-background px-3 text-[12px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" data-testid="input-finflux-password" /></label></div>
+            <div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#fff4db] text-[#8c641d]"><KeyRound size={18} /></span><div><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-[#8c641d]">Step 02 / Authenticate</p><h3 className="mt-1 font-display text-[20px] font-semibold">Authorize the write</h3><p className="mt-1 text-[11px] leading-5 text-muted-foreground">For multiple batches, credentials stay in temporary page memory until the run finishes. They are never written to browser storage.</p></div></div>
+            <div className="mt-5 space-y-3"><label className="block"><span className="classic-label">Finflux username</span><input name="username" value={username} onChange={(event) => setUsername(event.target.value)} disabled={selectionBusy} autoComplete="username" className="mt-1.5 h-10 w-full rounded-lg border border-input bg-background px-3 text-[12px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="input-finflux-username" /></label><label className="block"><span className="classic-label">Finflux password</span><input name="password" value={password} onChange={(event) => setPassword(event.target.value)} disabled={selectionBusy} type="password" autoComplete="current-password" className="mt-1.5 h-10 w-full rounded-lg border border-input bg-background px-3 text-[12px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="input-finflux-password" /></label></div>
             <div className="mt-4 rounded-lg border border-border bg-secondary/35 p-3"><div className="flex items-center gap-2 text-[10px] font-semibold text-foreground"><LockKeyhole size={13} className="text-primary" /> Credentials are not persisted</div><p className="mt-1.5 pl-5 text-[10px] leading-4 text-muted-foreground">No username, password or Finflux token is written to browser storage.</p></div>
             {submitError && <div className="mt-4 flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-[11px] leading-5 text-destructive" role="alert"><CircleAlert size={14} className="mt-0.5 shrink-0" />{submitError}</div>}
-            <button type="submit" disabled={!canSubmit} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-[12px] font-bold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-finflux-update"><Send size={15} />{createJobMutation.isPending ? 'Authenticating…' : `Send ${records.length || 0} record${records.length === 1 ? '' : 's'} to Finflux`}</button>
-            {records.length > 1000 && <p className="mt-2 text-[10px] text-destructive">This job is over the 1,000-record limit.</p>}
+            <button type="submit" disabled={!canSubmit} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-[12px] font-bold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-finflux-update"><Send size={15} />{batchIsActive ? `Sending batch ${batchProgress?.currentBatch || 1} of ${batchProgress?.totalBatches || 1}…` : createJobMutation.isPending ? 'Authenticating…' : `Send ${records.length || 0} record${records.length === 1 ? '' : 's'} to Finflux`}</button>
+            {mode === 'clients' && records.length > FINFLUX_JOB_LIMIT && !batchIsActive && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Will send in {Math.ceil(records.length / FINFLUX_JOB_LIMIT)} sequential batches of up to 1,000. Keep this page open until the run finishes.</p>}
+            {mode === 'file' && records.length > FINFLUX_JOB_LIMIT && <p className="mt-2 text-[10px] text-destructive">File imports are limited to 1,000 records per job. Split the file into smaller imports.</p>}
           </form>
           <section className="rounded-xl border border-border bg-[#f7f5ef] p-5 dark:bg-card" aria-label="Submission summary">
             <div className="flex items-center gap-2"><ListChecks size={15} className="text-primary" /><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Ready to send</p></div>
