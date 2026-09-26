@@ -82,6 +82,9 @@ describe("CKYC response match status", () => {
         createImportId,
       ]);
     }
+    await pool.query("DELETE FROM finflux_ckyc_attempts WHERE client_id LIKE $1", [
+      `CLI-${runId}%`,
+    ]);
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
       `${loanPrefix}%`,
     ]);
@@ -92,6 +95,7 @@ describe("CKYC response match status", () => {
     const dashboardBefore = await requestJson<{
       recordsPending: number;
       pendingErrors: Array<{ name: string; count: number }>;
+      finfluxFailed: number;
     }>(baseUrl, "/dashboard/summary");
     const rows: ClientInput[] = [
       {
@@ -201,6 +205,18 @@ describe("CKYC response match status", () => {
       "UPDATE clients SET ckyc_number = $1 WHERE loanid = $2",
       [rejectedNumber, `${loanPrefix}-rejected`],
     );
+    const finfluxFailureMessage = `FinFlux-write-error-${runId}`;
+    await pool.query(
+      `INSERT INTO finflux_ckyc_attempts (
+         job_id, client_id, ckyc_number, status, error, status_code
+       ) VALUES ($1, $2, $3, 'failed', $4, 503)`,
+      [
+        `job-${runId}`,
+        rows[3].ClientID,
+        rejectedNumber,
+        finfluxFailureMessage,
+      ],
+    );
 
     const createImport = await pool.query<{ id: number }>(
       `INSERT INTO ckyc_create_data_imports (source_file_name, row_count)
@@ -260,6 +276,9 @@ describe("CKYC response match status", () => {
         loanid: string;
         ckycResponseMatchStatus: string | null;
         ckycResponseStatus: "matched" | "error" | null;
+        finfluxStatus: "updated" | "failed" | "pending" | null;
+        finfluxError: string | null;
+        finfluxStatusCode: number | null;
       }>;
     }>(
       baseUrl,
@@ -288,6 +307,12 @@ describe("CKYC response match status", () => {
       "error",
       "the saved response error remains available as history",
     );
+    const failedFinfluxClient = clientList.items.find(
+      (client) => client.loanid === `${loanPrefix}-rejected`,
+    );
+    assert.equal(failedFinfluxClient?.finfluxStatus, "failed");
+    assert.equal(failedFinfluxClient?.finfluxError, finfluxFailureMessage);
+    assert.equal(failedFinfluxClient?.finfluxStatusCode, 503);
 
     const pendingClients = await requestJson<{ total: number }>(
       baseUrl,
@@ -308,8 +333,17 @@ describe("CKYC response match status", () => {
     const dashboardAfter = await requestJson<{
       recordsPending: number;
       pendingErrors: Array<{ name: string; count: number }>;
+      finfluxFailed: number;
+      finfluxErrors: Array<{ name: string; count: number }>;
     }>(baseUrl, "/dashboard/summary");
     assert.equal(dashboardAfter.recordsPending, dashboardBefore.recordsPending);
+    assert.equal(dashboardAfter.finfluxFailed, dashboardBefore.finfluxFailed + 1);
+    assert.equal(
+      dashboardAfter.finfluxErrors.some(
+        (error) => error.name === finfluxFailureMessage && error.count === 1,
+      ),
+      true,
+    );
     assert.equal(
       dashboardAfter.pendingErrors.some(
         (error) =>

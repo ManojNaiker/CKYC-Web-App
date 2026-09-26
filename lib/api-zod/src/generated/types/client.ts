@@ -7,6 +7,7 @@
  */
 import type { ClientCkycResponseMatchStatus } from './clientCkycResponseMatchStatus';
 import type { ClientCkycResponseStatus } from './clientCkycResponseStatus';
+import type { ClientFinfluxStatus } from './clientFinfluxStatus';
 
 export interface Client {
   id: number;
@@ -49,4 +50,12 @@ export interface Client {
   finfluxCkycUpdatedAt: Date | null;
   /** @nullable */
   finfluxResourceId: string | null;
+  /** @nullable */
+  finfluxStatus: ClientFinfluxStatus;
+  /** @nullable */
+  finfluxError: string | null;
+  /** @nullable */
+  finfluxStatusCode: number | null;
+  /** @nullable */
+  finfluxAttemptedAt: Date | null;
 }

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSummaryFinfluxErrorsItem } from './dashboardSummaryFinfluxErrorsItem';
 import type { DashboardSummaryPendingErrorsItem } from './dashboardSummaryPendingErrorsItem';
 
 export interface DashboardSummary {
@@ -16,6 +17,8 @@ export interface DashboardSummary {
   recordsPending: number;
   finfluxUpdated: number;
   finfluxPending: number;
+  finfluxFailed: number;
+  finfluxErrors: DashboardSummaryFinfluxErrorsItem[];
   pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;

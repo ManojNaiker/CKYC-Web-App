@@ -17,18 +17,21 @@ const JOB_RETENTION_MS = 60 * 60 * 1000;
 interface StoredJob extends FinfluxCkycUpdateJob {
   accessToken: string | null;
   records: FinfluxCkycUpdateRecordInput[];
-  persistSuccessfulRecords: PersistSuccessfulRecords;
+  persistUpdateOutcomes: PersistUpdateOutcomes;
 }
 
-export interface FinfluxSuccessfulUpdate {
+export interface FinfluxUpdateOutcome {
+  jobId: string;
   clientId: string;
   ckycNumber: string;
-  statusCode: number;
+  status: "success" | "failed";
+  error: string | null;
+  statusCode: number | null;
   resourceId: string | null;
 }
 
-type PersistSuccessfulRecords = (
-  records: FinfluxSuccessfulUpdate[],
+type PersistUpdateOutcomes = (
+  outcomes: FinfluxUpdateOutcome[],
 ) => Promise<void>;
 
 const jobs = new Map<string, StoredJob>();
@@ -59,6 +62,7 @@ function toPublicJob(job: StoredJob): FinfluxCkycUpdateJob {
     processed: job.processed,
     successCount: job.successCount,
     failureCount: job.failureCount,
+    notAttemptedCount: job.notAttemptedCount,
     results: job.results.map((result) => ({ ...result })),
     createdAt: job.createdAt,
     startedAt: job.startedAt,
@@ -70,9 +74,14 @@ function toPublicJob(job: StoredJob): FinfluxCkycUpdateJob {
 function updateCounts(job: StoredJob): void {
   job.processed = job.results.length;
   job.successCount = job.results.filter(
-    (result) => result.status === "success",
+    (result) => result.status === "success" && result.attempted,
   ).length;
-  job.failureCount = job.results.length - job.successCount;
+  job.failureCount = job.results.filter(
+    (result) => result.status === "failed" && result.attempted,
+  ).length;
+  job.notAttemptedCount = job.results.filter(
+    (result) => !result.attempted,
+  ).length;
 }
 
 async function processJob(job: StoredJob): Promise<void> {
@@ -99,6 +108,7 @@ async function processJob(job: StoredJob): Promise<void> {
         clientId: record.clientId,
         ckycNumber: record.ckycNumber,
         status: result.success ? "success" : "failed",
+        attempted: true,
         message: result.message,
         statusCode: result.statusCode,
         resourceId: result.resourceId,
@@ -115,6 +125,7 @@ async function processJob(job: StoredJob): Promise<void> {
             clientId: records[remaining].clientId,
             ckycNumber: records[remaining].ckycNumber,
             status: "failed",
+            attempted: false,
             message,
             statusCode: result.statusCode,
             resourceId: null,
@@ -135,20 +146,23 @@ async function processJob(job: StoredJob): Promise<void> {
   }
 
   try {
-    const successfulUpdates = job.results
-      .filter((result) => result.status === "success")
+    const updateOutcomes = job.results
+      .filter((result) => result.attempted)
       .map((result) => ({
+        jobId: job.id,
         clientId: result.clientId,
         ckycNumber: result.ckycNumber,
-        statusCode: result.statusCode ?? 200,
+        status: result.status,
+        error: result.status === "failed" ? result.message : null,
+        statusCode: result.statusCode,
         resourceId: result.resourceId,
       }));
-    if (successfulUpdates.length > 0) {
-      await job.persistSuccessfulRecords(successfulUpdates);
+    if (updateOutcomes.length > 0) {
+      await job.persistUpdateOutcomes(updateOutcomes);
     }
   } catch {
     job.error =
-      "Finflux accepted some records, but their local update status could not be saved. Check the row results before retrying.";
+      "Finflux results were received, but their local outcome status could not be saved. Check the row results before retrying.";
     job.status = "failed";
     logger.error(
       { jobId: job.id },
@@ -174,7 +188,7 @@ async function processJob(job: StoredJob): Promise<void> {
 export async function createFinfluxCkycUpdateJob(
   credentials: FinfluxCredentials,
   records: FinfluxCkycUpdateRecordInput[],
-  persistSuccessfulRecords: PersistSuccessfulRecords = async () => {},
+  persistUpdateOutcomes: PersistUpdateOutcomes = async () => {},
 ): Promise<FinfluxCkycUpdateJobAccepted> {
   pruneExpiredJobs();
   const activeJobCount = [...jobs.values()].filter(
@@ -191,6 +205,7 @@ export async function createFinfluxCkycUpdateJob(
     processed: 0,
     successCount: 0,
     failureCount: 0,
+    notAttemptedCount: 0,
     results: [],
     createdAt: now,
     startedAt: null,
@@ -198,7 +213,7 @@ export async function createFinfluxCkycUpdateJob(
     error: null,
     accessToken: null,
     records: records.map((record) => ({ ...record })),
-    persistSuccessfulRecords,
+    persistUpdateOutcomes,
   };
   jobs.set(id, job);
 

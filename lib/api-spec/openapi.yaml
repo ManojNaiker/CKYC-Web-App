@@ -737,6 +737,16 @@ components:
           format: date-time
         finfluxResourceId:
           type: ["string", "null"]
+        finfluxStatus:
+          type: ["string", "null"]
+          enum: [updated, failed, pending, null]
+        finfluxError:
+          type: ["string", "null"]
+        finfluxStatusCode:
+          type: ["number", "null"]
+        finfluxAttemptedAt:
+          type: ["string", "null"]
+          format: date-time
       required:
         - id
         - loanid
@@ -764,6 +774,10 @@ components:
         - ckycResponseAt
         - finfluxCkycUpdatedAt
         - finfluxResourceId
+        - finfluxStatus
+        - finfluxError
+        - finfluxStatusCode
+        - finfluxAttemptedAt
     ClientInput:
       type: object
       properties:
@@ -1326,6 +1340,20 @@ components:
           type: number
         finfluxPending:
           type: number
+        finfluxFailed:
+          type: number
+        finfluxErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              count:
+                type: number
+            required:
+              - name
+              - count
         pendingErrors:
           type: array
           items:
@@ -1351,6 +1379,8 @@ components:
         - recordsPending
         - finfluxUpdated
         - finfluxPending
+        - finfluxFailed
+        - finfluxErrors
         - pendingErrors
         - lastImportFile
         - lastActivityAt
@@ -1477,6 +1507,8 @@ components:
         status:
           type: string
           enum: [success, failed]
+        attempted:
+          type: boolean
         message:
           type: string
         statusCode:
@@ -1490,6 +1522,7 @@ components:
         - clientId
         - ckycNumber
         - status
+        - attempted
         - message
         - statusCode
         - durationMs
@@ -1509,6 +1542,8 @@ components:
         successCount:
           type: number
         failureCount:
+          type: number
+        notAttemptedCount:
           type: number
         results:
           type: array
@@ -1532,6 +1567,7 @@ components:
         - processed
         - successCount
         - failureCount
+        - notAttemptedCount
         - results
         - createdAt
         - startedAt

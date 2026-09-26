@@ -29,6 +29,11 @@ export const GetDashboardSummaryResponse = zod.object({
   "recordsPending": zod.number(),
   "finfluxUpdated": zod.number(),
   "finfluxPending": zod.number(),
+  "finfluxFailed": zod.number(),
+  "finfluxErrors": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number()
+})),
   "pendingErrors": zod.array(zod.object({
   "name": zod.string(),
   "count": zod.number()
@@ -96,7 +101,11 @@ export const ListClientsResponse = zod.object({
   "ckycResponseRequestId": zod.number().nullable(),
   "ckycResponseAt": zod.coerce.date().nullable(),
   "finfluxCkycUpdatedAt": zod.coerce.date().nullable(),
-  "finfluxResourceId": zod.string().nullable()
+  "finfluxResourceId": zod.string().nullable(),
+  "finfluxStatus": zod.union([zod.literal('updated'),zod.literal('failed'),zod.literal('pending'),zod.literal(null)]).nullable(),
+  "finfluxError": zod.string().nullable(),
+  "finfluxStatusCode": zod.number().nullable(),
+  "finfluxAttemptedAt": zod.coerce.date().nullable()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -215,11 +224,13 @@ export const GetFinfluxCkycUpdateJobResponse = zod.object({
   "processed": zod.number(),
   "successCount": zod.number(),
   "failureCount": zod.number(),
+  "notAttemptedCount": zod.number(),
   "results": zod.array(zod.object({
   "rowNumber": zod.number(),
   "clientId": zod.string(),
   "ckycNumber": zod.string(),
   "status": zod.enum(['success', 'failed']),
+  "attempted": zod.boolean(),
   "message": zod.string(),
   "statusCode": zod.number().nullable(),
   "durationMs": zod.number().nullable(),

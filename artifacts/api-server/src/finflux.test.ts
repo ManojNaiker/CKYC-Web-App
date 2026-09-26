@@ -15,8 +15,9 @@ import {
 import {
   createFinfluxCkycUpdateJob,
   getFinfluxCkycUpdateJob,
+  type FinfluxUpdateOutcome,
 } from "./lib/finflux-update-jobs";
-import { persistFinfluxSuccessfulUpdates } from "./lib/finflux-update-status";
+import { persistFinfluxUpdateOutcomes } from "./lib/finflux-update-status";
 
 test("CSV preview validates required fields and marks duplicate client IDs", async () => {
   const csv = [
@@ -199,12 +200,7 @@ test("Finflux resource-integrity 403 is treated as a row failure, not a batch-wi
 test("update job processes records and exposes per-client outcomes", async () => {
   const originalFetch = globalThis.fetch;
   const calls: string[] = [];
-  const persistedRecords: Array<{
-    clientId: string;
-    ckycNumber: string;
-    statusCode: number;
-    resourceId: string | null;
-  }> = [];
+  const persistedRecords: FinfluxUpdateOutcome[] = [];
   globalThis.fetch = async (input) => {
     const url = String(input);
     calls.push(url);
@@ -251,30 +247,51 @@ test("update job processes records and exposes per-client outcomes", async () =>
     assert.equal(job.processed, 2);
     assert.equal(job.successCount, 1);
     assert.equal(job.failureCount, 1);
+    assert.equal(job.notAttemptedCount, 0);
     assert.equal(job.results[0].status, "success");
+    assert.equal(job.results[0].attempted, true);
     assert.equal(job.results[0].resourceId, "15733716");
     assert.equal(job.results[1].status, "failed");
+    assert.equal(job.results[1].attempted, true);
     assert.equal(job.results[1].message, "Identifier already exists.");
-    assert.deepEqual(persistedRecords, [{
-      clientId: "LF-3001",
-      ckycNumber: "12345678901234",
-      statusCode: 201,
-      resourceId: "15733716",
-    }]);
+    assert.deepEqual(persistedRecords, [
+      {
+        jobId: accepted.id,
+        clientId: "LF-3001",
+        ckycNumber: "12345678901234",
+        status: "success",
+        error: null,
+        statusCode: 201,
+        resourceId: "15733716",
+      },
+      {
+        jobId: accepted.id,
+        clientId: "LF-3002",
+        ckycNumber: "23456789012345",
+        status: "failed",
+        error: "Identifier already exists.",
+        statusCode: 409,
+        resourceId: null,
+      },
+    ]);
     assert.equal(calls.length, 3);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("FinFlux resource IDs persist and survive later responses without an ID", async () => {
+test("failed FinFlux attempts persist without replacing confirmed updates", async () => {
   const clientId = `FINFLUX-RESOURCE-TEST-${randomUUID()}`;
   const ckycNumber = "12345678901234";
+  const jobId = randomUUID();
 
   try {
-    await persistFinfluxSuccessfulUpdates([{
+    await persistFinfluxUpdateOutcomes([{
+      jobId,
       clientId,
       ckycNumber,
+      status: "success",
+      error: null,
       statusCode: 201,
       resourceId: "15733716",
     }]);
@@ -284,9 +301,12 @@ test("FinFlux resource IDs persist and survive later responses without an ID", a
     );
     assert.equal(inserted.rows[0]?.resource_id, "15733716");
 
-    await persistFinfluxSuccessfulUpdates([{
+    await persistFinfluxUpdateOutcomes([{
+      jobId: randomUUID(),
       clientId,
       ckycNumber,
+      status: "success",
+      error: null,
       statusCode: 200,
       resourceId: null,
     }]);
@@ -296,7 +316,40 @@ test("FinFlux resource IDs persist and survive later responses without an ID", a
     );
     assert.equal(updated.rows[0]?.resource_id, "15733716");
     assert.equal(updated.rows[0]?.status_code, 200);
+
+    await persistFinfluxUpdateOutcomes([{
+      jobId: randomUUID(),
+      clientId,
+      ckycNumber,
+      status: "failed",
+      error: "FinFlux temporarily unavailable.",
+      statusCode: 503,
+      resourceId: null,
+    }]);
+    const stillConfirmed = await pool.query<{ resource_id: string | null; status_code: number }>(
+      "SELECT resource_id, status_code FROM finflux_ckyc_updates WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
+    assert.equal(stillConfirmed.rows[0]?.resource_id, "15733716");
+    assert.equal(stillConfirmed.rows[0]?.status_code, 200);
+
+    const latestAttempt = await pool.query<{
+      job_id: string;
+      status: string;
+      error: string | null;
+      status_code: number | null;
+    }>(
+      "SELECT job_id, status, error, status_code FROM finflux_ckyc_attempts WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
+    assert.equal(latestAttempt.rows[0]?.status, "failed");
+    assert.equal(latestAttempt.rows[0]?.error, "FinFlux temporarily unavailable.");
+    assert.equal(latestAttempt.rows[0]?.status_code, 503);
   } finally {
+    await pool.query(
+      "DELETE FROM finflux_ckyc_attempts WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
     await pool.query(
       "DELETE FROM finflux_ckyc_updates WHERE client_id = $1 AND ckyc_number = $2",
       [clientId, ckycNumber],
@@ -389,7 +442,11 @@ test("update job stops remaining rows after an authorization 403", async () => {
     assert.ok(job);
     assert.equal(job.status, "failed");
     assert.equal(job.processed, 2);
+    assert.equal(job.failureCount, 1);
+    assert.equal(job.notAttemptedCount, 1);
     assert.equal(job.results[1].message, "Finflux rejected authorization for this write. Remaining records were not attempted.");
+    assert.equal(job.results[0].attempted, true);
+    assert.equal(job.results[1].attempted, false);
     assert.equal(calls.length, 2);
   } finally {
     globalThis.fetch = originalFetch;

@@ -154,7 +154,9 @@ export default function Overview() {
   const recordsPending = data?.recordsPending ?? 0;
   const finfluxUpdated = data?.finfluxUpdated ?? 0;
   const finfluxPending = data?.finfluxPending ?? 0;
-  const finfluxTotal = finfluxUpdated + finfluxPending;
+  const finfluxFailed = data?.finfluxFailed ?? 0;
+  const finfluxErrors = data?.finfluxErrors ?? [];
+  const finfluxTotal = finfluxUpdated + finfluxFailed + finfluxPending;
   const dateLabel = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 
   return (
@@ -238,11 +240,16 @@ export default function Overview() {
               </div>
               <div className="mt-7 border-t border-border pt-5">
                 <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">FinFlux record updates</p>
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-[#cfe9dc] bg-gradient-to-br from-[#e8f7ef] to-[#f7fcf9] p-4 sm:p-5" data-testid="finflux-updated-summary">
                     <div className="flex items-center gap-2 text-[#287b59]"><CheckCircle2 size={17} /><p className="text-[11px] font-bold uppercase tracking-[.08em]">Updated</p></div>
                     <p className="mt-2 font-display text-[25px] font-bold leading-none text-[#205d45] sm:text-[28px]">{formatNumber(finfluxUpdated)}</p>
                     <p className="mt-1.5 text-[10px] font-medium text-[#4f7b67]">of {formatNumber(finfluxTotal)} client records</p>
+                  </div>
+                  <div className="rounded-2xl border border-[#f0d3cf] bg-gradient-to-br from-[#fff0ed] to-[#fff9f8] p-4 sm:p-5" data-testid="finflux-failed-summary">
+                    <div className="flex items-center gap-2 text-[#a23e36]"><p className="text-[11px] font-bold uppercase tracking-[.08em]">Failed</p></div>
+                    <p className="mt-2 font-display text-[25px] font-bold leading-none text-[#8e332d] sm:text-[28px]">{formatNumber(finfluxFailed)}</p>
+                    <p className="mt-1.5 text-[10px] font-medium text-[#a65d56]">of {formatNumber(finfluxTotal)} client records</p>
                   </div>
                   <div className="rounded-2xl border border-[#efdfb4] bg-gradient-to-br from-[#fff5d9] to-[#fffaf0] p-4 sm:p-5" data-testid="finflux-pending-summary">
                     <div className="flex items-center gap-2 text-[#896516]"><Clock3 size={17} /><p className="text-[11px] font-bold uppercase tracking-[.08em]">Pending</p></div>
@@ -250,6 +257,15 @@ export default function Overview() {
                     <p className="mt-1.5 text-[10px] font-medium text-[#8c7340]">of {formatNumber(finfluxTotal)} client records</p>
                   </div>
                 </div>
+                {finfluxErrors.length > 0 && <div className="mt-4 rounded-xl border border-[#f0d3cf] bg-[#fff9f8] p-4" data-testid="finflux-error-summary">
+                  <p className="font-mono-ui text-[9px] font-semibold uppercase tracking-[.12em] text-[#a23e36]">Latest FinFlux errors</p>
+                  <div className="mt-3 space-y-2">
+                    {finfluxErrors.slice(0, 5).map((error) => <div key={error.name} className="flex items-start justify-between gap-3 text-[11px]">
+                      <span className="min-w-0 line-clamp-2 leading-5 text-foreground" title={error.name}>{error.name}</span>
+                      <span className="shrink-0 font-mono-ui font-semibold text-[#a23e36]">{formatNumber(error.count)}</span>
+                    </div>)}
+                  </div>
+                </div>}
               </div>
               <div className="mt-7 grid grid-cols-2 gap-2">
                  <div className="rounded-2xl bg-sidebar p-4 text-sidebar-foreground sm:p-5">

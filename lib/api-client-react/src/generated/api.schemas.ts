@@ -33,6 +33,18 @@ export const ClientCkycResponseMatchStatus = {
   Not_Match: 'Not Match',
 } as const;
 
+/**
+ * @nullable
+ */
+export type ClientFinfluxStatus = typeof ClientFinfluxStatus[keyof typeof ClientFinfluxStatus] | null;
+
+
+export const ClientFinfluxStatus = {
+  updated: 'updated',
+  failed: 'failed',
+  pending: 'pending',
+} as const;
+
 export interface Client {
   id: number;
   loanid: string;
@@ -74,6 +86,14 @@ export interface Client {
   finfluxCkycUpdatedAt: string | null;
   /** @nullable */
   finfluxResourceId: string | null;
+  /** @nullable */
+  finfluxStatus: ClientFinfluxStatus;
+  /** @nullable */
+  finfluxError: string | null;
+  /** @nullable */
+  finfluxStatusCode: number | null;
+  /** @nullable */
+  finfluxAttemptedAt: string | null;
 }
 
 export interface ClientInput {
@@ -349,6 +369,11 @@ export interface CkycDownloadRequestBatchResponse {
   unmatchedReferences: string[];
 }
 
+export type DashboardSummaryFinfluxErrorsItem = {
+  name: string;
+  count: number;
+};
+
 export type DashboardSummaryPendingErrorsItem = {
   name: string;
   count: number;
@@ -363,6 +388,8 @@ export interface DashboardSummary {
   recordsPending: number;
   finfluxUpdated: number;
   finfluxPending: number;
+  finfluxFailed: number;
+  finfluxErrors: DashboardSummaryFinfluxErrorsItem[];
   pendingErrors: DashboardSummaryPendingErrorsItem[];
   /** @nullable */
   lastImportFile: string | null;
@@ -464,6 +491,7 @@ export interface FinfluxCkycUpdateResult {
   clientId: string;
   ckycNumber: string;
   status: FinfluxCkycUpdateResultStatus;
+  attempted: boolean;
   message: string;
   /** @nullable */
   statusCode: number | null;
@@ -490,6 +518,7 @@ export interface FinfluxCkycUpdateJob {
   processed: number;
   successCount: number;
   failureCount: number;
+  notAttemptedCount: number;
   results: FinfluxCkycUpdateResult[];
   createdAt: string;
   /** @nullable */

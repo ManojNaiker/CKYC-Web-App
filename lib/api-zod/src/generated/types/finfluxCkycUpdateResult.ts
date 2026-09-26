@@ -12,6 +12,7 @@ export interface FinfluxCkycUpdateResult {
   clientId: string;
   ckycNumber: string;
   status: FinfluxCkycUpdateResultStatus;
+  attempted: boolean;
   message: string;
   /** @nullable */
   statusCode: number | null;

@@ -15,6 +15,7 @@ export interface FinfluxCkycUpdateJob {
   processed: number;
   successCount: number;
   failureCount: number;
+  notAttemptedCount: number;
   results: FinfluxCkycUpdateResult[];
   createdAt: Date;
   /** @nullable */

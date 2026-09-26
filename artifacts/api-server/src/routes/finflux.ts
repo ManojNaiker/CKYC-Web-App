@@ -22,7 +22,7 @@ import {
   FinfluxJobsBusyError,
   getFinfluxCkycUpdateJob,
 } from "../lib/finflux-update-jobs";
-import { persistFinfluxSuccessfulUpdates } from "../lib/finflux-update-status";
+import { persistFinfluxUpdateOutcomes } from "../lib/finflux-update-status";
 
 const router: IRouter = Router();
 
@@ -141,7 +141,7 @@ router.post("/finflux/ckyc-update-jobs", async (req, res): Promise<void> => {
     const accepted = await createFinfluxCkycUpdateJob(
       credentials,
       records,
-      persistFinfluxSuccessfulUpdates,
+      persistFinfluxUpdateOutcomes,
     );
     res.status(202).json(CreateFinfluxCkycUpdateJobResponse.parse(accepted));
   } catch (error) {

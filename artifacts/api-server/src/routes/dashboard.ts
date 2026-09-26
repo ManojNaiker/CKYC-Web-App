@@ -1,16 +1,29 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import {
   db,
   clientsTable,
   ckycRequestsTable,
   finfluxCkycUpdatesTable,
+  finfluxCkycAttemptsTable,
 } from "@workspace/db";
 import { GetDashboardSummaryResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 router.get("/dashboard/summary", async (_req, res): Promise<void> => {
+  const hasFinalCkyc = and(
+    isNotNull(clientsTable.ckycNumber),
+    sql`btrim(${clientsTable.ckycNumber}) <> ''`,
+  );
+  const exactFinfluxPair = and(
+    eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+    eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+  );
+  const exactAttemptPair = and(
+    eq(finfluxCkycAttemptsTable.clientId, clientsTable.clientId),
+    eq(finfluxCkycAttemptsTable.ckycNumber, clientsTable.ckycNumber),
+  );
   const [
     clientCount,
     requestCount,
@@ -19,7 +32,9 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
     requestIdCount,
     pendingCount,
     finfluxUpdatedCount,
+    finfluxFailedCount,
     finfluxPendingCount,
+    finfluxErrorRows,
     pendingErrorRows,
     lastClient,
     lastRequest,
@@ -58,28 +73,58 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
         .from(clientsTable)
         .innerJoin(
           finfluxCkycUpdatesTable,
+          exactFinfluxPair,
+        )
+        .where(hasFinalCkyc),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(clientsTable)
+        .innerJoin(
+          finfluxCkycAttemptsTable,
           and(
-            eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
-            eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+            exactAttemptPair,
+            eq(finfluxCkycAttemptsTable.status, "failed"),
           ),
         )
-        .where(isNotNull(clientsTable.ckycNumber)),
+        .leftJoin(finfluxCkycUpdatesTable, exactFinfluxPair)
+        .where(and(hasFinalCkyc, isNull(finfluxCkycUpdatesTable.id))),
       db
         .select({ count: sql<number>`count(*)` })
         .from(clientsTable)
         .leftJoin(
           finfluxCkycUpdatesTable,
-          and(
-            eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
-            eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
-          ),
+          exactFinfluxPair,
+        )
+        .leftJoin(
+          finfluxCkycAttemptsTable,
+          exactAttemptPair,
         )
         .where(
           and(
-            isNotNull(clientsTable.ckycNumber),
+            hasFinalCkyc,
             isNull(finfluxCkycUpdatesTable.id),
+            or(
+              isNull(finfluxCkycAttemptsTable.id),
+              eq(finfluxCkycAttemptsTable.status, "success"),
+            ),
           ),
         ),
+      db
+        .select({
+          name: finfluxCkycAttemptsTable.error,
+          count: sql<number>`count(*)`,
+        })
+        .from(clientsTable)
+        .innerJoin(
+          finfluxCkycAttemptsTable,
+          and(
+            exactAttemptPair,
+            eq(finfluxCkycAttemptsTable.status, "failed"),
+          ),
+        )
+        .where(hasFinalCkyc)
+        .groupBy(finfluxCkycAttemptsTable.error)
+        .orderBy(desc(sql`count(*)`)),
       db
         .select({
           name: clientsTable.ckycResponseError,
@@ -129,6 +174,11 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
       recordsPending: Number(pendingCount[0]?.count ?? 0),
       finfluxUpdated: Number(finfluxUpdatedCount[0]?.count ?? 0),
       finfluxPending: Number(finfluxPendingCount[0]?.count ?? 0),
+      finfluxFailed: Number(finfluxFailedCount[0]?.count ?? 0),
+      finfluxErrors: finfluxErrorRows.map((row) => ({
+        name: row.name?.trim() || "Unknown FinFlux error",
+        count: Number(row.count ?? 0),
+      })),
       pendingErrors: pendingErrorRows.map((row) => ({
         name: row.name?.trim() || "Unknown error",
         count: Number(row.count ?? 0),

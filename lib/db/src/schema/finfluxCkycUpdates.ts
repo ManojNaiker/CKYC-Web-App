@@ -29,6 +29,29 @@ export const finfluxCkycUpdatesTable = pgTable(
   ],
 );
 
+export const finfluxCkycAttemptsTable = pgTable(
+  "finflux_ckyc_attempts",
+  {
+    id: serial("id").primaryKey(),
+    jobId: text("job_id").notNull(),
+    clientId: text("client_id").notNull(),
+    ckycNumber: text("ckyc_number").notNull(),
+    status: text("status").$type<"success" | "failed">().notNull(),
+    error: text("error"),
+    statusCode: integer("status_code"),
+    resourceId: text("resource_id"),
+    attemptedAt: timestamp("attempted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("finflux_ckyc_attempts_identifier_unique").on(
+      table.clientId,
+      table.ckycNumber,
+    ),
+  ],
+);
+
 export const insertFinfluxCkycUpdateSchema = createInsertSchema(
   finfluxCkycUpdatesTable,
 ).omit({ id: true, updatedAt: true });
@@ -37,3 +60,4 @@ export type InsertFinfluxCkycUpdate = z.infer<
   typeof insertFinfluxCkycUpdateSchema
 >;
 export type FinfluxCkycUpdate = typeof finfluxCkycUpdatesTable.$inferSelect;
+export type FinfluxCkycAttempt = typeof finfluxCkycAttemptsTable.$inferSelect;

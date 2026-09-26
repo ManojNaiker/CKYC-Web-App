@@ -17,6 +17,7 @@ import {
   db,
   clientsTable,
   finfluxCkycUpdatesTable,
+  finfluxCkycAttemptsTable,
 } from "@workspace/db";
 import {
   ExportClientsQueryParams,
@@ -399,9 +400,31 @@ async function getCkycCreateMatchedClientIds(
 function toClientResponse(
   client: typeof clientsTable.$inferSelect,
   ckycCreateMatched = false,
-  finfluxCkycUpdatedAt: Date | null = null,
-  finfluxResourceId: string | null = null,
+  finflux: {
+    updatedAt: Date | null;
+    resourceId: string | null;
+    attemptStatus: "success" | "failed" | null;
+    error: string | null;
+    statusCode: number | null;
+    attemptedAt: Date | null;
+  } = {
+    updatedAt: null,
+    resourceId: null,
+    attemptStatus: null,
+    error: null,
+    statusCode: null,
+    attemptedAt: null,
+  },
 ) {
+  const hasFinalCkyc = Boolean(client.ckycNumber?.trim());
+  const finfluxStatus = !hasFinalCkyc
+    ? null
+    : finflux.updatedAt
+      ? "updated"
+      : finflux.attemptStatus === "failed"
+        ? "failed"
+        : "pending";
+
   return {
     id: client.id,
     loanid: client.loanid,
@@ -433,8 +456,13 @@ function toClientResponse(
     ckycResponseFileName: client.ckycResponseFileName,
     ckycResponseRequestId: client.ckycResponseRequestId,
     ckycResponseAt: client.ckycResponseAt,
-    finfluxCkycUpdatedAt,
-    finfluxResourceId,
+    finfluxCkycUpdatedAt: finflux.updatedAt,
+    finfluxResourceId: finflux.resourceId,
+    finfluxStatus,
+    finfluxError:
+      finflux.attemptStatus === "failed" ? finflux.error : null,
+    finfluxStatusCode: finflux.statusCode,
+    finfluxAttemptedAt: finflux.attemptedAt,
   };
 }
 
@@ -544,6 +572,10 @@ router.get("/clients", async (req, res): Promise<void> => {
         client: clientsTable,
         finfluxCkycUpdatedAt: finfluxCkycUpdatesTable.updatedAt,
         finfluxResourceId: finfluxCkycUpdatesTable.resourceId,
+        finfluxAttemptStatus: finfluxCkycAttemptsTable.status,
+        finfluxError: finfluxCkycAttemptsTable.error,
+        finfluxStatusCode: finfluxCkycAttemptsTable.statusCode,
+        finfluxAttemptedAt: finfluxCkycAttemptsTable.attemptedAt,
       })
       .from(clientsTable)
       .leftJoin(
@@ -551,6 +583,13 @@ router.get("/clients", async (req, res): Promise<void> => {
         and(
           eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
           eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+        ),
+      )
+      .leftJoin(
+        finfluxCkycAttemptsTable,
+        and(
+          eq(finfluxCkycAttemptsTable.clientId, clientsTable.clientId),
+          eq(finfluxCkycAttemptsTable.ckycNumber, clientsTable.ckycNumber),
         ),
       )
       .where(filter)
@@ -571,13 +610,24 @@ router.get("/clients", async (req, res): Promise<void> => {
   );
 
   res.json({
-    items: rows.map(({ client, finfluxCkycUpdatedAt, finfluxResourceId }) =>
-      toClientResponse(
+    items: rows.map(
+      ({
         client,
-        createMatchedClientIds.has(client.id),
         finfluxCkycUpdatedAt,
         finfluxResourceId,
-      ),
+        finfluxAttemptStatus,
+        finfluxError,
+        finfluxStatusCode,
+        finfluxAttemptedAt,
+      }) =>
+        toClientResponse(client, createMatchedClientIds.has(client.id), {
+          updatedAt: finfluxCkycUpdatedAt,
+          resourceId: finfluxResourceId,
+          attemptStatus: finfluxAttemptStatus,
+          error: finfluxError,
+          statusCode: finfluxStatusCode,
+          attemptedAt: finfluxAttemptedAt,
+        }),
     ),
     total: Number(countRows[0]?.count ?? 0),
     page,
