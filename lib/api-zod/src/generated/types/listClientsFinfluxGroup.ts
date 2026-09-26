@@ -11,6 +11,7 @@ export type ListClientsFinfluxGroup = typeof ListClientsFinfluxGroup[keyof typeo
 
 export const ListClientsFinfluxGroup = {
   finalCkyc: 'finalCkyc',
+  finalCkycFailed: 'finalCkycFailed',
   requestIdUpdated: 'requestIdUpdated',
   recordsPending: 'recordsPending',
 } as const;

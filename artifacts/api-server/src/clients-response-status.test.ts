@@ -314,6 +314,32 @@ describe("CKYC response match status", () => {
     assert.equal(failedFinfluxClient?.finfluxError, finfluxFailureMessage);
     assert.equal(failedFinfluxClient?.finfluxStatusCode, 503);
 
+    const readyFinfluxClients = await requestJson<{
+      total: number;
+      items: Array<{ loanid: string; finfluxStatus: string | null }>;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&finfluxGroup=finalCkyc&pageSize=20`,
+    );
+    const failedFinfluxClients = await requestJson<{
+      total: number;
+      items: Array<{ loanid: string; finfluxStatus: string | null }>;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(loanPrefix)}&finfluxGroup=finalCkycFailed&pageSize=20`,
+    );
+    assert.equal(readyFinfluxClients.total, 2);
+    assert.equal(
+      readyFinfluxClients.items.some(
+        (client) => client.loanid === `${loanPrefix}-rejected`,
+      ),
+      false,
+      "previous FinFlux failures are excluded from the default ready list",
+    );
+    assert.equal(failedFinfluxClients.total, 1);
+    assert.equal(failedFinfluxClients.items[0]?.loanid, `${loanPrefix}-rejected`);
+    assert.equal(failedFinfluxClients.items[0]?.finfluxStatus, "failed");
+
     const pendingClients = await requestJson<{ total: number }>(
       baseUrl,
       `/clients?search=${encodeURIComponent(loanPrefix)}&status=pending`,

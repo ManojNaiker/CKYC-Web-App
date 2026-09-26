@@ -3,6 +3,7 @@ import { Router, type IRouter } from "express";
 import {
   and,
   desc,
+  exists,
   ilike,
   inArray,
   isNull,
@@ -521,6 +522,46 @@ function getFinfluxGroupFilter(finfluxGroup?: string) {
               and(
                 eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
                 eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+              ),
+            ),
+        ),
+        notExists(
+          db
+            .select({ id: finfluxCkycAttemptsTable.id })
+            .from(finfluxCkycAttemptsTable)
+            .where(
+              and(
+                eq(finfluxCkycAttemptsTable.clientId, clientsTable.clientId),
+                eq(finfluxCkycAttemptsTable.ckycNumber, clientsTable.ckycNumber),
+                eq(finfluxCkycAttemptsTable.status, "failed"),
+              ),
+            ),
+        ),
+      );
+    case "finalCkycFailed":
+      return and(
+        isNotNull(clientsTable.ckycNumber),
+        sql`btrim(${clientsTable.ckycNumber}) <> ''`,
+        notExists(
+          db
+            .select({ id: finfluxCkycUpdatesTable.id })
+            .from(finfluxCkycUpdatesTable)
+            .where(
+              and(
+                eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+                eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+              ),
+            ),
+        ),
+        exists(
+          db
+            .select({ id: finfluxCkycAttemptsTable.id })
+            .from(finfluxCkycAttemptsTable)
+            .where(
+              and(
+                eq(finfluxCkycAttemptsTable.clientId, clientsTable.clientId),
+                eq(finfluxCkycAttemptsTable.ckycNumber, clientsTable.ckycNumber),
+                eq(finfluxCkycAttemptsTable.status, "failed"),
               ),
             ),
         ),

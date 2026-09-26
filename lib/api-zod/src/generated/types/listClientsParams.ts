@@ -20,7 +20,7 @@ clientId?: number;
  */
 status?: ListClientsStatus;
 /**
- * Filter pending FinFlux records by readiness group. Request ID and records-pending groups are view-only until a final CKYC number is available.
+ * Filter FinFlux records by readiness or latest exact ClientID and CKYC-pair failure. Ready excludes previously failed and successful pairs; failed pairs can be reviewed and retried.
  */
 finfluxGroup?: ListClientsFinfluxGroup;
 /**

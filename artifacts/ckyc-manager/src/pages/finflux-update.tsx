@@ -38,7 +38,7 @@ import { EmptyState, PageIntro, QueryError } from '@/components/workspace-shell'
 
 type Mode = 'clients' | 'file';
 type SelectedRecord = { clientId: string; ckycNumber: string; clientName?: string };
-type FinfluxGroup = 'finalCkyc' | 'requestIdUpdated' | 'recordsPending';
+type FinfluxGroup = 'finalCkyc' | 'finalCkycFailed' | 'requestIdUpdated' | 'recordsPending';
 type BatchProgress = {
   status: 'running' | 'stopping' | 'completed' | 'stopped' | 'failed';
   totalRecords: number;
@@ -273,7 +273,7 @@ export default function FinfluxUpdate() {
   const selectedList = useMemo(() => Object.values(selectedRecords), [selectedRecords]);
   const validSelected = useMemo(() => selectedList.filter((record) => record.clientId.trim() && record.ckycNumber.trim()), [selectedList]);
   const validPreview = useMemo(() => (preview?.rows ?? []).filter((row) => row.valid && row.clientId?.trim() && row.ckycNumber?.trim()), [preview]);
-  const canEditSelectedRecords = finfluxGroup === 'finalCkyc';
+  const canEditSelectedRecords = finfluxGroup === 'finalCkyc' || finfluxGroup === 'finalCkycFailed';
   const batchIsActive = batchProgress?.status === 'running' || batchProgress?.status === 'stopping';
   const selectionBusy = selectingAll || batchIsActive;
   const currentPageSelected = canEditSelectedRecords && clients.length > 0 && clients.every((client) => Boolean(selectedRecords[client.ClientID]));
@@ -648,9 +648,10 @@ export default function FinfluxUpdate() {
                 <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Source register</p><h3 className="mt-1 font-display text-[20px] font-semibold">Choose client records</h3><p className="mt-1 text-[11px] text-muted-foreground">Outgoing client ID: LMS ClientID. Database IDs are not sent.</p></div><div className="rounded-lg bg-secondary px-3 py-2 text-right"><p className="font-mono-ui text-[9px] uppercase tracking-[.12em] text-muted-foreground">Selected</p><p className="font-mono-ui text-[18px] font-semibold text-primary">{selectedList.length}</p></div></div>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <label className="sm:w-[225px]">
-                    <span className="sr-only">Filter CKYC readiness group</span>
+                    <span className="sr-only">Filter FinFlux client list</span>
                     <select value={finfluxGroup} disabled={selectionBusy} onChange={(event) => { setFinfluxGroup(event.target.value as FinfluxGroup); setSelectedRecords({}); setSelectionError(''); setPage(1); }} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-[11px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60" data-testid="select-finflux-group">
-                      <option value="finalCkyc">Final CKYC update</option>
+                      <option value="finalCkyc">Ready for update</option>
+                      <option value="finalCkycFailed">Previous errors (retry)</option>
                       <option value="requestIdUpdated">Request ID updated</option>
                       <option value="recordsPending">Records pending</option>
                     </select>
@@ -673,6 +674,7 @@ export default function FinfluxUpdate() {
                   </div>
                 </div>
                 {selectionError && <div className="mt-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-[11px] text-destructive" role="alert">{selectionError}</div>}
+                {finfluxGroup === 'finalCkycFailed' && <p className="mt-3 rounded-lg border border-[#eadcae] bg-[#fff8e5] px-3 py-2 text-[10px] leading-5 text-[#81651c]">These records have a previous FinFlux error. Review the message below, then select the rows you want to retry.</p>}
                 {!canEditSelectedRecords && <p className="mt-3 rounded-lg border border-[#eadcae] bg-[#fff8e5] px-3 py-2 text-[10px] leading-5 text-[#81651c]">These clients do not have a final CKYC number yet, so they are view-only and cannot be sent to FinFlux.</p>}
               </div>
               {clientsQuery.isError ? <div className="p-5"><QueryError onRetry={() => clientsQuery.refetch()} /></div> : clientsQuery.isLoading ? <div className="space-y-3 p-5">{[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-[72px] animate-pulse rounded-lg bg-muted" />)}</div> : clients.length === 0 ? <EmptyState icon={Database} title={search ? 'No clients match this search' : 'No LMS clients available'} detail={search ? 'Try a ClientID, name or loan ID with fewer terms.' : 'Import LMS rows before preparing a Finflux update.'} /> : (
