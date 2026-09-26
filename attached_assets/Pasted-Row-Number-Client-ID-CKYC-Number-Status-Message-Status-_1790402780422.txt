@@ -1,0 +1,2 @@
+Row Number	Client ID	CKYC Number	Status	Message	Status Code	Duration (ms)	Response Data
+1	5723167	10000033096176	SUCCESS	CKYC added successfully	200	125.038	{"officeId": 336, "clientId": 5723167, "resourceId": 15733716}
