@@ -69,58 +69,58 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(18, 63, 79, 0.15);
-  --badge-outline: rgba(18, 63, 79, 0.1);
+  --button-outline: rgba(83, 65, 184, 0.16);
+  --badge-outline: rgba(83, 65, 184, 0.1);
 
   /* Automatic computation of border around primary / danger buttons */
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(15, 77, 103, 0.045);
-  --elevate-2: rgba(15, 77, 103, 0.09);
+  --elevate-1: rgba(91, 69, 195, 0.045);
+  --elevate-2: rgba(91, 69, 195, 0.09);
 
-  /* Navy + cyan operations: deep navigation, mineral canvas, crisp data surfaces. */
-  --background: 195 38% 95%;
-  --foreground: 208 58% 16%;
-  --border: 194 30% 82%;
-  --card: 186 35% 99%;
-  --card-foreground: 208 58% 16%;
-  --card-border: 194 30% 82%;
-  --sidebar: 208 57% 15%;
-  --sidebar-foreground: 191 34% 92%;
-  --sidebar-border: 206 40% 26%;
-  --sidebar-primary: 185 84% 56%;
-  --sidebar-primary-foreground: 208 57% 13%;
-  --sidebar-accent: 205 45% 23%;
-  --sidebar-accent-foreground: 184 80% 83%;
-  --sidebar-ring: 185 84% 56%;
-  --popover: 186 35% 99%;
-  --popover-foreground: 208 58% 16%;
-  --popover-border: 194 30% 82%;
-  --primary: 199 78% 29%;
-  --primary-foreground: 185 45% 98%;
-  --secondary: 190 42% 91%;
-  --secondary-foreground: 202 62% 24%;
-  --muted: 192 32% 90%;
-  --muted-foreground: 205 24% 36%;
-  --accent: 185 68% 84%;
-  --accent-foreground: 205 63% 18%;
-  --destructive: 3 64% 39%;
-  --destructive-foreground: 0 70% 98%;
-  --input: 194 30% 75%;
-  --ring: 188 82% 36%;
-  --chart-1: 199 78% 33%;
-  --chart-2: 183 68% 38%;
-  --chart-3: 153 48% 36%;
-  --chart-4: 37 82% 43%;
-  --chart-5: 3 64% 46%;
-  --success: 155 65% 25%;
-  --success-bg: 154 51% 91%;
-  --warning: 35 78% 30%;
-  --warning-bg: 42 89% 90%;
-  --info: 199 78% 29%;
-  --info-bg: 194 65% 90%;
-  --danger-bg: 5 76% 94%;
+  /* Vivid operations palette: indigo, aqua, violet and warm amber accents. */
+  --background: 226 48% 97%;
+  --foreground: 235 39% 18%;
+  --border: 228 33% 86%;
+  --card: 0 0% 100%;
+  --card-foreground: 235 39% 18%;
+  --card-border: 228 33% 87%;
+  --sidebar: 250 57% 23%;
+  --sidebar-foreground: 220 100% 98%;
+  --sidebar-border: 249 38% 35%;
+  --sidebar-primary: 43 100% 62%;
+  --sidebar-primary-foreground: 250 48% 18%;
+  --sidebar-accent: 251 43% 32%;
+  --sidebar-accent-foreground: 43 100% 88%;
+  --sidebar-ring: 43 100% 62%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 235 39% 18%;
+  --popover-border: 228 33% 87%;
+  --primary: 248 72% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 207 100% 94%;
+  --secondary-foreground: 228 52% 32%;
+  --muted: 228 42% 95%;
+  --muted-foreground: 233 19% 42%;
+  --accent: 39 100% 91%;
+  --accent-foreground: 26 57% 27%;
+  --destructive: 0 75% 47%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 229 30% 82%;
+  --ring: 251 81% 65%;
+  --chart-1: 248 72% 57%;
+  --chart-2: 177 70% 37%;
+  --chart-3: 39 94% 50%;
+  --chart-4: 320 70% 55%;
+  --chart-5: 204 88% 56%;
+  --success: 151 63% 30%;
+  --success-bg: 150 68% 92%;
+  --warning: 28 79% 34%;
+  --warning-bg: 40 100% 91%;
+  --info: 213 82% 45%;
+  --info-bg: 208 100% 94%;
+  --danger-bg: 2 91% 96%;
   --app-font-sans: 'DM Sans', sans-serif;
   --app-font-serif: 'Outfit', sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
@@ -208,40 +208,47 @@
   --elevate-1: rgba(255, 255, 255, 0.04);
   --elevate-2: rgba(255, 255, 255, 0.09);
 
-  --background: 213 31% 12%;
-  --foreground: 40 26% 91%;
-  --border: 213 23% 27%;
-  --card: 213 27% 16%;
-  --card-foreground: 40 26% 91%;
-  --card-border: 213 23% 27%;
-  --sidebar: 214 39% 9%;
-  --sidebar-foreground: 40 26% 91%;
-  --sidebar-border: 214 26% 21%;
-  --sidebar-primary: 198 86% 58%;
-  --sidebar-primary-foreground: 214 39% 9%;
-  --sidebar-accent: 214 27% 20%;
-  --sidebar-accent-foreground: 40 26% 91%;
-  --sidebar-ring: 161 29% 58%;
-  --popover: 213 27% 16%;
-  --popover-foreground: 40 26% 91%;
-  --popover-border: 213 23% 27%;
-  --primary: 198 86% 58%;
-  --primary-foreground: 214 39% 9%;
-  --secondary: 213 27% 21%;
-  --secondary-foreground: 40 26% 91%;
-  --muted: 213 27% 21%;
-  --muted-foreground: 40 13% 66%;
-  --accent: 28 91% 53%;
-  --accent-foreground: 214 39% 9%;
-  --destructive: 4 58% 57%;
-  --destructive-foreground: 40 26% 91%;
-  --input: 213 23% 31%;
-  --ring: 198 86% 58%;
-  --chart-1: 198 86% 58%;
-  --chart-2: 28 91% 53%;
-  --chart-3: 70 84% 52%;
-  --chart-4: 4 58% 57%;
-  --chart-5: 143 25% 55%;
+  --background: 232 32% 11%;
+  --foreground: 222 35% 94%;
+  --border: 231 26% 27%;
+  --card: 235 32% 15%;
+  --card-foreground: 222 35% 94%;
+  --card-border: 231 26% 26%;
+  --sidebar: 249 53% 9%;
+  --sidebar-foreground: 222 38% 93%;
+  --sidebar-border: 249 25% 22%;
+  --sidebar-primary: 42 100% 62%;
+  --sidebar-primary-foreground: 248 50% 12%;
+  --sidebar-accent: 249 31% 18%;
+  --sidebar-accent-foreground: 42 100% 86%;
+  --sidebar-ring: 42 100% 62%;
+  --popover: 235 32% 15%;
+  --popover-foreground: 222 35% 94%;
+  --popover-border: 231 26% 26%;
+  --primary: 248 78% 70%;
+  --primary-foreground: 249 45% 12%;
+  --secondary: 231 29% 23%;
+  --secondary-foreground: 223 35% 92%;
+  --muted: 231 29% 22%;
+  --muted-foreground: 224 17% 68%;
+  --accent: 25 88% 59%;
+  --accent-foreground: 232 36% 13%;
+  --destructive: 3 70% 58%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 231 23% 32%;
+  --ring: 252 85% 74%;
+  --chart-1: 248 80% 70%;
+  --chart-2: 173 72% 52%;
+  --chart-3: 42 97% 61%;
+  --chart-4: 322 76% 68%;
+  --chart-5: 205 92% 65%;
+  --success: 145 58% 61%;
+  --success-bg: 150 40% 18%;
+  --warning: 39 90% 65%;
+  --warning-bg: 34 65% 18%;
+  --info: 207 90% 70%;
+  --info-bg: 215 45% 20%;
+  --danger-bg: 0 42% 21%;
 
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
@@ -365,18 +372,66 @@
 @layer utilities {
   .ckyc-readable-type main {
     background:
-      radial-gradient(ellipse 70% 35% at 100% 0%, hsl(186 71% 87% / .46), transparent 75%),
+      radial-gradient(ellipse 62% 34% at 100% 0%, hsl(263 100% 91% / .68), transparent 76%),
+      radial-gradient(ellipse 55% 34% at 0% 17%, hsl(188 100% 90% / .56), transparent 79%),
+      radial-gradient(ellipse 48% 30% at 96% 87%, hsl(42 100% 90% / .46), transparent 76%),
       hsl(var(--background));
+  }
+  .ckyc-readable-type .app-sidebar {
+    background:
+      radial-gradient(ellipse 80% 32% at 0% 0%, hsl(278 68% 44% / .42), transparent 72%),
+      linear-gradient(165deg, hsl(250 57% 27%) 0%, hsl(248 61% 21%) 58%, hsl(220 76% 27%) 100%);
+  }
+  .dark .ckyc-readable-type .app-sidebar {
+    background:
+      radial-gradient(ellipse 80% 32% at 0% 0%, hsl(278 72% 35% / .25), transparent 72%),
+      linear-gradient(165deg, hsl(250 53% 12%) 0%, hsl(248 58% 9%) 58%, hsl(220 70% 15%) 100%);
+  }
+  .ckyc-readable-type .app-topbar {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--card) / .98),
+      hsl(250 100% 98% / .96) 54%,
+      hsl(44 100% 97% / .96)
+    );
+  }
+  .dark .ckyc-readable-type .app-topbar {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--card) / .97),
+      hsl(250 34% 18% / .96) 54%,
+      hsl(38 38% 17% / .96)
+    );
   }
   .ckyc-readable-type .data-table thead,
   .ckyc-readable-type .data-table[class*="grid-cols-"] {
-    background: hsl(191 49% 87%);
+    background: linear-gradient(
+      90deg,
+      hsl(248 100% 95%),
+      hsl(196 100% 93%) 55%,
+      hsl(43 100% 92%)
+    );
   }
   .ckyc-readable-type .data-table tbody tr:nth-child(even) {
-    background-color: hsl(189 35% 97%);
+    background-color: hsl(229 70% 98%);
   }
   .ckyc-readable-type .data-table tbody tr:hover {
-    background-color: hsl(188 54% 91%);
+    background-color: hsl(194 100% 93%);
+  }
+  .dark .ckyc-readable-type .data-table thead,
+  .dark .ckyc-readable-type .data-table[class*="grid-cols-"] {
+    background: linear-gradient(
+      90deg,
+      hsl(251 43% 23%),
+      hsl(211 48% 21%) 55%,
+      hsl(34 45% 21%)
+    );
+  }
+  .dark .ckyc-readable-type .data-table tbody tr:nth-child(even) {
+    background-color: hsl(232 34% 17%);
+  }
+  .dark .ckyc-readable-type .data-table tbody tr:hover {
+    background-color: hsl(246 38% 23%);
   }
   .ckyc-readable-type input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   .ckyc-readable-type select,
