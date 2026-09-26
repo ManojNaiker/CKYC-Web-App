@@ -12,15 +12,21 @@ import {
 
 const router: IRouter = Router();
 export const publicAuthRouter: IRouter = Router();
+let authConfigurationWarningLogged = false;
 
 publicAuthRouter.post("/auth/login", async (req, res): Promise<void> => {
   const configured = process.env.CKYC_ADMIN_PASSWORD;
-  if (
-    !configured ||
-    configured.length < 12 ||
-    !process.env.SESSION_SECRET ||
-    process.env.SESSION_SECRET.length < 32
-  ) {
+  const adminPasswordReady = Boolean(configured && configured.length >= 12);
+  const sessionSecret = process.env.SESSION_SECRET;
+  const sessionSecretReady = Boolean(sessionSecret && sessionSecret.length >= 32);
+  if (!adminPasswordReady || !sessionSecretReady) {
+    if (!authConfigurationWarningLogged) {
+      req.log.warn(
+        { adminPasswordReady, sessionSecretReady },
+        "Local Admin login configuration is incomplete",
+      );
+      authConfigurationWarningLogged = true;
+    }
     res.status(503).json({ error: "Authentication is temporarily unavailable." });
     return;
   }
