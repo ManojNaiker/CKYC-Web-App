@@ -6,6 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminUsersResponse';
+export * from './appRole';
+export * from './appUser';
+export * from './appUserRoleUpdate';
+export * from './auditTrailEntry';
+export * from './auditTrailEntryMetadata';
+export * from './auditTrailsResponse';
 export * from './ckycClientInput';
 export * from './ckycClientInputSearchType';
 export * from './ckycCreateDataBatch';
@@ -36,6 +43,7 @@ export * from './clientFinfluxStatus';
 export * from './clientImportInput';
 export * from './clientInput';
 export * from './clientList';
+export * from './currentAppUserResponse';
 export * from './dashboardSummary';
 export * from './dashboardSummaryFinfluxErrorsItem';
 export * from './dashboardSummaryPendingErrorsItem';
@@ -58,6 +66,7 @@ export * from './finfluxCredentialInput';
 export * from './getFinfluxCkycUpdateJobParams';
 export * from './healthStatus';
 export * from './importResult';
+export * from './listAuditTrailsParams';
 export * from './listCkycCreateDataParams';
 export * from './listCkycDownloadResponseFilesParams';
 export * from './listClientsFinfluxGroup';

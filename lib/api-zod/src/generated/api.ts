@@ -18,6 +18,94 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get the current signed-in application user
+ */
+export const GetCurrentAppUserResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "fullName": zod.string(),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary List application users and roles
+ */
+export const ListAdminUsersResponse = zod.object({
+  "users": zod.array(zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "fullName": zod.string(),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Update an application's user role
+ */
+export const UpdateAdminUserRoleParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UpdateAdminUserRoleBody = zod.object({
+  "role": zod.enum(['admin', 'manager', 'viewer'])
+})
+
+export const UpdateAdminUserRoleResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "fullName": zod.string(),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary List recent audit trail events
+ */
+export const listAuditTrailsQueryLimitDefault = 100;
+export const listAuditTrailsQueryLimitMax = 200;
+
+export const listAuditTrailsQueryOffsetDefault = 0;
+export const listAuditTrailsQueryOffsetMin = 0;
+
+
+
+export const ListAuditTrailsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listAuditTrailsQueryLimitMax).default(listAuditTrailsQueryLimitDefault),
+  "offset": zod.coerce.number().min(listAuditTrailsQueryOffsetMin).default(listAuditTrailsQueryOffsetDefault)
+})
+
+export const ListAuditTrailsResponse = zod.object({
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "actorUserId": zod.string(),
+  "actorEmail": zod.string().nullable(),
+  "actorRole": zod.enum(['admin', 'manager', 'viewer']),
+  "method": zod.string(),
+  "path": zod.string(),
+  "statusCode": zod.number(),
+  "requestId": zod.string().nullable(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "limit": zod.number(),
+  "offset": zod.number()
+})
+
+
+/**
  * @summary Get workspace summary
  */
 export const GetDashboardSummaryResponse = zod.object({

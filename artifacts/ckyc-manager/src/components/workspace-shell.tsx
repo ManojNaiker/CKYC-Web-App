@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useClerk } from '@clerk/react';
 import {
-  ArrowUpRight,
   ChevronRight,
   Database,
   FileClock,
@@ -9,26 +9,53 @@ import {
   FileSpreadsheet,
   FileUp,
   FolderOpen,
+  History,
   LayoutDashboard,
+  LogOut,
   Menu,
-  ShieldCheck,
+  Users,
   X,
 } from 'lucide-react';
 import lightFinanceLogo from '@assets/Logo_Light_1788338497887.png';
+import { roleLabel, type AppRole } from '@/lib/role-access';
 
-const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard, color: 'text-sky-300' },
-  { href: '/clients', label: 'LMS Clients', icon: Database, color: 'text-emerald-300' },
-  { href: '/requests', label: 'CKYC Requests', icon: FileClock, color: 'text-violet-300' },
-  { href: '/download-requests', label: 'CKYC Downloads', icon: FileDown, color: 'text-amber-300' },
-  { href: '/ckyc-create-data', label: 'CKYC Create Data', icon: FileSpreadsheet, color: 'text-cyan-300' },
-  { href: '/finflux-update', label: 'Finflux Update', icon: FileUp, color: 'text-rose-300' },
+type WorkspaceUser = {
+  fullName: string;
+  email: string;
+  role: AppRole;
+};
+
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  color: string;
+  roles: AppRole[];
+}> = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'text-sky-300', roles: ['viewer', 'manager', 'admin'] },
+  { href: '/clients', label: 'LMS Clients', icon: Database, color: 'text-emerald-300', roles: ['viewer', 'manager', 'admin'] },
+  { href: '/requests', label: 'CKYC Requests', icon: FileClock, color: 'text-violet-300', roles: ['manager', 'admin'] },
+  { href: '/download-requests', label: 'CKYC Downloads', icon: FileDown, color: 'text-amber-300', roles: ['manager', 'admin'] },
+  { href: '/ckyc-create-data', label: 'CKYC Create Data', icon: FileSpreadsheet, color: 'text-cyan-300', roles: ['manager', 'admin'] },
+  { href: '/finflux-update', label: 'Finflux Update', icon: FileUp, color: 'text-rose-300', roles: ['admin'] },
+  { href: '/manage-users', label: 'Manage Users', icon: Users, color: 'text-indigo-300', roles: ['admin'] },
+  { href: '/audit-trails', label: 'Audit Trails', icon: History, color: 'text-orange-300', roles: ['admin'] },
 ];
 
-export function WorkspaceShell({ children }: { children: React.ReactNode }) {
+export function WorkspaceShell({ children, user }: { children: React.ReactNode; user: WorkspaceUser }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const current = navItems.find((item) => item.href === location || (item.href !== '/' && location.startsWith(`${item.href}/`)));
+  const { signOut } = useClerk();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(user.role));
+  const current = visibleNavItems.find((item) => item.href === location || (item.href !== '/' && location.startsWith(`${item.href}/`)));
+  const initials = user.fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'U';
 
   return (
     <div className="ckyc-readable-type min-h-[100dvh] bg-background">
@@ -51,7 +78,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         <div className="px-3 pt-7">
           <p className="mb-3 px-3 font-mono-ui text-[10px] font-semibold uppercase tracking-[0.17em] text-sidebar-foreground/55">Operations / 01</p>
           <nav className="space-y-1">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const active = location === item.href || (item.href !== '/' && location.startsWith(item.href));
               return (
@@ -72,21 +99,22 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="mt-auto px-3 pb-4">
-          <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/75 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="font-mono-ui text-[9px] uppercase tracking-[0.18em] text-sidebar-foreground/65">Workspace focus</span>
-              <ShieldCheck size={15} className="text-sidebar-primary" />
-            </div>
-            <p className="text-[12px] font-semibold text-sidebar-foreground">Keep the trail complete.</p>
-            <Link href="/requests" className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-sidebar-primary hover:underline" data-testid="link-workspace-focus">Review requests <ArrowUpRight size={12} /></Link>
-          </div>
           <div className="mt-4 flex items-center gap-3 border-t border-sidebar-border pt-4">
-            <div className="grid size-8 place-items-center rounded-lg bg-sidebar-primary font-mono-ui text-[10px] font-bold text-sidebar-primary-foreground">OP</div>
-            <div className="min-w-0">
-              <p className="truncate text-[12px] font-semibold text-sidebar-foreground">Operations desk</p>
-              <p className="font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/40">Maker / checker</p>
+            <div className="grid size-9 place-items-center rounded-lg bg-sidebar-primary font-mono-ui text-[11px] font-bold text-sidebar-primary-foreground">{initials}</div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-semibold text-sidebar-foreground">{user.fullName}</p>
+              <p className="truncate font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/50">{roleLabel(user.role)}</p>
             </div>
-            <ArrowUpRight size={14} className="ml-auto text-sidebar-foreground/40" />
+            <button
+              type="button"
+              onClick={() => void signOut({ redirectUrl: basePath || '/' })}
+              className="grid size-8 place-items-center rounded-md text-sidebar-foreground/55 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              aria-label="Sign out"
+              title="Sign out"
+              data-testid="button-sign-out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </aside>
@@ -105,8 +133,21 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden items-center gap-2 rounded-md border border-border bg-secondary/55 px-3 py-1.5 font-mono-ui text-[10px] font-semibold uppercase tracking-[.1em] text-secondary-foreground sm:inline-flex"><span className="size-1.5 rounded-full bg-emerald-400" /> Operations desk</span>
-            <div className="grid size-9 place-items-center rounded-lg bg-primary font-mono-ui text-[10px] font-bold text-primary-foreground">OP</div>
+            <div className="hidden text-right sm:block">
+              <p className="max-w-48 truncate text-[11px] font-semibold text-foreground">{user.fullName}</p>
+              <p className="font-mono-ui text-[9px] uppercase tracking-[.1em] text-muted-foreground">{user.email}</p>
+            </div>
+            <span className="hidden rounded-md border border-border bg-secondary/55 px-2.5 py-1.5 font-mono-ui text-[9px] font-semibold uppercase tracking-[.1em] text-secondary-foreground md:inline-flex">{roleLabel(user.role)}</span>
+            <div className="grid size-9 place-items-center rounded-lg bg-primary font-mono-ui text-[10px] font-bold text-primary-foreground">{initials}</div>
+            <button
+              type="button"
+              onClick={() => void signOut({ redirectUrl: basePath || '/' })}
+              className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </header>
         <div className="w-full min-w-0 max-w-none p-3 sm:p-4 xl:p-5">{children}</div>

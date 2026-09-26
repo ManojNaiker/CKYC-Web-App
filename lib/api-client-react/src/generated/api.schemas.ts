@@ -9,6 +9,62 @@ export interface HealthStatus {
   status: string;
 }
 
+export type AppRole = typeof AppRole[keyof typeof AppRole];
+
+
+export const AppRole = {
+  admin: 'admin',
+  manager: 'manager',
+  viewer: 'viewer',
+} as const;
+
+export interface AppUser {
+  userId: string;
+  /** Verified primary email on the identity provider account */
+  email: string;
+  fullName: string;
+  role: AppRole;
+  createdAt: string;
+  /** @nullable */
+  lastSeenAt: string | null;
+}
+
+export interface CurrentAppUserResponse {
+  user: AppUser;
+}
+
+export interface AdminUsersResponse {
+  users: AppUser[];
+}
+
+export interface AppUserRoleUpdate {
+  role: AppRole;
+}
+
+export type AuditTrailEntryMetadata = { [key: string]: unknown };
+
+export interface AuditTrailEntry {
+  id: number;
+  actorUserId: string;
+  /** @nullable */
+  actorEmail: string | null;
+  actorRole: AppRole;
+  method: string;
+  path: string;
+  statusCode: number;
+  /** @nullable */
+  requestId: string | null;
+  metadata: AuditTrailEntryMetadata;
+  createdAt: string;
+}
+
+export interface AuditTrailsResponse {
+  events: AuditTrailEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 /**
  * @nullable
  */
@@ -532,6 +588,18 @@ export interface FinfluxCkycUpdateJob {
 export interface ErrorResponse {
   error: string;
 }
+
+export type ListAuditTrailsParams = {
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
 
 export type ExportClientsParams = {
 search?: string;

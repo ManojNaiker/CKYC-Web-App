@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-labelledby="title">
+  <title id="title">Light Finance</title>
+  <rect width="320" height="72" rx="12" fill="#f5fbfa"/>
+  <circle cx="40" cy="36" r="21" fill="none" stroke="#d4a72c" stroke-width="3"/>
+  <path d="M40 18v36M22 36h36M27 23l26 26M53 23 27 49" stroke="#d4a72c" stroke-width="2"/>
+  <text x="76" y="34" fill="#176d67" font-family="Georgia,serif" font-size="26">Light Finance</text>
+  <text x="78" y="53" fill="#a77d17" font-family="Arial,sans-serif" font-size="10" letter-spacing="2">OPERATIONS</text>
+</svg>

@@ -18,6 +18,10 @@ tags:
     description: Imported CKYC Create portal results
   - name: dashboard
     description: Workspace overview
+  - name: auth
+    description: Signed-in application user
+  - name: admin
+    description: Administrator user and audit controls
 paths:
   /healthz:
     get:
@@ -32,6 +36,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/me:
+    get:
+      operationId: getCurrentAppUser
+      tags: [auth]
+      summary: Get the current signed-in application user
+      responses:
+        "200":
+          description: Current application user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentAppUserResponse"
+        "401":
+          description: Sign-in required
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List application users and roles
+      responses:
+        "200":
+          description: Users available for role management
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersResponse"
+        "403":
+          description: Administrator access required
+  /admin/users/{userId}/role:
+    patch:
+      operationId: updateAdminUserRole
+      tags: [admin]
+      summary: Update an application's user role
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppUserRoleUpdate"
+      responses:
+        "200":
+          description: Updated application user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentAppUserResponse"
+        "400":
+          description: Invalid role
+        "403":
+          description: Administrator access required
+        "404":
+          description: User not found
+        "409":
+          description: The last administrator cannot be demoted
+  /admin/audit-trails:
+    get:
+      operationId: listAuditTrails
+      tags: [admin]
+      summary: List recent audit trail events
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Audit events ordered newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditTrailsResponse"
+        "403":
+          description: Administrator access required
   /dashboard/summary:
     get:
       operationId: getDashboardSummary
@@ -676,6 +770,98 @@ components:
           type: string
       required:
         - status
+    AppRole:
+      type: string
+      enum: [admin, manager, viewer]
+    AppUser:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+          description: Verified primary email on the identity provider account
+        fullName:
+          type: string
+        role:
+          $ref: "#/components/schemas/AppRole"
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [userId, email, fullName, role, createdAt, lastSeenAt]
+    CurrentAppUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AppUser"
+      required: [user]
+    AdminUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppUser"
+      required: [users]
+    AppUserRoleUpdate:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/AppRole"
+      required: [role]
+    AuditTrailEntry:
+      type: object
+      properties:
+        id:
+          type: number
+        actorUserId:
+          type: string
+        actorEmail:
+          type: ["string", "null"]
+        actorRole:
+          $ref: "#/components/schemas/AppRole"
+        method:
+          type: string
+        path:
+          type: string
+        statusCode:
+          type: number
+        requestId:
+          type: ["string", "null"]
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - actorUserId
+        - actorEmail
+        - actorRole
+        - method
+        - path
+        - statusCode
+        - requestId
+        - metadata
+        - createdAt
+    AuditTrailsResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditTrailEntry"
+        total:
+          type: number
+        limit:
+          type: number
+        offset:
+          type: number
+      required: [events, total, limit, offset]
     Client:
       type: object
       properties:
