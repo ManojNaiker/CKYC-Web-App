@@ -278,7 +278,7 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     min-width: 320px;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.5;
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
@@ -319,7 +319,7 @@
   }
   .data-table th {
     font-family: var(--app-font-mono);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.065em;
     text-transform: uppercase;
@@ -330,34 +330,39 @@
   }
   .classic-label {
     color: hsl(var(--muted-foreground));
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     letter-spacing: 0.02em;
   }
-  /* Normalize the compact text sizes used by existing workspace screens. */
+  /* Enlarge compact labels and keep operational pages tight and easy to scan. */
   .ckyc-readable-type [class~="text-[8px]"] {
-    font-size: 0.625rem;
-    line-height: 1.3;
-  }
-  .ckyc-readable-type [class~="text-[9px]"] {
     font-size: 0.6875rem;
     line-height: 1.35;
   }
-  .ckyc-readable-type [class~="text-[10px]"] {
+  .ckyc-readable-type [class~="text-[9px]"] {
     font-size: 0.75rem;
     line-height: 1.4;
   }
-  .ckyc-readable-type [class~="text-[11px]"] {
+  .ckyc-readable-type [class~="text-[10px]"] {
     font-size: 0.8125rem;
     line-height: 1.45;
   }
-  .ckyc-readable-type [class~="text-[12px]"] {
+  .ckyc-readable-type [class~="text-[11px]"] {
     font-size: 0.875rem;
     line-height: 1.5;
   }
-  .ckyc-readable-type [class~="text-[13px]"] {
+  .ckyc-readable-type [class~="text-[12px]"] {
     font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .ckyc-readable-type [class~="text-[13px]"] {
+    font-size: 1rem;
     line-height: 1.55;
+  }
+  .ckyc-readable-type svg.lucide {
+    flex-shrink: 0;
+    min-width: 1rem;
+    min-height: 1rem;
   }
   .hairline-grid {
     background-image: linear-gradient(to right, hsl(var(--border) / 0.38) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.38) 1px, transparent 1px);
@@ -417,6 +422,30 @@
   }
   .ckyc-readable-type .data-table tbody tr:hover {
     background-color: hsl(194 100% 93%);
+  }
+  .ckyc-readable-type main [class~="gap-6"] {
+    gap: 1.25rem;
+  }
+  .ckyc-readable-type main [class~="gap-5"] {
+    gap: 1rem;
+  }
+  .ckyc-readable-type main [class~="gap-4"] {
+    gap: 0.75rem;
+  }
+  .ckyc-readable-type main [class~="gap-3"] {
+    gap: 0.625rem;
+  }
+  .ckyc-readable-type main [class~="p-5"] {
+    padding: 1rem;
+  }
+  .ckyc-readable-type main [class~="px-5"] {
+    padding-inline: 1rem;
+  }
+  .ckyc-readable-type main [class~="py-5"] {
+    padding-block: 0.875rem;
+  }
+  .ckyc-readable-type main .data-table tbody td {
+    padding-block: 0.7rem;
   }
   .dark .ckyc-readable-type .data-table thead,
   .dark .ckyc-readable-type .data-table[class*="grid-cols-"] {
