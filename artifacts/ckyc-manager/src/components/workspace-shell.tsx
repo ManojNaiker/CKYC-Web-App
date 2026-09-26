@@ -32,10 +32,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="ckyc-readable-type min-h-[100dvh] bg-background">
-      <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 flex w-[240px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[8px_0_30px_hsl(250_57%_15%_/_0.2)] transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 flex w-[250px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[8px_0_30px_hsl(250_57%_15%_/_0.2)] transition-transform duration-300 xl:w-[260px] lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-[86px] items-center justify-between border-b border-sidebar-border px-5">
           <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
-            <span className="flex h-11 w-[174px] items-center rounded-lg bg-[#f1faf9] px-2.5 shadow-sm">
+            <span className="flex h-11 w-[190px] items-center rounded-lg bg-[#f1faf9] px-2.5 shadow-sm">
               <img
                 src={lightFinanceLogo}
                 alt="Light Finance"
@@ -62,7 +62,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}
                   className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_hsl(var(--sidebar-primary))]' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
-                  <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-sidebar-primary' : item.color} />
+                  <Icon size={18} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-sidebar-primary' : item.color} />
                   <span className="flex-1">{item.label}</span>
                   {active && <ChevronRight size={14} className="text-sidebar-primary" />}
                 </Link>
@@ -93,15 +93,15 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
       {mobileOpen && <button className="fixed inset-0 z-30 bg-[hsl(249_55%_12%_/_0.56)] lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" data-testid="button-overlay-menu" />}
 
-        <main className="min-h-[100dvh] lg:pl-[240px]">
-        <header className="app-topbar sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-border bg-card/95 px-5 shadow-[0_3px_18px_hsl(249_68%_51%_/_0.09)] backdrop-blur-xl sm:px-8">
+        <main className="min-h-[100dvh] min-w-0 lg:pl-[250px] xl:pl-[260px]">
+        <header className="app-topbar sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border bg-card/95 px-5 shadow-[0_3px_18px_hsl(249_68%_51%_/_0.09)] backdrop-blur-xl sm:px-8">
           <div className="flex items-center gap-3">
             <button className="rounded-lg border border-border bg-card p-2 text-foreground/70 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-menu">
               <Menu size={18} />
             </button>
             <div>
               <p className="font-mono-ui text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">Light Finance / Operations</p>
-              <h1 className="mt-0.5 font-display text-[19px] font-semibold tracking-[-0.015em] text-foreground">{current?.label ?? 'Workspace'}</h1>
+              <h1 className="mt-0.5 font-display text-[21px] font-semibold tracking-[-0.015em] text-foreground">{current?.label ?? 'Workspace'}</h1>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -109,7 +109,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <div className="grid size-9 place-items-center rounded-lg bg-primary font-mono-ui text-[10px] font-bold text-primary-foreground">OP</div>
           </div>
         </header>
-        <div className="w-full max-w-none p-4 sm:p-7 xl:p-8">{children}</div>
+        <div className="w-full min-w-0 max-w-none p-3 sm:p-4 xl:p-5">{children}</div>
       </main>
     </div>
   );
@@ -117,11 +117,11 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: React.ReactNode }) {
   return (
-    <div className="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <p className="mb-2 font-mono-ui text-[10px] font-medium uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
-        <h2 className="font-display text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-[36px]">{title}</h2>
-        <p className="mt-3 max-w-[620px] text-[13px] leading-[1.7] text-muted-foreground">{description}</p>
+        <p className="mb-1.5 font-mono-ui text-[10px] font-medium uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
+        <h2 className="font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-[38px]">{title}</h2>
+        <p className="mt-2 max-w-[620px] text-[13px] leading-[1.6] text-muted-foreground">{description}</p>
       </div>
       {action}
     </div>

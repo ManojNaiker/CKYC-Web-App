@@ -639,12 +639,12 @@ export default function FinfluxUpdate() {
         </button>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(330px,.8fr)]">
-        <div className="space-y-5">
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(330px,.8fr)]">
+        <div className="min-w-0 space-y-5">
           {mode === 'clients' ? (
-            <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs" aria-label="Select LMS clients">
+            <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs" aria-label="Select LMS clients">
               <div className="border-b border-border px-5 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Source register</p><h3 className="mt-1 font-display text-[20px] font-semibold">Choose client records</h3><p className="mt-1 text-[11px] text-muted-foreground">Outgoing client ID: LMS ClientID. Database IDs are not sent.</p></div><div className="rounded-lg bg-secondary px-3 py-2 text-right"><p className="font-mono-ui text-[9px] uppercase tracking-[.12em] text-muted-foreground">Selected</p><p className="font-mono-ui text-[18px] font-semibold text-primary">{selectedList.length}</p></div></div>
+                <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">Source register</p><h3 className="mt-1 font-display text-[20px] font-semibold">Choose client records</h3><p className="mt-1 text-[11px] text-muted-foreground">Outgoing client ID: LMS ClientID. Database IDs are not sent.</p></div><div className="rounded-lg bg-secondary px-3 py-2 text-right"><p className="font-mono-ui text-[9px] uppercase tracking-[.12em] text-muted-foreground">Selected</p><p className="font-mono-ui text-[18px] font-semibold text-primary">{selectedList.length}</p></div></div>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                   <label className="sm:w-[225px]">
                     <span className="sr-only">Filter CKYC readiness group</span>
