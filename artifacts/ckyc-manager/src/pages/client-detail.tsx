@@ -43,6 +43,7 @@ export default function ClientDetail() {
   if (query.isError || !client) return <QueryError onRetry={() => query.refetch()} />;
 
   const hasFinalCkyc = Boolean(client.ckycNumber?.trim());
+  const hasResponseSummary = Boolean(client.ckycResponseId || client.ckycResponseFileName);
   const isCreateMatch = client.ckycResponseMatchStatus === 'Match via Create CKYC';
   const isUnresolvedResponseError =
     client.ckycResponseStatus === 'error' && !hasFinalCkyc;
@@ -95,11 +96,21 @@ export default function ClientDetail() {
           <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
             <div className="flex items-center gap-3 border-b border-border pb-4">
               <span className="grid size-10 place-items-center rounded-lg bg-secondary text-primary"><FileText size={18} /></span>
-              <div><p className="font-display text-[17px] font-bold">CKYC response trail</p><p className="mt-1 text-[11px] text-muted-foreground">The exact rows used for this client</p></div>
+              <div><p className="font-display text-[17px] font-bold">CKYC response trail</p><p className="mt-1 text-[11px] text-muted-foreground">Saved request and response source rows</p></div>
             </div>
             <div className="mt-5 space-y-4">
-              <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Request matched row</p><pre className="mt-2 overflow-x-auto rounded-lg bg-[#17343a] p-3 font-mono-ui text-[10px] leading-5 text-[#c2e3d9]">{client.ckycResponseRequestLine || 'No request row saved yet.'}</pre></div>
-              <div><p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Response matched row</p><pre className="mt-2 overflow-x-auto rounded-lg bg-[#17343a] p-3 font-mono-ui text-[10px] leading-5 text-[#c2e3d9]">{client.ckycResponseMatchedRow || 'No response row saved yet.'}</pre></div>
+              <div>
+                <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Request matched row</p>
+                {client.ckycResponseRequestLine
+                  ? <pre className="mt-2 overflow-x-auto rounded-lg bg-[#17343a] p-3 font-mono-ui text-[10px] leading-5 text-[#c2e3d9]">{client.ckycResponseRequestLine}</pre>
+                  : <p className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-[11px] leading-5 text-muted-foreground">{hasResponseSummary ? 'The saved history does not contain the request row for this response.' : 'No request row saved yet.'}</p>}
+              </div>
+              <div>
+                <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Response matched row</p>
+                {client.ckycResponseMatchedRow
+                  ? <pre className="mt-2 overflow-x-auto rounded-lg bg-[#17343a] p-3 font-mono-ui text-[10px] leading-5 text-[#c2e3d9]">{client.ckycResponseMatchedRow}</pre>
+                  : <p className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-[11px] leading-5 text-muted-foreground">{hasResponseSummary ? 'The response ID and file reference are saved, but the original raw response row was not retained. It cannot be reconstructed without the original response file.' : 'No response row saved yet.'}</p>}
+              </div>
             </div>
           </section>
         </div>
@@ -110,7 +121,7 @@ export default function ClientDetail() {
               <span className={`grid size-9 place-items-center rounded-lg ${isUnresolvedResponseError ? 'bg-[#fff1d6] text-[#9b6915]' : client.ckycResponseId || client.ckycNumber ? 'bg-[#e2f2e9] text-[#31734d]' : 'bg-secondary text-primary'}`}>
                 {isUnresolvedResponseError ? <Clock3 size={17} /> : <CheckCircle2 size={17} />}
               </span>
-              <div><p className="text-[13px] font-bold">{responseStatus}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{isCreateMatch ? 'Source: CKYC Create data' : `Matched by ${client.ckycResponseMatchedBy || '—'}`}</p></div>
+              <div><p className="text-[13px] font-bold">{responseStatus}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{isCreateMatch ? 'Source: CKYC Create data' : client.ckycResponseMatchedBy ? `Matched by ${client.ckycResponseMatchedBy}` : hasResponseSummary && !client.ckycResponseMatchedRow ? 'Cannot verify the name match without the saved response row.' : 'Matched by —'}</p></div>
             </div>
             <div className="mt-5 space-y-3 border-t border-border pt-4">
               <DetailItem label="CKYC response ID" value={client.ckycResponseId} />

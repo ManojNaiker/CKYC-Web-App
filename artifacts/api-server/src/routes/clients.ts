@@ -189,8 +189,7 @@ export function getCkycResponseMatchStatus(
   responseRow: string | null,
   responseId: string | null,
 ): CkycResponseMatchStatus | null {
-  if (!responseRow && !responseId) return null;
-  if (!responseRow) return responseId ? "Match" : "Not Match";
+  if (!responseRow) return responseId ? "Not Match" : null;
   if (!responseHasId(responseRow)) return "Not Match";
 
   const responseName = normalizeNameForMatch(responseCustomerName(responseRow));

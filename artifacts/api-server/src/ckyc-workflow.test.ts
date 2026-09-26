@@ -1304,6 +1304,13 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     assert.match(csv, /"Not Match"/);
   });
 
+  it("does not mark a response without a saved row as a name match", () => {
+    assert.equal(
+      getCkycResponseMatchStatus("Rathva Ramliben", null, "IN123"),
+      "Not Match",
+    );
+  });
+
   it("handles CKYC name spacing, ordering, and minor spelling variations", () => {
     const response = (name: string) =>
       `20|1|E|4293|IN123|${name}|04|03|04|04|04|04|XXXXXXXXXX3210|04|||`;
