@@ -80,7 +80,7 @@ function ProgressRing({ value, count, label, color }: { value: number; count: nu
     <div className="flex min-w-0 flex-1 flex-col items-center gap-2.5">
       <div
         className="grid size-[92px] place-items-center rounded-full sm:size-[100px]"
-        style={{ background: `conic-gradient(${color} ${safeValue * 3.6}deg, #edf0f4 0deg)` }}
+         style={{ background: `conic-gradient(${color} ${safeValue * 3.6}deg, hsl(190 42% 91%) 0deg)` }}
         aria-label={`${label}: ${safeValue}%`}
       >
         <div className="grid size-[74px] place-items-center rounded-full bg-card text-center sm:size-[80px]">
@@ -110,9 +110,9 @@ function PendingErrorChart({
           <h3 className="mt-1 font-display text-[24px] font-semibold tracking-[-.025em] text-foreground">Why records are pending</h3>
           <p className="mt-2 text-[12px] leading-6 text-muted-foreground">Pending records have neither a response ID nor a Final CKYC number.</p>
         </div>
-        <div className="rounded-2xl border border-[#f0dfa9] bg-gradient-to-br from-[#fff3cf] to-[#fffaf0] px-4 py-3 text-right">
-          <p className="font-mono-ui text-[21px] font-bold leading-none text-[#896516]">{formatNumber(pendingCount)}</p>
-          <p className="mt-1.5 font-mono-ui text-[9px] font-semibold uppercase tracking-[.1em] text-[#896516]">pending</p>
+        <div className="rounded-xl border border-[hsl(var(--warning)/.24)] bg-[hsl(var(--warning-bg))] px-4 py-3 text-right">
+          <p className="font-mono-ui text-[21px] font-bold leading-none text-[hsl(var(--warning))]">{formatNumber(pendingCount)}</p>
+          <p className="mt-1.5 font-mono-ui text-[9px] font-semibold uppercase tracking-[.1em] text-[hsl(var(--warning))]">pending</p>
         </div>
       </div>
       {errors.length === 0 ? (
@@ -130,8 +130,8 @@ function PendingErrorChart({
                   <span className="min-w-0 leading-5 text-foreground">{error.name}</span>
                   <span className="shrink-0 font-mono-ui font-semibold text-foreground">{percent}% · {formatNumber(error.count)}</span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-[#f1e7cd]">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#e8b847] to-[#f2a34e] transition-all" style={{ width: `${width}%` }} />
+                <div className="h-2 overflow-hidden rounded-full bg-[hsl(var(--warning-bg))]">
+                  <div className="h-full rounded-full bg-[hsl(var(--warning))] transition-all" style={{ width: `${width}%` }} />
                 </div>
               </div>
             );
@@ -163,11 +163,11 @@ export default function Overview() {
         <>
           <section className="mb-5 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#dfd3f2] bg-[#f0e9fb] px-3.5 py-2 font-mono-ui text-[10px] font-semibold uppercase tracking-[.14em] text-[#7c5baa]">
-                <Sparkles size={14} /> Operations overview
+               <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-primary/20 bg-secondary px-3 py-1.5 font-mono-ui text-[10px] font-semibold uppercase tracking-[.14em] text-primary">
+                 <Sparkles size={14} /> Operations overview
               </div>
               <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
-                <h2 className="font-display text-[42px] font-semibold leading-none tracking-[-.045em] text-foreground sm:text-[52px]">Dashboard</h2>
+                 <h2 className="font-display text-[40px] font-semibold leading-none tracking-[-.045em] text-foreground sm:text-[48px]">Dashboard</h2>
                 <p className="mb-1 font-mono-ui text-[10px] font-medium uppercase tracking-[.08em] text-muted-foreground">{dateLabel}</p>
               </div>
               <p className="mt-3 max-w-[660px] text-[14px] leading-6 text-muted-foreground">
@@ -187,10 +187,10 @@ export default function Overview() {
           <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {summary.isLoading || downloads.isLoading ? [1, 2, 3, 4].map((item) => <div className="h-[140px] animate-pulse rounded-2xl border border-border bg-card" key={item} />) : (
               <>
-                <TotalTile label="LMS clients" value={formatNumber(data?.totalClients ?? 0)} detail="Imported records" icon={Users} tone="bg-[#e9ddfb] text-[#7840bc]" surface="border-[#e2d2f4] bg-gradient-to-br from-[#f4edff] to-white" testId="metric-imported-clients" />
-                <TotalTile label="CKYC requests" value={data?.generatedRequests ?? 0} detail="Request files created" icon={FileClock} tone="bg-[#dceffd] text-[#287da9]" surface="border-[#d4eafb] bg-gradient-to-br from-[#edf7ff] to-white" testId="metric-request-files" />
-                <TotalTile label="Responses uploaded" value={data?.responsesUploaded ?? 0} detail="Latest workbook ready" icon={FileCheck2} tone="bg-[#dcf3e9] text-[#287b59]" surface="border-[#cfe9dc] bg-gradient-to-br from-[#edf9f3] to-white" testId="metric-responses-uploaded" />
-                <TotalTile label="Download queue" value={downloads.data?.length ?? 0} detail="Nothing waiting" icon={FileDown} tone="bg-[#fff0c9] text-[#987016]" surface="border-[#efdfb4] bg-gradient-to-br from-[#fff8e7] to-white" testId="metric-download-queue" />
+                 <TotalTile label="LMS clients" value={formatNumber(data?.totalClients ?? 0)} detail="Imported records" icon={Users} tone="bg-[hsl(var(--info-bg))] text-[hsl(var(--info))]" surface="border-[hsl(var(--info)/.22)] bg-[hsl(192_64%_95%)]" testId="metric-imported-clients" />
+                 <TotalTile label="CKYC requests" value={data?.generatedRequests ?? 0} detail="Request files created" icon={FileClock} tone="bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]" surface="border-[hsl(183_50%_77%)] bg-[hsl(181_49%_94%)]" testId="metric-request-files" />
+                 <TotalTile label="Responses uploaded" value={data?.responsesUploaded ?? 0} detail="Latest workbook ready" icon={FileCheck2} tone="bg-[hsl(var(--success-bg))] text-[hsl(var(--success))]" surface="border-[hsl(var(--success)/.22)] bg-[hsl(154_47%_96%)]" testId="metric-responses-uploaded" />
+                 <TotalTile label="Download queue" value={downloads.data?.length ?? 0} detail="Nothing waiting" icon={FileDown} tone="bg-[hsl(var(--warning-bg))] text-[hsl(var(--warning))]" surface="border-[hsl(var(--warning)/.22)] bg-[hsl(43_80%_96%)]" testId="metric-download-queue" />
               </>
             )}
           </section>
@@ -232,9 +232,9 @@ export default function Overview() {
                 <BarChart3 size={21} className="text-primary" />
               </div>
               <div className="mt-6 flex justify-around gap-3">
-                <ProgressRing value={formatPercent(finalCkycUpdated, totalClients)} count={finalCkycUpdated} label="Final CKYC update" color="#ae75e4" />
-                <ProgressRing value={formatPercent(requestIdUpdated, totalClients)} count={requestIdUpdated} label="Request ID updated" color="#4a9bd2" />
-                <ProgressRing value={formatPercent(recordsPending, totalClients)} count={recordsPending} label="Records pending" color="#d2a94b" />
+                 <ProgressRing value={formatPercent(finalCkycUpdated, totalClients)} count={finalCkycUpdated} label="Final CKYC update" color="#12836d" />
+                 <ProgressRing value={formatPercent(requestIdUpdated, totalClients)} count={requestIdUpdated} label="Request ID updated" color="#1778a7" />
+                 <ProgressRing value={formatPercent(recordsPending, totalClients)} count={recordsPending} label="Records pending" color="#a16b16" />
               </div>
               <div className="mt-7 border-t border-border pt-5">
                 <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">FinFlux record updates</p>
@@ -252,15 +252,15 @@ export default function Overview() {
                 </div>
               </div>
               <div className="mt-7 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-[#272733] p-4 text-white sm:p-5">
-                  <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.1em] text-white/65">Last import</p>
+                 <div className="rounded-2xl bg-sidebar p-4 text-sidebar-foreground sm:p-5">
+                   <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.1em] text-sidebar-foreground/65">Last import</p>
                   <p className="mt-2 truncate text-[12px] font-semibold">{data?.lastImportFile ?? 'No file imported'}</p>
-                  <FileUp size={20} className="mt-4 text-[#c59af0]" />
+                   <FileUp size={20} className="mt-4 text-sidebar-primary" />
                 </div>
-                <div className="rounded-2xl border border-[#dfd3f2] bg-gradient-to-br from-[#f0e9fb] to-[#fbf8ff] p-4 text-[#5c4778] sm:p-5">
-                  <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.1em] text-[#725b92]">Achievements</p>
+                 <div className="rounded-2xl border border-primary/20 bg-secondary p-4 text-secondary-foreground sm:p-5">
+                   <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.1em] text-primary">Achievements</p>
                   <p className="mt-2 text-[12px] font-semibold">{data?.responsesUploaded ? 'Response received' : 'Ready for first response'}</p>
-                  <CheckCircle2 size={20} className="mt-4 text-[#7840bc]" />
+                   <CheckCircle2 size={20} className="mt-4 text-primary" />
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2 border-t border-border pt-4 text-[11px] text-muted-foreground">

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -69,54 +69,62 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(0, 0, 0, 0.1);
-  --badge-outline: rgba(0, 0, 0, 0.05);
+  --button-outline: rgba(18, 63, 79, 0.15);
+  --badge-outline: rgba(18, 63, 79, 0.1);
 
   /* Automatic computation of border around primary / danger buttons */
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(0, 0, 0, 0.03);
-  --elevate-2: rgba(0, 0, 0, 0.08);
+  --elevate-1: rgba(15, 77, 103, 0.045);
+  --elevate-2: rgba(15, 77, 103, 0.09);
 
-  --background: 240 15% 97%;
-  --foreground: 231 18% 19%;
-  --border: 240 13% 89%;
-  --card: 0 0% 100%;
-  --card-foreground: 210 34% 20%;
-  --card-border: 240 13% 90%;
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 231 18% 27%;
-  --sidebar-border: 240 13% 91%;
-  --sidebar-primary: 267 63% 66%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 260 38% 97%;
-  --sidebar-accent-foreground: 231 18% 24%;
-  --sidebar-ring: 267 63% 66%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 34% 20%;
-  --popover-border: 240 13% 90%;
-  --primary: 163 48% 43%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 260 52% 96%;
-  --secondary-foreground: 231 18% 28%;
-  --muted: 240 15% 94%;
-  --muted-foreground: 231 12% 43%;
-  --accent: 42 82% 63%;
-  --accent-foreground: 231 18% 20%;
-  --destructive: 4 58% 48%;
-  --destructive-foreground: 42 40% 98%;
-  --input: 38 20% 79%;
-  --ring: 198 86% 43%;
-  --chart-1: 198 86% 43%;
-  --chart-2: 28 91% 53%;
-  --chart-3: 70 84% 42%;
-  --chart-4: 4 58% 48%;
-  --chart-5: 143 25% 45%;
-  --app-font-sans: 'Inter', sans-serif;
-  --app-font-serif: 'Source Serif 4', Georgia, serif;
+  /* Navy + cyan operations: deep navigation, mineral canvas, crisp data surfaces. */
+  --background: 195 38% 95%;
+  --foreground: 208 58% 16%;
+  --border: 194 30% 82%;
+  --card: 186 35% 99%;
+  --card-foreground: 208 58% 16%;
+  --card-border: 194 30% 82%;
+  --sidebar: 208 57% 15%;
+  --sidebar-foreground: 191 34% 92%;
+  --sidebar-border: 206 40% 26%;
+  --sidebar-primary: 185 84% 56%;
+  --sidebar-primary-foreground: 208 57% 13%;
+  --sidebar-accent: 205 45% 23%;
+  --sidebar-accent-foreground: 184 80% 83%;
+  --sidebar-ring: 185 84% 56%;
+  --popover: 186 35% 99%;
+  --popover-foreground: 208 58% 16%;
+  --popover-border: 194 30% 82%;
+  --primary: 199 78% 29%;
+  --primary-foreground: 185 45% 98%;
+  --secondary: 190 42% 91%;
+  --secondary-foreground: 202 62% 24%;
+  --muted: 192 32% 90%;
+  --muted-foreground: 205 24% 36%;
+  --accent: 185 68% 84%;
+  --accent-foreground: 205 63% 18%;
+  --destructive: 3 64% 39%;
+  --destructive-foreground: 0 70% 98%;
+  --input: 194 30% 75%;
+  --ring: 188 82% 36%;
+  --chart-1: 199 78% 33%;
+  --chart-2: 183 68% 38%;
+  --chart-3: 153 48% 36%;
+  --chart-4: 37 82% 43%;
+  --chart-5: 3 64% 46%;
+  --success: 155 65% 25%;
+  --success-bg: 154 51% 91%;
+  --warning: 35 78% 30%;
+  --warning-bg: 42 89% 90%;
+  --info: 199 78% 29%;
+  --info-bg: 194 65% 90%;
+  --danger-bg: 5 76% 94%;
+  --app-font-sans: 'DM Sans', sans-serif;
+  --app-font-serif: 'Outfit', sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
-  --radius: 0.45rem;
+  --radius: 0.65rem;
   --shadow-2xs: 0px 1px 1px 0px hsl(210 34% 20% / 0.04);
   --shadow-xs: 0px 1px 3px -1px hsl(210 34% 20% / 0.09);
   --shadow-sm:
@@ -263,8 +271,8 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     min-width: 320px;
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: 14px;
+    line-height: 1.5;
     letter-spacing: 0;
     text-rendering: optimizeLegibility;
     font-feature-settings: "kern" 1, "liga" 1;
@@ -273,7 +281,7 @@
   h1, h2, h3, h4 {
     font-family: var(--app-font-serif);
     font-weight: 600;
-    letter-spacing: -0.018em;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
 
@@ -284,12 +292,16 @@
   input::placeholder {
     color: hsl(var(--muted-foreground) / 0.72);
   }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
   .font-display {
     font-family: var(--app-font-serif);
-    font-variant-numeric: oldstyle-nums proportional-nums;
+    font-variant-numeric: lining-nums tabular-nums;
     font-optical-sizing: auto;
   }
   .font-mono-ui { font-family: var(--app-font-mono); }
@@ -302,8 +314,9 @@
     font-family: var(--app-font-mono);
     font-size: 0.6875rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.065em;
     text-transform: uppercase;
+    color: hsl(var(--secondary-foreground));
   }
   .data-table td {
     vertical-align: middle;
@@ -345,6 +358,98 @@
   }
   .animate-rise { animation: rise-in 500ms cubic-bezier(.2,.8,.2,1) both; }
   .animate-fade { animation: fade-in 400ms ease-out both; }
+}
+
+/* Shared surface and semantic treatments apply to every workspace route, not
+   just overview. Existing workflows remain untouched. */
+@layer utilities {
+  .ckyc-readable-type main {
+    background:
+      radial-gradient(ellipse 70% 35% at 100% 0%, hsl(186 71% 87% / .46), transparent 75%),
+      hsl(var(--background));
+  }
+  .ckyc-readable-type .data-table thead,
+  .ckyc-readable-type .data-table[class*="grid-cols-"] {
+    background: hsl(191 49% 87%);
+  }
+  .ckyc-readable-type .data-table tbody tr:nth-child(even) {
+    background-color: hsl(189 35% 97%);
+  }
+  .ckyc-readable-type .data-table tbody tr:hover {
+    background-color: hsl(188 54% 91%);
+  }
+  .ckyc-readable-type input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .ckyc-readable-type select,
+  .ckyc-readable-type textarea {
+    color: hsl(var(--foreground));
+  }
+  .ckyc-readable-type input:disabled,
+  .ckyc-readable-type button:disabled {
+    cursor: not-allowed;
+  }
+  .ckyc-readable-type [class~="bg-[#eff8f5]"],
+  .ckyc-readable-type [class~="bg-[#eef7f4]"],
+  .ckyc-readable-type [class~="bg-[#f1f7f5]"],
+  .ckyc-readable-type [class~="bg-[#f4faf8]"] {
+    background-color: hsl(var(--info-bg));
+  }
+  .ckyc-readable-type [class~="bg-[#dcefeb]"],
+  .ckyc-readable-type [class~="bg-[#e4eff8]"],
+  .ckyc-readable-type [class~="bg-[#e7f1f6]"] {
+    background-color: hsl(var(--info-bg));
+  }
+  .ckyc-readable-type [class~="text-[#246c5d]"],
+  .ckyc-readable-type [class~="text-[#286e5f]"],
+  .ckyc-readable-type [class~="text-[#27677d]"],
+  .ckyc-readable-type [class~="text-[#386985]"] {
+    color: hsl(var(--info));
+  }
+  .ckyc-readable-type [class~="bg-[#e2f2e9]"],
+  .ckyc-readable-type [class~="bg-[#dcf3e9]"],
+  .ckyc-readable-type [class~="bg-[#e8f7ef]"] {
+    background-color: hsl(var(--success-bg));
+  }
+  .ckyc-readable-type [class~="text-[#31734d]"],
+  .ckyc-readable-type [class~="text-[#287b59]"],
+  .ckyc-readable-type [class~="text-[#245b3d]"],
+  .ckyc-readable-type [class~="text-[#205d45]"],
+  .ckyc-readable-type [class~="text-[#4f7b67]"] {
+    color: hsl(var(--success));
+  }
+  .ckyc-readable-type [class~="bg-[#fff1d6]"],
+  .ckyc-readable-type [class~="bg-[#fff0c9]"],
+  .ckyc-readable-type [class~="bg-[#fff4db]"],
+  .ckyc-readable-type [class~="bg-[#fff8e5]"] {
+    background-color: hsl(var(--warning-bg));
+  }
+  .ckyc-readable-type [class~="text-[#9b6915]"],
+  .ckyc-readable-type [class~="text-[#9d761f]"],
+  .ckyc-readable-type [class~="text-[#896516]"],
+  .ckyc-readable-type [class~="text-[#8c641d]"],
+  .ckyc-readable-type [class~="text-[#81651c]"],
+  .ckyc-readable-type [class~="text-[#775711]"] {
+    color: hsl(var(--warning));
+  }
+  .ckyc-readable-type [class~="bg-[#fff0ed]"] {
+    background-color: hsl(var(--danger-bg));
+  }
+  .ckyc-readable-type [class~="text-[#a23e36]"] {
+    color: hsl(var(--destructive));
+  }
+  .ckyc-readable-type [class~="border-[#31734d]/25"] {
+    border-color: hsl(var(--success) / .3);
+  }
+  .ckyc-readable-type [class~="border-[#eadcae]"],
+  .ckyc-readable-type [class~="border-[#eadcbf]"] {
+    border-color: hsl(var(--warning) / .28);
+  }
+  .ckyc-readable-type [class~="bg-[#fbf7ed]"],
+  .ckyc-readable-type [class~="bg-[#fffaf0]"] {
+    background-color: hsl(var(--warning-bg) / .6);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade, .animate-rise { animation: none; }
+  }
 }
 
 @keyframes rise-in {
