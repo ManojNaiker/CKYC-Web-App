@@ -51,11 +51,16 @@ type BatchProgress = {
   error?: string;
 };
 type BatchReport = { batchCount: number; results: FinfluxCkycUpdateJob['results'] };
+type FinfluxSubmissionRecord = {
+  clientId: string;
+  ckycNumber: string;
+  sourceRowNumber?: number;
+};
 
 const PAGE_SIZE = 8;
 const SELECT_ALL_PAGE_SIZE = 2000;
 const FINFLUX_JOB_LIMIT = 1000;
-const CLIENT_BATCH_SIZE = 100;
+const FINFLUX_BATCH_SIZE = 100;
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const JOB_STORAGE_KEY = 'finflux-ckyc-update-job-id';
 
@@ -306,9 +311,13 @@ export default function FinfluxUpdate() {
   const displayedJob = batchIsActive
     ? batchProgress?.activeJob ?? job
     : job || batchProgress?.activeJob;
-  const records = mode === 'clients'
+  const records: FinfluxSubmissionRecord[] = mode === 'clients'
     ? validSelected.map(({ clientId, ckycNumber }) => ({ clientId, ckycNumber }))
-    : validPreview.map((row) => ({ clientId: row.clientId as string, ckycNumber: row.ckycNumber as string }));
+    : validPreview.map((row) => ({
+        clientId: row.clientId as string,
+        ckycNumber: row.ckycNumber as string,
+        sourceRowNumber: row.rowNumber,
+      }));
   const invalidSelectedCount = selectedList.length - validSelected.length;
   const canSubmit = Boolean(
     username.trim() &&
@@ -413,11 +422,12 @@ export default function FinfluxUpdate() {
     reader.readAsDataURL(file);
   };
 
-  const runClientBatches = async (
-    clientRecords: { clientId: string; ckycNumber: string }[],
+  const runSequentialBatches = async (
+    batchRecords: FinfluxSubmissionRecord[],
     credentials: { username: string; password: string },
+    removeSuccessfulFromClientSelection: boolean,
   ) => {
-    const totalBatches = Math.ceil(clientRecords.length / CLIENT_BATCH_SIZE);
+    const totalBatches = Math.ceil(batchRecords.length / FINFLUX_BATCH_SIZE);
     const successfulClientIds = new Set<string>();
     const combinedResults: FinfluxCkycUpdateJob['results'] = [];
     const reportedBatchIds = new Set<string>();
@@ -436,14 +446,16 @@ export default function FinfluxUpdate() {
       reportedBatchIds.add(job.id);
       combinedResults.push(...job.results.map((result) => ({
         ...result,
-        rowNumber: currentBatchOffset + result.rowNumber,
+        rowNumber:
+          batchRecords[currentBatchOffset + result.rowNumber - 1]?.sourceRowNumber ??
+          currentBatchOffset + result.rowNumber,
       })));
     };
     stopAfterCurrentBatch.current = false;
     setBatchReport(undefined);
     setBatchProgress({
       status: 'running',
-      totalRecords: clientRecords.length,
+      totalRecords: batchRecords.length,
       totalBatches,
       currentBatch: 0,
       completedRecords: 0,
@@ -452,8 +464,8 @@ export default function FinfluxUpdate() {
     });
 
     try {
-      for (let offset = 0; offset < clientRecords.length; offset += CLIENT_BATCH_SIZE) {
-        const batchNumber = Math.floor(offset / CLIENT_BATCH_SIZE) + 1;
+      for (let offset = 0; offset < batchRecords.length; offset += FINFLUX_BATCH_SIZE) {
+        const batchNumber = Math.floor(offset / FINFLUX_BATCH_SIZE) + 1;
         if (stopAfterCurrentBatch.current && offset > 0) {
           finalStatus = 'stopped';
           break;
@@ -463,10 +475,15 @@ export default function FinfluxUpdate() {
         inFlightFailureCount = 0;
         currentBatchOffset = offset;
         latestPolledJob = undefined;
-        const batch = clientRecords.slice(offset, offset + CLIENT_BATCH_SIZE);
+        const batch = batchRecords.slice(offset, offset + FINFLUX_BATCH_SIZE);
         setBatchProgress((current) => current ? { ...current, currentBatch: batchNumber, activeJob: undefined } : current);
 
-        const accepted = await createJobMutation.mutateAsync({ data: { credentials, records: batch } });
+        const accepted = await createJobMutation.mutateAsync({
+          data: {
+            credentials,
+            records: batch.map(({ clientId, ckycNumber }) => ({ clientId, ckycNumber })),
+          },
+        });
         setPassword('');
         setJobId(accepted.id);
         try {
@@ -522,6 +539,11 @@ export default function FinfluxUpdate() {
           finalError = currentJob.error || `Batch ${batchNumber} failed. Later batches were not sent.`;
           break;
         }
+        if (currentJob.successCount === 0 && currentJob.failureCount > 0) {
+          finalStatus = 'failed';
+          finalError = `Batch ${batchNumber} had no accepted records. Later batches were not sent; review its row results before retrying.`;
+          break;
+        }
         if (stopAfterCurrentBatch.current && batchNumber < totalBatches) {
           finalStatus = 'stopped';
           break;
@@ -539,7 +561,7 @@ export default function FinfluxUpdate() {
       if (combinedResults.length > 0) {
         setBatchReport({ batchCount: reportedBatchIds.size, results: combinedResults });
       }
-      if (successfulClientIds.size > 0) {
+      if (removeSuccessfulFromClientSelection && successfulClientIds.size > 0) {
         setSelectedRecords((current) => {
           const next = { ...current };
           successfulClientIds.forEach((clientId) => { delete next[clientId]; });
@@ -564,21 +586,30 @@ export default function FinfluxUpdate() {
     if (!username.trim()) { setSubmitError('Enter the Finflux username before submitting.'); return; }
     if (!password) { setSubmitError('Enter the Finflux password before submitting.'); return; }
     if (!records.length) { setSubmitError(mode === 'clients' ? 'Select at least one valid client row.' : 'There are no eligible rows in this preview.'); return; }
-    if (mode === 'file' && records.length > FINFLUX_JOB_LIMIT) { setSubmitError('File imports are limited to 1,000 records per job. Split the file into smaller imports.'); return; }
-    const usesBatches = mode === 'clients' && records.length > CLIENT_BATCH_SIZE;
+    if (mode === 'file' && records.length > FINFLUX_JOB_LIMIT) { setSubmitError('File imports are limited to 1,000 eligible rows. Split the file into smaller files.'); return; }
+    const usesBatches = records.length > FINFLUX_BATCH_SIZE;
     const confirmed = window.confirm(
       usesBatches
-        ? `Send ${records.length.toLocaleString('en-IN')} CKYC identifiers to Finflux in ${Math.ceil(records.length / CLIENT_BATCH_SIZE)} sequential jobs of up to 100 records? These writes cannot be undone from CKYC Manager. Keep this page open until all batches finish.`
+        ? `Send ${records.length.toLocaleString('en-IN')} CKYC identifiers to Finflux in ${Math.ceil(records.length / FINFLUX_BATCH_SIZE)} sequential jobs of up to 100 records? These writes cannot be undone from CKYC Manager. Keep this page open until all batches finish.`
         : `Send ${records.length} CKYC identifier${records.length === 1 ? '' : 's'} to Finflux? This uses LMS ClientID and cannot be undone from CKYC Manager. Continue only if the selected records or import preview are correct.`,
     );
     if (!confirmed) return;
     setBatchProgress(undefined);
     setBatchReport(undefined);
     if (usesBatches) {
-      void runClientBatches(records, { username: username.trim(), password });
+      void runSequentialBatches(
+        records,
+        { username: username.trim(), password },
+        mode === 'clients',
+      );
       return;
     }
-    createJobMutation.mutate({ data: { credentials: { username: username.trim(), password }, records } }, {
+    createJobMutation.mutate({
+      data: {
+        credentials: { username: username.trim(), password },
+        records: records.map(({ clientId, ckycNumber }) => ({ clientId, ckycNumber })),
+      },
+    }, {
       onSuccess: (accepted) => {
         setPassword('');
         setJobId(accepted.id);
@@ -724,7 +755,7 @@ export default function FinfluxUpdate() {
               <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono-ui text-[10px]">
                 <span className="text-primary">Accepted {batchProgress.successCount.toLocaleString('en-IN')}</span>
                 <span className="text-destructive">Rejected {batchProgress.failureCount.toLocaleString('en-IN')}</span>
-                <span className="text-muted-foreground">Each client batch contains up to 100 records</span>
+                <span className="text-muted-foreground">Each batch contains up to 100 records</span>
               </div>
               {batchProgress.error && <p className="mt-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-[11px] leading-5 text-destructive" role="alert">{batchProgress.error}</p>}
               {batchProgress.status === 'stopped' && batchProgress.completedRecords < batchProgress.totalRecords && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">The remaining selected records were not sent. You can review the current job and start another run for the remaining rows.</p>}
@@ -747,8 +778,8 @@ export default function FinfluxUpdate() {
             <div className="mt-4 rounded-lg border border-border bg-secondary/35 p-3"><div className="flex items-center gap-2 text-[10px] font-semibold text-foreground"><LockKeyhole size={13} className="text-primary" /> Credentials are not persisted</div><p className="mt-1.5 pl-5 text-[10px] leading-4 text-muted-foreground">No username, password or Finflux token is written to browser storage.</p></div>
             {submitError && <div className="mt-4 flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-[11px] leading-5 text-destructive" role="alert"><CircleAlert size={14} className="mt-0.5 shrink-0" />{submitError}</div>}
             <button type="submit" disabled={!canSubmit} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-[12px] font-bold text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-finflux-update"><Send size={15} />{batchIsActive ? `Sending batch ${batchProgress?.currentBatch || 1} of ${batchProgress?.totalBatches || 1}…` : createJobMutation.isPending ? 'Authenticating…' : `Send ${records.length || 0} record${records.length === 1 ? '' : 's'} to Finflux`}</button>
-            {mode === 'clients' && records.length > CLIENT_BATCH_SIZE && !batchIsActive && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Will send in {Math.ceil(records.length / CLIENT_BATCH_SIZE)} sequential batches of up to 100. Keep this page open until the run finishes.</p>}
-            {mode === 'file' && records.length > FINFLUX_JOB_LIMIT && <p className="mt-2 text-[10px] text-destructive">File imports are limited to 1,000 records per job. Split the file into smaller imports.</p>}
+            {records.length > FINFLUX_BATCH_SIZE && !batchIsActive && <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Will send in {Math.ceil(records.length / FINFLUX_BATCH_SIZE)} sequential batches of up to 100. Keep this page open until the run finishes.</p>}
+            {mode === 'file' && records.length > FINFLUX_JOB_LIMIT && <p className="mt-2 text-[10px] text-destructive">File imports are limited to 1,000 eligible rows per file. Split the file into smaller files.</p>}
           </form>
           <section className="rounded-xl border border-border bg-[#f7f5ef] p-5 dark:bg-card" aria-label="Submission summary">
             <div className="flex items-center gap-2"><ListChecks size={15} className="text-primary" /><p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">Ready to send</p></div>

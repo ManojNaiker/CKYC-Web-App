@@ -104,9 +104,9 @@ async function processJob(job: StoredJob): Promise<void> {
       });
       updateCounts(job);
 
-      if (result.statusCode === 401 || result.statusCode === 403) {
+      if (result.authorizationRejected) {
         const message =
-          "Finflux authorization was rejected. Remaining records were not attempted.";
+          "Finflux rejected authorization for this write. Remaining records were not attempted.";
         for (let remaining = index + 1; remaining < records.length; remaining += 1) {
           job.results.push({
             rowNumber: remaining + 1,

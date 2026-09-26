@@ -163,6 +163,30 @@ test("non-success identifier response includes a bounded API message", async () 
   assert.equal(result.success, false);
   assert.equal(result.statusCode, 409);
   assert.equal(result.message, "Identifier could not be added.");
+  assert.equal(result.authorizationRejected, false);
+});
+
+test("Finflux resource-integrity 403 is treated as a row failure, not a batch-wide authorization failure", async () => {
+  const fetchImpl: typeof fetch = async () =>
+    new Response(
+      JSON.stringify({
+        errors: [
+          {
+            defaultUserMessage: "Unknown data integrity issue with resource.",
+          },
+        ],
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  const result = await addFinfluxCkycIdentifier(
+    "test-token",
+    { clientId: "LF-1001", ckycNumber: "12345678901234" },
+    fetchImpl,
+  );
+
+  assert.equal(result.success, false);
+  assert.equal(result.statusCode, 403);
+  assert.equal(result.authorizationRejected, false);
 });
 
 test("update job processes records and exposes per-client outcomes", async () => {
@@ -211,6 +235,98 @@ test("update job processes records and exposes per-client outcomes", async () =>
     assert.equal(job.results[1].status, "failed");
     assert.equal(job.results[1].message, "Identifier already exists.");
     assert.equal(calls.length, 3);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("update job continues after a resource-integrity 403 for one client", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.endsWith("/oauth/token")) {
+      return new Response('{"access_token":"job-integrity-test-token"}', {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.endsWith("/LF-4001/identifiers")) {
+      return new Response(
+        '{"errors":[{"defaultUserMessage":"Unknown data integrity issue with resource."}]}',
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return new Response("{}", { status: 201 });
+  };
+
+  try {
+    const accepted = await createFinfluxCkycUpdateJob(
+      { username: "operator", password: "test-only" },
+      [
+        { clientId: "LF-4001", ckycNumber: "12345678901234" },
+        { clientId: "LF-4002", ckycNumber: "23456789012345" },
+      ],
+    );
+
+    let job = getFinfluxCkycUpdateJob(accepted.id);
+    for (let attempt = 0; attempt < 50 && job?.status === "running"; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      job = getFinfluxCkycUpdateJob(accepted.id);
+    }
+
+    assert.ok(job);
+    assert.equal(job.status, "completed");
+    assert.equal(job.processed, 2);
+    assert.equal(job.successCount, 1);
+    assert.equal(job.failureCount, 1);
+    assert.equal(job.results[0].message, "Unknown data integrity issue with resource.");
+    assert.equal(job.results[1].status, "success");
+    assert.equal(calls.length, 3);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("update job stops remaining rows after an authorization 403", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.endsWith("/oauth/token")) {
+      return new Response('{"access_token":"job-auth-test-token"}', {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(
+      '{"errors":[{"defaultUserMessage":"User is not authorized to update client identifiers."}]}',
+      { status: 403, headers: { "Content-Type": "application/json" } },
+    );
+  };
+
+  try {
+    const accepted = await createFinfluxCkycUpdateJob(
+      { username: "operator", password: "test-only" },
+      [
+        { clientId: "LF-4011", ckycNumber: "12345678901234" },
+        { clientId: "LF-4012", ckycNumber: "23456789012345" },
+      ],
+    );
+
+    let job = getFinfluxCkycUpdateJob(accepted.id);
+    for (let attempt = 0; attempt < 50 && job?.status === "running"; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      job = getFinfluxCkycUpdateJob(accepted.id);
+    }
+
+    assert.ok(job);
+    assert.equal(job.status, "failed");
+    assert.equal(job.processed, 2);
+    assert.equal(job.results[1].message, "Finflux rejected authorization for this write. Remaining records were not attempted.");
+    assert.equal(calls.length, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }

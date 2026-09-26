@@ -18,6 +18,7 @@ export interface FinfluxIdentifierResult {
   success: boolean;
   statusCode: number | null;
   message: string;
+  authorizationRejected: boolean;
 }
 
 export class FinfluxAuthenticationError extends Error {
@@ -152,6 +153,7 @@ export async function addFinfluxCkycIdentifier(
     return {
       success: false,
       statusCode: null,
+      authorizationRejected: false,
       message:
         error instanceof Error && error.name === "TimeoutError"
           ? "Finflux request timed out."
@@ -164,13 +166,21 @@ export async function addFinfluxCkycIdentifier(
     return {
       success: true,
       statusCode: response.status,
+      authorizationRejected: false,
       message: "CKYC identifier added successfully.",
     };
   }
 
+  const message = getApiMessage(body, response.status);
+  const isResourceIntegrityRejection =
+    response.status === 403 &&
+    message.toLowerCase().includes("unknown data integrity issue with resource");
   return {
     success: false,
     statusCode: response.status,
-    message: getApiMessage(body, response.status),
+    message,
+    authorizationRejected:
+      response.status === 401 ||
+      (response.status === 403 && !isResourceIntegrityRejection),
   };
 }
