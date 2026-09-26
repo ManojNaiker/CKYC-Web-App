@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useClerk } from '@clerk/react';
+import { useLogout } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ChevronRight,
   Database,
@@ -45,7 +46,16 @@ const navItems: Array<{
 export function WorkspaceShell({ children, user }: { children: React.ReactNode; user: WorkspaceUser }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { signOut } = useClerk();
+  const logout = useLogout();
+  const queryClient = useQueryClient();
+  const signOut = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.clear();
+        window.location.assign(`${basePath || ''}/sign-in`);
+      },
+    });
+  };
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const visibleNavItems = navItems.filter((item) => item.roles.includes(user.role));
   const current = visibleNavItems.find((item) => item.href === location || (item.href !== '/' && location.startsWith(`${item.href}/`)));
@@ -107,7 +117,8 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
             </div>
             <button
               type="button"
-              onClick={() => void signOut({ redirectUrl: basePath || '/' })}
+              onClick={signOut}
+              disabled={logout.isPending}
               className="grid size-8 place-items-center rounded-md text-sidebar-foreground/55 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
               aria-label="Sign out"
               title="Sign out"
@@ -141,7 +152,8 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
             <div className="grid size-9 place-items-center rounded-lg bg-primary font-mono-ui text-[10px] font-bold text-primary-foreground">{initials}</div>
             <button
               type="button"
-              onClick={() => void signOut({ redirectUrl: basePath || '/' })}
+              onClick={signOut}
+              disabled={logout.isPending}
               className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
               aria-label="Sign out"
               title="Sign out"

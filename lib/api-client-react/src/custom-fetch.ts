@@ -348,6 +348,13 @@ export async function customFetch<T = unknown>(
   if (responseType === "json" && !headers.has("accept")) {
     headers.set("accept", DEFAULT_JSON_ACCEPT);
   }
+  // Cookie sessions are same-origin; state-changing requests also carry the
+  // double-submit CSRF token. The token is intentionally only read from the
+  // JS-readable CSRF cookie, never from storage.
+  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && typeof document !== "undefined") {
+    const csrf = document.cookie.match(/(?:^|;\s*)ckyc_csrf=([^;]*)/)?.[1];
+    if (csrf && !headers.has("x-csrf-token")) headers.set("x-csrf-token", decodeURIComponent(csrf));
+  }
 
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
@@ -360,7 +367,7 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, { ...init, method, headers, credentials: init.credentials ?? "same-origin" });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

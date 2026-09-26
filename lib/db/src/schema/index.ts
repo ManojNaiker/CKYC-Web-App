@@ -24,3 +24,4 @@ export * from "./ckycDownloadResponseRecords";
 export * from "./ckycCreateData";
 export * from "./finfluxCkycUpdates";
 export * from "./appAccess";
+export * from "./authSessions";

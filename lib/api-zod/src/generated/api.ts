@@ -33,6 +33,36 @@ export const GetCurrentAppUserResponse = zod.object({
 
 
 /**
+ * @summary Sign in with the local administrator account
+ */
+
+
+
+
+export const LoginBody = zod.object({
+  "username": zod.string().min(1),
+  "password": zod.string().min(1)
+})
+
+export const LoginResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "fullName": zod.string(),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
+ * @summary Revoke the current session
+ */
+export const LogoutResponse = zod.void()
+
+
+/**
  * @summary List application users and roles
  */
 export const ListAdminUsersResponse = zod.object({

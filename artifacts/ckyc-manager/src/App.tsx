@@ -1,12 +1,4 @@
-import { useEffect, useRef } from "react";
-import {
-  ClerkProvider,
-  SignIn,
-  SignUp,
-  useAuth,
-} from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
-import { shadcn } from "@clerk/themes";
+import { useEffect, useRef, useState } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -15,6 +7,7 @@ import {
 import {
   getGetCurrentAppUserQueryKey,
   useGetCurrentAppUser,
+  useLogin,
 } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
@@ -43,64 +36,6 @@ import {
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-
-if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY.");
-}
-
-const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: "clerk",
-  options: {
-    logoPlacement: "inside" as const,
-    logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
-  },
-  variables: {
-    colorPrimary: "#5041d8",
-    colorForeground: "#24233f",
-    colorMutedForeground: "#657087",
-    colorDanger: "#b42332",
-    colorBackground: "#ffffff",
-    colorInput: "#f8fafc",
-    colorInputForeground: "#24233f",
-    colorNeutral: "#d7dbea",
-    fontFamily: "DM Sans, sans-serif",
-    borderRadius: "0.75rem",
-  },
-  elements: {
-    rootBox: "w-full flex justify-center",
-    cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-xl border border-slate-200",
-    card: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "text-slate-900 font-bold",
-    headerSubtitle: "text-slate-600",
-    socialButtonsBlockButtonText: "text-slate-800 font-semibold",
-    formFieldLabel: "text-slate-700",
-    footerActionLink: "text-indigo-700 font-semibold",
-    footerActionText: "text-slate-600",
-    dividerText: "text-slate-500",
-    identityPreviewEditButton: "text-indigo-700",
-    formFieldSuccessText: "text-emerald-700",
-    alertText: "text-red-700",
-    logoBox: "justify-center",
-    logoImage: "h-10",
-    socialButtonsBlockButton: "border-slate-300 bg-white hover:bg-slate-50",
-    formButtonPrimary: "bg-indigo-600 hover:bg-indigo-700 text-white font-semibold",
-    formFieldInput: "border-slate-300 text-slate-900",
-    footerAction: "bg-transparent",
-    dividerLine: "bg-slate-200",
-    alert: "bg-red-50 border border-red-200",
-    otpCodeFieldInput: "border-slate-300",
-    formFieldRow: "space-y-1",
-    main: "text-slate-900",
-  },
-};
 
 type CurrentUser = {
   userId: string;
@@ -123,69 +58,79 @@ function LoadingScreen() {
 }
 
 function SignInPage() {
+  const login = useLogin();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
-      <SignIn
-        routing="path"
-        path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
-        appearance={clerkAppearance}
-      />
+      <form className="w-full max-w-[440px] space-y-5 rounded-2xl border border-border bg-card p-8 shadow-xl"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setError("");
+          login.mutate({ data: { username, password } }, {
+            onSuccess: () => {
+              const target = new URLSearchParams(window.location.search).get("returnTo");
+              window.location.assign(target?.startsWith("/") ? target : (basePath || "/"));
+            },
+            onError: (cause) => {
+              const status = (cause as { status?: number }).status;
+              setError(
+                status === 503
+                  ? "Sign-in is temporarily unavailable. Please contact your administrator."
+                  : "Invalid username or password.",
+              );
+              setPassword("");
+            },
+          });
+        }}>
+        <h1 className="font-display text-2xl font-semibold">Welcome back</h1>
+        <p className="text-sm text-muted-foreground">Sign in to access Light Finance operations.</p>
+        <label className="block text-sm font-medium" htmlFor="username">Username
+          <input id="username" required autoComplete="username" className="mt-1 w-full rounded-lg border p-2.5"
+            value={username} onChange={(event) => setUsername(event.target.value)} />
+        </label>
+        <label className="block text-sm font-medium" htmlFor="password">Password
+          <input id="password" required type="password" autoComplete="current-password" className="mt-1 w-full rounded-lg border p-2.5"
+            value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <button type="submit" disabled={login.isPending} className="w-full rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground">
+          {login.isPending ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
     </div>
   );
 }
 
-function SignUpPage() {
-  return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
-      <SignUp
-        routing="path"
-        path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-        appearance={clerkAppearance}
-      />
-    </div>
-  );
-}
-
-function ClerkCacheInvalidator() {
-  const { userId } = useAuth();
+function HomeRoute() {
+  const currentUser = useGetCurrentAppUser({ query: { queryKey: getGetCurrentAppUserQueryKey(), retry: false } });
   const queryClient = useQueryClient();
-  const previousUserId = useRef<string | null | undefined>(undefined);
-
+  const previousUserId = useRef<string | undefined>(undefined);
+  const userId = currentUser.data?.user.userId;
   useEffect(() => {
-    if (
-      previousUserId.current !== undefined &&
-      previousUserId.current !== userId
-    ) {
+    if (previousUserId.current !== undefined && previousUserId.current !== userId) {
       queryClient.clear();
     }
     previousUserId.current = userId;
   }, [queryClient, userId]);
-
-  return null;
-}
-
-function HomeRoute() {
-  const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) return <LoadingScreen />;
-  return isSignedIn ? <ProtectedWorkspace /> : <PublicHome />;
+  if (currentUser.isLoading) return <LoadingScreen />;
+  return currentUser.data?.user ? <ProtectedWorkspace /> : <PublicHome />;
 }
 
 function ProtectedWorkspace() {
-  const { isLoaded, isSignedIn } = useAuth();
   const currentUser = useGetCurrentAppUser({
     query: {
       queryKey: getGetCurrentAppUserQueryKey(),
-      enabled: isLoaded && Boolean(isSignedIn),
       retry: false,
       refetchOnWindowFocus: true,
     },
   });
 
-  if (!isLoaded) return <LoadingScreen />;
-  if (!isSignedIn) return <Redirect to="/" />;
   if (currentUser.isLoading) return <LoadingScreen />;
+  if (currentUser.isError && (currentUser.error as { status?: number }).status === 401) {
+    return <Redirect to={`/sign-in?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`} />;
+  }
   if (currentUser.isError || !currentUser.data?.user) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-background p-5">
@@ -259,44 +204,13 @@ function AccessDenied() {
   );
 }
 
-function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
-  const stripBase = (path: string) =>
-    basePath && path.startsWith(basePath)
-      ? path.slice(basePath.length) || "/"
-      : path;
-
+function AppRoutes() {
   return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      localization={{
-        signIn: {
-          start: {
-            title: "Welcome back",
-            subtitle: "Sign in to access Light Finance operations",
-          },
-        },
-        signUp: {
-          start: {
-            title: "Create your account",
-            subtitle: "New accounts start with Viewer access",
-          },
-        },
-      }}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ClerkCacheInvalidator />
           <ErrorBoundary>
             <Switch>
               <Route path="/sign-in/*?" component={SignInPage} />
-              <Route path="/sign-up/*?" component={SignUpPage} />
               <Route path="/" component={HomeRoute} />
               <Route component={ProtectedWorkspace} />
             </Switch>
@@ -304,14 +218,13 @@ function ClerkProviderWithRoutes() {
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>
-    </ClerkProvider>
   );
 }
 
 export default function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <AppRoutes />
     </WouterRouter>
   );
 }

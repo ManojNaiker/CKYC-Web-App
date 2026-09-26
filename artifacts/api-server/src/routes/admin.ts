@@ -13,6 +13,7 @@ import {
   type AppUser,
 } from "@workspace/db";
 import { toAppUserResponse } from "../lib/app-users";
+import { LOCAL_ADMIN_USER_ID } from "../lib/local-auth";
 
 const router: IRouter = Router();
 const roleValues = new Set<AppRole>(["admin", "manager", "viewer"]);
@@ -57,6 +58,10 @@ router.patch("/admin/users/:userId/role", async (req, res): Promise<void> => {
     return;
   }
   const nextRole = requestedRole as AppRole;
+  if (userId === LOCAL_ADMIN_USER_ID && nextRole !== "admin") {
+    res.status(409).json({ error: "The local Admin account must remain an administrator." });
+    return;
+  }
 
   type UpdateResult =
     | { kind: "updated"; user: AppUser }

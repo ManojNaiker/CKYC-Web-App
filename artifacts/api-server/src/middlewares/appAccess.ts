@@ -1,9 +1,8 @@
-import { getAuth } from "@clerk/express";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { appUsersTable, db, type AppUser } from "@workspace/db";
-import { getOrCreateAppUser, VerifiedEmailRequiredError } from "../lib/app-users";
 import { canAccessApiPath } from "../lib/role-permissions";
+import { resolveSession } from "../lib/local-auth";
 
 const testAppUser: AppUser = {
   clerkUserId: "ckyc-workflow-test",
@@ -29,30 +28,25 @@ export async function resolveAppUser(
     return;
   }
 
-  const userId = getAuth(req).userId;
-  if (!userId) {
-    res.status(401).json({ error: "Sign in to access this workspace." });
-    return;
-  }
-
   try {
-    let user = await getOrCreateAppUser(userId);
+    const sessionUser = await resolveSession(req);
+    if (!sessionUser) {
+      res.status(401).json({ error: "Sign in to access this workspace." });
+      return;
+    }
+    let user = sessionUser;
     if (!user.lastSeenAt || Date.now() - user.lastSeenAt.getTime() > 300_000) {
       const now = new Date();
       const [updated] = await db
         .update(appUsersTable)
         .set({ lastSeenAt: now })
-        .where(eq(appUsersTable.clerkUserId, userId))
+        .where(eq(appUsersTable.clerkUserId, user.clerkUserId))
         .returning();
       if (updated) user = updated;
     }
     res.locals.appUser = user;
     next();
   } catch (error) {
-    if (error instanceof VerifiedEmailRequiredError) {
-      res.status(403).json({ error: "Verify your primary email to continue." });
-      return;
-    }
     req.log.error({ err: error }, "Could not resolve signed-in app user");
     res.status(503).json({ error: "Account access is temporarily unavailable." });
   }

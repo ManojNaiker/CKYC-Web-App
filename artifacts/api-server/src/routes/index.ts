@@ -6,7 +6,7 @@ import dashboardRouter from "./dashboard";
 import ckycDownloadsRouter from "./ckyc-downloads";
 import ckycCreateDataRouter from "./ckyc-create-data";
 import finfluxRouter from "./finflux";
-import authRouter from "./auth";
+import authRouter, { publicAuthRouter } from "./auth";
 import adminRouter from "./admin";
 import { auditApiActivity } from "../middlewares/auditApiMutations";
 import {
@@ -17,6 +17,8 @@ import {
 const router: IRouter = Router();
 
 router.use(healthRouter);
+// Login/logout are intentionally public; /auth/me is protected by its own session check.
+router.use(publicAuthRouter);
 router.use(resolveAppUser);
 router.use(auditApiActivity);
 router.use(authorizeAppUser);

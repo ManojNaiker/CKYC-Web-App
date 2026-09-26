@@ -72,3 +72,4 @@ export * from './listCkycDownloadResponseFilesParams';
 export * from './listClientsFinfluxGroup';
 export * from './listClientsParams';
 export * from './listClientsStatus';
+export * from './loginInput';

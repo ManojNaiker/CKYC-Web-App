@@ -42,8 +42,7 @@ export default function PublicHome() {
             Welcome
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Sign in to continue. New accounts start with Viewer access; an
-            administrator can assign Manager or Admin permissions.
+            Sign in with the Admin account to continue.
           </p>
           <Link
             href="/sign-in"
@@ -51,15 +50,6 @@ export default function PublicHome() {
           >
             Sign in <ArrowRight size={16} />
           </Link>
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            New to the portal?{" "}
-            <Link
-              href="/sign-up"
-              className="font-semibold text-primary underline-offset-4 hover:underline"
-            >
-              Create an account
-            </Link>
-          </p>
         </div>
       </section>
     </main>
