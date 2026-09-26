@@ -53,6 +53,34 @@ export interface AppUserRoleUpdate {
   role: AppRole;
 }
 
+export interface AdminUserUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  fullName: string;
+  /**
+     * @minLength 1
+     * @maxLength 320
+     */
+  email: string;
+  /**
+     * A local login username; null keeps a legacy account without local credentials.
+     * @minLength 3
+     * @maxLength 64
+     * @nullable
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$
+     */
+  username: string | null;
+  /**
+     * Optional new password; omit to keep the current password.
+     * @minLength 1
+     * @maxLength 1024
+     */
+  password?: string;
+  role: AppRole;
+}
+
 export interface ProvisionedUserInput {
   /**
      * @minLength 1
@@ -763,3 +791,4 @@ importId: number;
 export type ListCkycDownloadResponseFilesParams = {
 includeArchived?: boolean;
 };
+

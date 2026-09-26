@@ -117,6 +117,38 @@ paths:
           description: Administrator access required
         "409":
           description: Username is already in use or reserved
+  /admin/users/{userId}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update an application user's profile, role, or password
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdate"
+      responses:
+        "200":
+          description: Updated application user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentAppUserResponse"
+        "400":
+          description: Invalid account details
+        "403":
+          description: Administrator access required
+        "404":
+          description: User not found
+        "409":
+          description: Username conflict, protected administrator account, or last-admin safeguard
   /admin/users/{userId}/role:
     patch:
       operationId: updateAdminUserRole
@@ -930,6 +962,31 @@ components:
         role:
           $ref: "#/components/schemas/AppRole"
       required: [role]
+    AdminUserUpdate:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          minLength: 1
+          maxLength: 320
+        username:
+          type: ["string", "null"]
+          minLength: 3
+          maxLength: 64
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$"
+          description: A local login username; null keeps a legacy account without local credentials.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: Optional new password; omit to keep the current password.
+        role:
+          $ref: "#/components/schemas/AppRole"
+      required: [fullName, email, username, role]
     ProvisionedUserInput:
       type: object
       properties:

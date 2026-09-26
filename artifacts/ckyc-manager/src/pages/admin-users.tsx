@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  getGetCurrentAppUserQueryKey,
   getListAdminUsersQueryKey,
   useListAdminUsers,
-  useUpdateAdminUserRole,
 } from "@workspace/api-client-react";
-import { Check, Loader2, Shield, Users } from "lucide-react";
+import { Loader2, Shield, Users } from "lucide-react";
 import { AdminUserCreateDialog } from "@/components/admin-user-create-dialog";
+import { AdminUserEditDialog } from "@/components/admin-user-edit-dialog";
 import { EmptyState, PageIntro, QueryError } from "@/components/workspace-shell";
 import { roleLabel, type AppRole } from "@/lib/role-access";
 
@@ -28,13 +26,9 @@ function displayDate(value: string | null): string {
 }
 
 export default function AdminUsers() {
-  const queryClient = useQueryClient();
   const usersQuery = useListAdminUsers({
     query: { queryKey: getListAdminUsersQueryKey() },
   });
-  const updateRole = useUpdateAdminUserRole();
-  const [pendingRoles, setPendingRoles] = useState<Record<string, AppRole>>({});
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const users = usersQuery.data?.users ?? [];
@@ -47,49 +41,12 @@ export default function AdminUsers() {
     [users],
   );
 
-  const saveRole = (userId: string, currentRole: AppRole) => {
-    const role = pendingRoles[userId] ?? currentRole;
-    if (role === currentRole) return;
-    setUpdatingUserId(userId);
-    setMessage("");
-    updateRole.mutate(
-      { userId, data: { role } },
-      {
-        onSuccess: async () => {
-          setPendingRoles((current) => {
-            const next = { ...current };
-            delete next[userId];
-            return next;
-          });
-          setMessage("User role updated.");
-          await Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: getListAdminUsersQueryKey(),
-            }),
-            queryClient.invalidateQueries({
-              queryKey: getGetCurrentAppUserQueryKey(),
-            }),
-          ]);
-          setUpdatingUserId(null);
-        },
-        onError: (error) => {
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Could not update the user role.",
-          );
-          setUpdatingUserId(null);
-        },
-      },
-    );
-  };
-
   return (
     <div>
       <PageIntro
         eyebrow="Access control / Admin"
         title="Manage users"
-        description="Create username and password accounts, then assign Viewer, Manager, or Admin access."
+        description="Create accounts, update user profiles and sign-in details, and manage workspace roles."
         action={
           <div className="flex flex-wrap items-center justify-end gap-2">
             <AdminUserCreateDialog
@@ -125,7 +82,7 @@ export default function AdminUsers() {
         <div
           role="status"
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
-            message === "User role updated." || message.startsWith("Account @")
+            message.startsWith("User ") || message.startsWith("Account @")
               ? "border-emerald-200 bg-emerald-50 text-emerald-800"
               : "border-destructive/25 bg-[hsl(var(--danger-bg))] text-destructive"
           }`}
@@ -150,7 +107,7 @@ export default function AdminUsers() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <div className="overflow-x-auto">
-            <table className="data-table w-full min-w-[760px] border-collapse text-left">
+            <table className="data-table w-full min-w-[800px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-border">
                   <th className="px-4 py-3">Account</th>
@@ -162,23 +119,30 @@ export default function AdminUsers() {
               </thead>
               <tbody>
                 {users.map((user) => {
-                  const selectedRole = pendingRoles[user.userId] ?? user.role;
-                  const isSaving = updatingUserId === user.userId;
                   return (
                     <tr
                       key={user.userId}
                       className="border-b border-border/70 last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <p className="font-semibold text-foreground">
+                        <p
+                          data-testid={`text-user-name-${user.userId}`}
+                          className="font-semibold text-foreground"
+                        >
                           {user.fullName}
                         </p>
                         {user.username && (
-                          <p className="mt-0.5 text-xs font-medium text-primary">
+                          <p
+                            data-testid={`text-user-username-${user.userId}`}
+                            className="mt-0.5 text-xs font-medium text-primary"
+                          >
                             @{user.username}
                           </p>
                         )}
-                        <p className="mt-0.5 text-xs text-muted-foreground">
+                        <p
+                          data-testid={`text-user-email-${user.userId}`}
+                          className="mt-0.5 text-xs text-muted-foreground"
+                        >
                           {user.email}
                         </p>
                       </td>
@@ -189,39 +153,23 @@ export default function AdminUsers() {
                         {displayDate(user.createdAt)}
                       </td>
                       <td className="px-4 py-3">
-                        <select
-                          aria-label={`Role for ${user.email}`}
-                          value={selectedRole}
-                          onChange={(event) =>
-                            setPendingRoles((current) => ({
-                              ...current,
-                              [user.userId]: event.target.value as AppRole,
-                            }))
-                          }
-                          disabled={isSaving}
-                          className="min-w-32 rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold"
+                        <span
+                          data-testid={`text-user-role-${user.userId}`}
+                          className="inline-flex rounded-full border border-border bg-secondary/50 px-3 py-1.5 text-xs font-semibold text-foreground"
                         >
-                          {roles.map((role) => (
-                            <option key={role} value={role}>
-                              {roleLabel(role)}
-                            </option>
-                          ))}
-                        </select>
+                          {roleLabel(user.role)}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => saveRole(user.userId, user.role)}
-                          disabled={isSaving || selectedRole === user.role}
-                          className="inline-flex min-w-28 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-45"
-                        >
-                          {isSaving ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Check size={14} />
-                          )}
-                          {isSaving ? "Saving" : "Save role"}
-                        </button>
+                        <AdminUserEditDialog
+                          user={user}
+                          onSaved={(updatedUser) => {
+                            const identity =
+                              updatedUser.username ??
+                              updatedUser.fullName;
+                            setMessage(`User ${identity} updated.`);
+                          }}
+                        />
                       </td>
                     </tr>
                   );

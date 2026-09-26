@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminUserUpdate,
   AdminUsersResponse,
   AppUserRoleUpdate,
   AuditTrailsResponse,
@@ -536,6 +537,78 @@ export const useCreateAdminUser = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateAdminUserMutationOptions(options));
+    }
+
+export const getUpdateAdminUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}`
+}
+
+/**
+ * @summary Update an application user's profile, role, or password
+ */
+export const updateAdminUser = async (userId: string,
+    adminUserUpdate: AdminUserUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CurrentAppUserResponse> => {
+
+  return customFetch<CurrentAppUserResponse>(getUpdateAdminUserUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUserUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: string;data: BodyType<AdminUserUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUser>>, {userId: string;data: BodyType<AdminUserUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateAdminUser(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminUser>>>
+    export type UpdateAdminUserMutationBody = BodyType<AdminUserUpdate>
+    export type UpdateAdminUserMutationError = ErrorType<void>
+
+    /**
+ * @summary Update an application user's profile, role, or password
+ */
+export const useUpdateAdminUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUser>>, TError,{userId: string;data: BodyType<AdminUserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminUser>>,
+        TError,
+        {userId: string;data: BodyType<AdminUserUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminUserMutationOptions(options));
     }
 
 export const getUpdateAdminUserRoleUrl = (userId: string,) => {
@@ -2744,3 +2817,4 @@ export const useGenerateCkycDownloadRequestBatch = <TError = ErrorType<ErrorResp
       > => {
       return useMutation(getGenerateCkycDownloadRequestBatchMutationOptions(options));
     }
+

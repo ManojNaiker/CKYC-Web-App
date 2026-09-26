@@ -9,6 +9,8 @@ let server: Server;
 let baseUrl: string;
 let adminPassword: string;
 let createdUserId: string | undefined;
+let collisionUserId: string | undefined;
+let legacyUserId: string | undefined;
 
 function getCookiePair(headers: Headers, name: string): string {
   const value = headers.get("set-cookie") ?? "";
@@ -38,13 +40,14 @@ describe("local Admin authentication", () => {
   });
 
   after(async () => {
-    if (createdUserId) {
+    for (const userId of [createdUserId, collisionUserId, legacyUserId]) {
+      if (!userId) continue;
       await db
         .delete(authSessionsTable)
-        .where(eq(authSessionsTable.userId, createdUserId));
+        .where(eq(authSessionsTable.userId, userId));
       await db
         .delete(appUsersTable)
-        .where(eq(appUsersTable.clerkUserId, createdUserId));
+        .where(eq(appUsersTable.clerkUserId, userId));
     }
     if (server) {
       await new Promise<void>((resolve, reject) => {
@@ -128,8 +131,28 @@ describe("local Admin authentication", () => {
     };
     assert.ok(adminUsersBody.users.some((user) => user.userId === "local-admin"));
 
+    const bootstrapPasswordEdit = await fetch(`${baseUrl}/admin/users/local-admin`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Admin",
+        email: "admin@local.invalid",
+        username: "admin",
+        password: "must-not-replace-the-secret",
+        role: "admin",
+      }),
+    });
+    assert.equal(bootstrapPasswordEdit.status, 409);
+
     const username = `member-${randomBytes(6).toString("hex")}`;
     const initialPassword = randomBytes(18).toString("base64url");
+    const updatedUsername = `${username}-updated`;
+    const updatedPassword = randomBytes(18).toString("base64url");
+    const collisionUsername = `collision-${randomBytes(6).toString("hex")}`;
     const createUser = await fetch(`${baseUrl}/admin/users`, {
       method: "POST",
       headers: {
@@ -160,6 +183,160 @@ describe("local Admin authentication", () => {
     assert.equal("passwordHash" in createdBody.user, false);
     assert.equal("password" in createdBody.user, false);
 
+    const collisionUser = await fetch(`${baseUrl}/admin/users`, {
+      method: "POST",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Collision Member",
+        username: collisionUsername,
+        password: randomBytes(18).toString("base64url"),
+        role: "viewer",
+      }),
+    });
+    assert.equal(collisionUser.status, 201);
+    const collisionBody = (await collisionUser.json()) as {
+      user: { userId: string };
+    };
+    collisionUserId = collisionBody.user.userId;
+
+    const conflictingEdit = await fetch(`${baseUrl}/admin/users/${createdUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Test Member",
+        email: "test-member@example.com",
+        username: collisionUsername,
+        role: "manager",
+      }),
+    });
+    assert.equal(conflictingEdit.status, 409);
+
+    const updateUser = await fetch(`${baseUrl}/admin/users/${createdUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Updated Test Member",
+        email: "updated-member@example.com",
+        username: updatedUsername.toUpperCase(),
+        password: updatedPassword,
+        role: "manager",
+      }),
+    });
+    assert.equal(updateUser.status, 200);
+    const updatedBody = (await updateUser.json()) as {
+      user: {
+        userId: string;
+        fullName: string;
+        email: string;
+        username: string | null;
+        role: string;
+      };
+    };
+    assert.equal(updatedBody.user.userId, createdUserId);
+    assert.equal(updatedBody.user.fullName, "Updated Test Member");
+    assert.equal(updatedBody.user.email, "updated-member@example.com");
+    assert.equal(updatedBody.user.username, updatedUsername);
+    assert.equal(updatedBody.user.role, "manager");
+    assert.equal("passwordHash" in updatedBody.user, false);
+    assert.equal("password" in updatedBody.user, false);
+
+    const profileOnlyUpdate = await fetch(`${baseUrl}/admin/users/${createdUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Updated Test Member",
+        email: "updated-member@example.com",
+        username: updatedUsername,
+        role: "manager",
+      }),
+    });
+    assert.equal(profileOnlyUpdate.status, 200);
+
+    legacyUserId = `legacy-${randomBytes(8).toString("hex")}`;
+    await db.insert(appUsersTable).values({
+      clerkUserId: legacyUserId,
+      email: "legacy@example.com",
+      fullName: "Legacy Member",
+      username: null,
+      passwordHash: null,
+      role: "viewer",
+    });
+    const legacyProfileEdit = await fetch(`${baseUrl}/admin/users/${legacyUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Updated Legacy Member",
+        email: "updated-legacy@example.com",
+        username: null,
+        role: "viewer",
+      }),
+    });
+    assert.equal(legacyProfileEdit.status, 200);
+
+    const legacyUsername = `legacy-${randomBytes(6).toString("hex")}`;
+    const missingInitialPassword = await fetch(
+      `${baseUrl}/admin/users/${legacyUserId}`,
+      {
+        method: "PATCH",
+        headers: {
+          cookie: cookies,
+          "content-type": "application/json",
+          "x-csrf-token": decodeURIComponent(csrfCookieValue),
+        },
+        body: JSON.stringify({
+          fullName: "Updated Legacy Member",
+          email: "updated-legacy@example.com",
+          username: legacyUsername,
+          role: "viewer",
+        }),
+      },
+    );
+    assert.equal(missingInitialPassword.status, 400);
+
+    const legacyPassword = randomBytes(18).toString("base64url");
+    const enableLegacyLogin = await fetch(`${baseUrl}/admin/users/${legacyUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Updated Legacy Member",
+        email: "updated-legacy@example.com",
+        username: legacyUsername,
+        password: legacyPassword,
+        role: "viewer",
+      }),
+    });
+    assert.equal(enableLegacyLogin.status, 200);
+    const legacyLogin = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: legacyUsername, password: legacyPassword }),
+    });
+    assert.equal(legacyLogin.status, 200);
+
     const duplicateUser = await fetch(`${baseUrl}/admin/users`, {
       method: "POST",
       headers: {
@@ -169,26 +346,36 @@ describe("local Admin authentication", () => {
       },
       body: JSON.stringify({
         fullName: "Duplicate Member",
-        username,
+        username: updatedUsername,
         password: initialPassword,
         role: "viewer",
       }),
     });
     assert.equal(duplicateUser.status, 409);
 
+    const oldLogin = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: updatedUsername, password: initialPassword }),
+    });
+    assert.equal(oldLogin.status, 401);
     const memberLogin = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username, password: initialPassword }),
+      body: JSON.stringify({ username: updatedUsername, password: updatedPassword }),
     });
     assert.equal(memberLogin.status, 200);
     const memberCookies = `${getCookiePair(memberLogin.headers, "ckyc_session")}; ${getCookiePair(memberLogin.headers, "ckyc_csrf")}`;
     const memberMe = await fetch(`${baseUrl}/auth/me`, {
       headers: { cookie: memberCookies },
     });
-    const memberBody = (await memberMe.json()) as { user: { role: string } };
+    const memberBody = (await memberMe.json()) as {
+      user: { role: string; fullName: string; email: string };
+    };
     assert.equal(memberMe.status, 200);
     assert.equal(memberBody.user.role, "manager");
+    assert.equal(memberBody.user.fullName, "Updated Test Member");
+    assert.equal(memberBody.user.email, "updated-member@example.com");
 
     const memberAdminList = await fetch(`${baseUrl}/admin/users`, {
       headers: { cookie: memberCookies },
@@ -214,10 +401,26 @@ describe("local Admin authentication", () => {
     });
     assert.equal(memberCreate.status, 403);
 
+    const memberEdit = await fetch(`${baseUrl}/admin/users/${createdUserId}`, {
+      method: "PATCH",
+      headers: {
+        cookie: memberCookies,
+        "content-type": "application/json",
+        "x-csrf-token": memberCsrf,
+      },
+      body: JSON.stringify({
+        fullName: "Blocked Edit",
+        email: "blocked@example.com",
+        username: updatedUsername,
+        role: "viewer",
+      }),
+    });
+    assert.equal(memberEdit.status, 403);
+
     const wrongMemberPassword = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username, password: "wrong-password" }),
+      body: JSON.stringify({ username: updatedUsername, password: "wrong-password" }),
     });
     assert.equal(wrongMemberPassword.status, 401);
     assert.deepEqual(await wrongMemberPassword.json(), {

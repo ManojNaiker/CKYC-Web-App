@@ -118,6 +118,47 @@ export const CreateAdminUserResponse = zod.object({
 
 
 /**
+ * @summary Update an application user's profile, role, or password
+ */
+export const UpdateAdminUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const updateAdminUserBodyFullNameMax = 200;
+
+export const updateAdminUserBodyEmailMax = 320;
+
+export const updateAdminUserBodyUsernameMin = 3;
+export const updateAdminUserBodyUsernameMax = 64;
+
+
+export const updateAdminUserBodyUsernameRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$');
+export const updateAdminUserBodyPasswordMax = 1024;
+
+
+
+export const UpdateAdminUserBody = zod.object({
+  "fullName": zod.string().min(1).max(updateAdminUserBodyFullNameMax),
+  "email": zod.string().min(1).max(updateAdminUserBodyEmailMax),
+  "username": zod.string().min(updateAdminUserBodyUsernameMin).max(updateAdminUserBodyUsernameMax).regex(updateAdminUserBodyUsernameRegExp).nullable().describe('A local login username; null keeps a legacy account without local credentials.'),
+  "password": zod.string().min(1).max(updateAdminUserBodyPasswordMax).optional().describe('Optional new password; omit to keep the current password.'),
+  "role": zod.enum(['admin', 'manager', 'viewer'])
+})
+
+export const UpdateAdminUserResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
+  "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+})
+})
+
+
+/**
  * @summary Update an application's user role
  */
 export const UpdateAdminUserRoleParams = zod.object({
@@ -837,3 +878,5 @@ export const GenerateCkycDownloadRequestBatchResponse = zod.object({
   "matchedClientCount": zod.number(),
   "unmatchedReferences": zod.array(zod.string())
 })
+
+

@@ -7,6 +7,7 @@
  */
 
 export * from './adminUsersResponse';
+export * from './adminUserUpdate';
 export * from './appRole';
 export * from './appUser';
 export * from './appUserRoleUpdate';

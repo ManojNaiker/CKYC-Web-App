@@ -7,4 +7,8 @@ Preserve the bootstrap Admin login backed by workspace secrets, durable opaque d
 
 **Why:** The user approved individual username/password accounts after initially choosing a single Admin login, with the constraint that account creation remain Admin-only. Existing Clerk-era user IDs still provide attribution for historical audit records.
 
-**How to apply:** Preserve the stable bootstrap Admin principal and existing role checks. Never expose password hashes, reintroduce public registration, or rewrite historical actor IDs.
+The bootstrap Admin username is fixed and its password remains secret-managed. Its profile name and email may be edited in Manage Users, so successful bootstrap logins must preserve those profile fields.
+
+**Why:** The login upsert runs on every successful Admin login; resetting name and email there would silently undo profile edits.
+
+**How to apply:** Keep bootstrap credential management separate from profile editing, and preserve the stable Admin principal, role checks, historical actor IDs, and password-hash secrecy.

@@ -99,8 +99,6 @@ export async function authenticateLocal(username: unknown, password: unknown, re
       .onConflictDoUpdate({
         target: appUsersTable.clerkUserId,
         set: {
-          email: "admin@local.invalid",
-          fullName: "Admin",
           username: "admin",
           passwordHash: null,
           role: "admin",

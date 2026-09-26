@@ -52,7 +52,16 @@ export function auditApiActivity(
                   : null,
               assignedRole: req.body?.role ?? null,
             }
-        : {};
+          : req.path.startsWith("/admin/users/") && req.method === "PATCH"
+            ? {
+                updatedUsername:
+                  typeof req.body?.username === "string"
+                    ? req.body.username.trim().toLowerCase()
+                    : null,
+                assignedRole: req.body?.role ?? null,
+                passwordChanged: typeof req.body?.password === "string",
+              }
+            : {};
     const rawRequestId = (req as Request & { id?: string | number }).id;
     void db
       .insert(auditTrailTable)
