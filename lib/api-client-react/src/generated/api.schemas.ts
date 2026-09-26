@@ -27,9 +27,14 @@ export const AppRole = {
 
 export interface AppUser {
   userId: string;
-  /** Verified primary email on the identity provider account */
+  /** Contact email, or a local placeholder when omitted */
   email: string;
   fullName: string;
+  /**
+     * Login username for locally provisioned accounts
+     * @nullable
+     */
+  username: string | null;
   role: AppRole;
   createdAt: string;
   /** @nullable */
@@ -45,6 +50,31 @@ export interface AdminUsersResponse {
 }
 
 export interface AppUserRoleUpdate {
+  role: AppRole;
+}
+
+export interface ProvisionedUserInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  fullName: string;
+  /**
+     * @minLength 3
+     * @maxLength 64
+     * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$
+     */
+  username: string;
+  /**
+     * Optional contact email; it is not used to sign in or verified.
+     * @maxLength 320
+     */
+  email?: string;
+  /**
+     * @minLength 1
+     * @maxLength 1024
+     */
+  password: string;
   role: AppRole;
 }
 

@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -20,6 +21,8 @@ export const appUsersTable = pgTable(
     clerkUserId: text("clerk_user_id").primaryKey(),
     email: text("email").notNull(),
     fullName: text("full_name").notNull(),
+    username: text("username"),
+    passwordHash: text("password_hash"),
     role: text("role").$type<AppRole>().notNull().default("viewer"),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -31,6 +34,7 @@ export const appUsersTable = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    uniqueIndex("app_users_username_unique").on(table.username),
     check(
       "app_users_role_check",
       sql`${table.role} IN ('admin', 'manager', 'viewer')`,

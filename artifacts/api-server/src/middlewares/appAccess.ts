@@ -8,6 +8,8 @@ const testAppUser: AppUser = {
   clerkUserId: "ckyc-workflow-test",
   email: "workflow-test@invalid.local",
   fullName: "CKYC Workflow Test",
+  username: null,
+  passwordHash: null,
   role: "manager",
   lastSeenAt: new Date(0),
   createdAt: new Date(0),

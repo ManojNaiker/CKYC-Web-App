@@ -62,7 +62,8 @@ import type {
   ListCkycCreateDataParams,
   ListCkycDownloadResponseFilesParams,
   ListClientsParams,
-  LoginInput
+  LoginInput,
+  ProvisionedUserInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -256,7 +257,7 @@ export const getLoginUrl = () => {
 }
 
 /**
- * @summary Sign in with the local administrator account
+ * @summary Sign in with a provisioned application account
  */
 export const login = async (loginInput: LoginInput, options?: Parameters<typeof customFetch>[1]): Promise<CurrentAppUserResponse> => {
 
@@ -305,7 +306,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type LoginMutationError = ErrorType<void>
 
     /**
- * @summary Sign in with the local administrator account
+ * @summary Sign in with a provisioned application account
  */
 export const useLogin = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -465,6 +466,77 @@ export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUse
 
 
 
+
+export const getCreateAdminUserUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * @summary Create a username and password account
+ */
+export const createAdminUser = async (provisionedUserInput: ProvisionedUserInput, options?: Parameters<typeof customFetch>[1]): Promise<CurrentAppUserResponse> => {
+
+  return customFetch<CurrentAppUserResponse>(getCreateAdminUserUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(provisionedUserInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAdminUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<ProvisionedUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<ProvisionedUserInput>}, TContext> => {
+
+const mutationKey = ['createAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminUser>>, {data: BodyType<ProvisionedUserInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminUser(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminUser>>>
+    export type CreateAdminUserMutationBody = BodyType<ProvisionedUserInput>
+    export type CreateAdminUserMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a username and password account
+ */
+export const useCreateAdminUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<ProvisionedUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminUser>>,
+        TError,
+        {data: BodyType<ProvisionedUserInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminUserMutationOptions(options));
+    }
 
 export const getUpdateAdminUserRoleUrl = (userId: string,) => {
 

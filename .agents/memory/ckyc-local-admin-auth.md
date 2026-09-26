@@ -1,10 +1,10 @@
 ---
 name: CKYC local Admin authentication
-description: Durable constraints for the single-account authentication model that replaced Clerk.
+description: Durable constraints for the Admin-provisioned username/password model that replaced Clerk.
 ---
 
-Use one app-managed `Admin` login backed by a workspace secret, durable opaque database sessions, and CSRF protection. Keep historical Clerk-era application users and audit actors unchanged even though they can no longer sign in.
+Preserve the bootstrap Admin login backed by workspace secrets, durable opaque database sessions, and CSRF protection. Additional users may sign in with unique usernames and scrypt password hashes, but only an authenticated Admin can create accounts. Keep public signup disabled and preserve historical Clerk-era user and audit IDs.
 
-**Why:** The user explicitly chose a single local Admin account with no signup. Existing user rows still provide attribution for historical audit records, so deleting or rewriting them would damage the audit trail.
+**Why:** The user approved individual username/password accounts after initially choosing a single Admin login, with the constraint that account creation remain Admin-only. Existing Clerk-era user IDs still provide attribution for historical audit records.
 
-**How to apply:** New authentication work should preserve the stable local Admin principal, existing role authorization checks, and old audit associations. Do not reintroduce public registration or silently migrate historical actor IDs.
+**How to apply:** Preserve the stable bootstrap Admin principal and existing role checks. Never expose password hashes, reintroduce public registration, or rewrite historical actor IDs.

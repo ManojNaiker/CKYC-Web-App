@@ -44,6 +44,14 @@ export function auditApiActivity(
     const metadata =
       req.path.startsWith("/admin/users/") && req.path.endsWith("/role")
         ? { assignedRole: req.body?.role ?? null }
+        : req.path === "/admin/users" && req.method === "POST"
+          ? {
+              createdUsername:
+                typeof req.body?.username === "string"
+                  ? req.body.username.trim().toLowerCase()
+                  : null,
+              assignedRole: req.body?.role ?? null,
+            }
         : {};
     const rawRequestId = (req as Request & { id?: string | number }).id;
     void db

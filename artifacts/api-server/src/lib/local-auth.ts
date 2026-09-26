@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { appUsersTable, authSessionsTable, db, type AppUser } from "@workspace/db";
+import { verifyLocalPassword } from "./password-hash";
 
 export const SESSION_COOKIE = "ckyc_session";
 export const CSRF_COOKIE = "ckyc_csrf";
@@ -66,39 +67,75 @@ function clearFailures(req: Request): void {
 }
 
 export async function authenticateLocal(username: unknown, password: unknown, req: Request): Promise<AppUser | null> {
-  const configured = process.env.CKYC_ADMIN_PASSWORD;
-  const validConfig = Boolean(configured && secret());
   const suppliedUser =
     typeof username === "string" && username.length <= 64 ? username.trim() : "";
   const suppliedPassword =
     typeof password === "string" && password.length <= 1024 ? password : "";
-  const passwordMatch =
-    validConfig && equalCredential(suppliedPassword, configured!);
-  if (isRateLimited(req) || !equal(suppliedUser.toLowerCase(), "admin") || !passwordMatch) {
+  const normalizedUsername = suppliedUser.toLowerCase();
+  if (isRateLimited(req) || !normalizedUsername || !suppliedPassword) {
+    recordFailure(req);
+    return null;
+  }
+
+  let user: AppUser | undefined;
+  if (equal(normalizedUsername, "admin")) {
+    const configured = process.env.CKYC_ADMIN_PASSWORD;
+    if (!configured || !secret() || !equalCredential(suppliedPassword, configured)) {
+      await verifyLocalPassword(suppliedPassword, null);
+      recordFailure(req);
+      return null;
+    }
+    [user] = await db
+      .insert(appUsersTable)
+      .values({
+        clerkUserId: LOCAL_ADMIN_USER_ID,
+        email: "admin@local.invalid",
+        fullName: "Admin",
+        username: "admin",
+        passwordHash: null,
+        role: "admin",
+        lastSeenAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: appUsersTable.clerkUserId,
+        set: {
+          email: "admin@local.invalid",
+          fullName: "Admin",
+          username: "admin",
+          passwordHash: null,
+          role: "admin",
+          lastSeenAt: new Date(),
+        },
+      })
+      .returning();
+  } else {
+    const [candidate] = await db
+      .select()
+      .from(appUsersTable)
+      .where(eq(appUsersTable.username, normalizedUsername))
+      .limit(1);
+    const passwordMatches = await verifyLocalPassword(
+      suppliedPassword,
+      candidate?.passwordHash,
+    );
+    if (!candidate || !candidate.passwordHash || !passwordMatches) {
+      recordFailure(req);
+      return null;
+    }
+    const [updated] = await db
+      .update(appUsersTable)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(appUsersTable.clerkUserId, candidate.clerkUserId))
+      .returning();
+    user = updated ?? candidate;
+  }
+
+  if (!user) {
     recordFailure(req);
     return null;
   }
   clearFailures(req);
-  const [user] = await db
-    .insert(appUsersTable)
-    .values({
-      clerkUserId: LOCAL_ADMIN_USER_ID,
-      email: "admin@local.invalid",
-      fullName: "Admin",
-      role: "admin",
-      lastSeenAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: appUsersTable.clerkUserId,
-      set: {
-        email: "admin@local.invalid",
-        fullName: "Admin",
-        role: "admin",
-        lastSeenAt: new Date(),
-      },
-    })
-    .returning();
-  return user ?? null;
+  return user;
 }
 
 export async function createSession(user: AppUser, res: Response): Promise<void> {

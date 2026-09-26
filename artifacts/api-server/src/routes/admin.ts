@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
+import { randomUUID } from "node:crypto";
 import { count, desc, eq, sql } from "drizzle-orm";
 import type {
   AdminUsersResponse,
   AuditTrailsResponse,
   CurrentAppUserResponse,
 } from "@workspace/api-zod";
+import { CreateAdminUserBody } from "@workspace/api-zod";
 import {
   appUsersTable,
   auditTrailTable,
@@ -14,6 +16,7 @@ import {
 } from "@workspace/db";
 import { toAppUserResponse } from "../lib/app-users";
 import { LOCAL_ADMIN_USER_ID } from "../lib/local-auth";
+import { hashLocalPassword } from "../lib/password-hash";
 
 const router: IRouter = Router();
 const roleValues = new Set<AppRole>(["admin", "manager", "viewer"]);
@@ -43,6 +46,72 @@ router.get("/admin/users", async (_req, res): Promise<void> => {
     users: users.map(toAppUserResponse),
   };
   res.json(response);
+});
+
+router.post("/admin/users", async (req, res): Promise<void> => {
+  const parsed = CreateAdminUserBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter valid user details." });
+    return;
+  }
+
+  const fullName = parsed.data.fullName.trim();
+  const username = parsed.data.username.trim().toLowerCase();
+  const email = parsed.data.email?.trim().toLowerCase() || `${username}@local.invalid`;
+  if (!fullName || username === "admin") {
+    res.status(username === "admin" ? 409 : 400).json({
+      error:
+        username === "admin"
+          ? "The Admin username is reserved."
+          : "Enter a user's name.",
+    });
+    return;
+  }
+
+  const [existing] = await db
+    .select({ userId: appUsersTable.clerkUserId })
+    .from(appUsersTable)
+    .where(eq(appUsersTable.username, username))
+    .limit(1);
+  if (existing) {
+    res.status(409).json({ error: "That username is already in use." });
+    return;
+  }
+
+  try {
+    const passwordHash = await hashLocalPassword(parsed.data.password);
+    const [user] = await db
+      .insert(appUsersTable)
+      .values({
+        clerkUserId: `local-user-${randomUUID()}`,
+        email,
+        fullName,
+        username,
+        passwordHash,
+        role: parsed.data.role,
+      })
+      .returning();
+    if (!user) {
+      res.status(500).json({ error: "The user account could not be created." });
+      return;
+    }
+    const response: CurrentAppUserResponse = {
+      user: toAppUserResponse(user),
+    };
+    res.status(201).json(response);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      res.status(409).json({ error: "That username is already in use." });
+      return;
+    }
+    req.log.error({ err: error }, "Could not create local user account");
+    res.status(503).json({ error: "User account creation is temporarily unavailable." });
+  }
 });
 
 router.patch("/admin/users/:userId/role", async (req, res): Promise<void> => {

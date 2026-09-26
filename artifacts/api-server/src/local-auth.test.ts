@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import { after, before, describe, it } from "node:test";
+import { eq } from "drizzle-orm";
+import { appUsersTable, authSessionsTable, db } from "@workspace/db";
 
 let server: Server;
 let baseUrl: string;
 let adminPassword: string;
+let createdUserId: string | undefined;
 
 function getCookiePair(headers: Headers, name: string): string {
   const value = headers.get("set-cookie") ?? "";
@@ -35,10 +38,19 @@ describe("local Admin authentication", () => {
   });
 
   after(async () => {
-    if (!server) return;
-    await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
-    });
+    if (createdUserId) {
+      await db
+        .delete(authSessionsTable)
+        .where(eq(authSessionsTable.userId, createdUserId));
+      await db
+        .delete(appUsersTable)
+        .where(eq(appUsersTable.clerkUserId, createdUserId));
+    }
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
   });
 
   it("rejects wrong credentials with one generic response and has no signup endpoint", async () => {
@@ -112,9 +124,105 @@ describe("local Admin authentication", () => {
     const adminUsers = await fetch(`${baseUrl}/admin/users`, { headers: { cookie: cookies } });
     assert.equal(adminUsers.status, 200);
     const adminUsersBody = (await adminUsers.json()) as {
-      users: Array<{ userId: string }>;
+      users: Array<{ userId: string; username: string | null }>;
     };
     assert.ok(adminUsersBody.users.some((user) => user.userId === "local-admin"));
+
+    const username = `member-${randomBytes(6).toString("hex")}`;
+    const initialPassword = randomBytes(18).toString("base64url");
+    const createUser = await fetch(`${baseUrl}/admin/users`, {
+      method: "POST",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Test Member",
+        username: username.toUpperCase(),
+        password: initialPassword,
+        role: "manager",
+      }),
+    });
+    assert.equal(createUser.status, 201);
+    const createdBody = (await createUser.json()) as {
+      user: {
+        userId: string;
+        username: string | null;
+        email: string;
+        role: string;
+      };
+    };
+    createdUserId = createdBody.user.userId;
+    assert.equal(createdBody.user.username, username);
+    assert.equal(createdBody.user.email, `${username}@local.invalid`);
+    assert.equal(createdBody.user.role, "manager");
+    assert.equal("passwordHash" in createdBody.user, false);
+    assert.equal("password" in createdBody.user, false);
+
+    const duplicateUser = await fetch(`${baseUrl}/admin/users`, {
+      method: "POST",
+      headers: {
+        cookie: cookies,
+        "content-type": "application/json",
+        "x-csrf-token": decodeURIComponent(csrfCookieValue),
+      },
+      body: JSON.stringify({
+        fullName: "Duplicate Member",
+        username,
+        password: initialPassword,
+        role: "viewer",
+      }),
+    });
+    assert.equal(duplicateUser.status, 409);
+
+    const memberLogin = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username, password: initialPassword }),
+    });
+    assert.equal(memberLogin.status, 200);
+    const memberCookies = `${getCookiePair(memberLogin.headers, "ckyc_session")}; ${getCookiePair(memberLogin.headers, "ckyc_csrf")}`;
+    const memberMe = await fetch(`${baseUrl}/auth/me`, {
+      headers: { cookie: memberCookies },
+    });
+    const memberBody = (await memberMe.json()) as { user: { role: string } };
+    assert.equal(memberMe.status, 200);
+    assert.equal(memberBody.user.role, "manager");
+
+    const memberAdminList = await fetch(`${baseUrl}/admin/users`, {
+      headers: { cookie: memberCookies },
+    });
+    assert.equal(memberAdminList.status, 403);
+
+    const memberCsrf = decodeURIComponent(
+      getCookiePair(memberLogin.headers, "ckyc_csrf").slice("ckyc_csrf=".length),
+    );
+    const memberCreate = await fetch(`${baseUrl}/admin/users`, {
+      method: "POST",
+      headers: {
+        cookie: memberCookies,
+        "content-type": "application/json",
+        "x-csrf-token": memberCsrf,
+      },
+      body: JSON.stringify({
+        fullName: "Blocked Member",
+        username: `blocked-${randomBytes(6).toString("hex")}`,
+        password: "not-created",
+        role: "viewer",
+      }),
+    });
+    assert.equal(memberCreate.status, 403);
+
+    const wrongMemberPassword = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username, password: "wrong-password" }),
+    });
+    assert.equal(wrongMemberPassword.status, 401);
+    assert.deepEqual(await wrongMemberPassword.json(), {
+      error: "Invalid username or password.",
+    });
 
     const rejectedLogout = await fetch(`${baseUrl}/auth/logout`, {
       method: "POST",

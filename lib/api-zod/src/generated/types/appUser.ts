@@ -9,9 +9,14 @@ import type { AppRole } from './appRole';
 
 export interface AppUser {
   userId: string;
-  /** Verified primary email on the identity provider account */
+  /** Contact email, or a local placeholder when omitted */
   email: string;
   fullName: string;
+  /**
+     * Login username for locally provisioned accounts
+     * @nullable
+     */
+  username: string | null;
   role: AppRole;
   createdAt: Date;
   /** @nullable */

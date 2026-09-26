@@ -15,17 +15,14 @@ export const publicAuthRouter: IRouter = Router();
 let authConfigurationWarningLogged = false;
 
 publicAuthRouter.post("/auth/login", async (req, res): Promise<void> => {
-  const configured = process.env.CKYC_ADMIN_PASSWORD;
-  const adminPasswordPresent = Boolean(configured);
   const sessionSecret = process.env.SESSION_SECRET;
   const sessionSecretPresent = Boolean(sessionSecret);
   const sessionSecretLengthValid = Boolean(sessionSecret && sessionSecret.length >= 32);
   const sessionSecretReady = sessionSecretPresent && sessionSecretLengthValid;
-  if (!adminPasswordPresent || !sessionSecretReady) {
+  if (!sessionSecretReady) {
     if (!authConfigurationWarningLogged) {
       req.log.warn(
         {
-          adminPasswordPresent,
           sessionSecretPresent,
           sessionSecretLengthValid,
         },

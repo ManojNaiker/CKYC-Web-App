@@ -23,8 +23,9 @@ export const HealthCheckResponse = zod.object({
 export const GetCurrentAppUserResponse = zod.object({
   "user": zod.object({
   "userId": zod.string(),
-  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
   "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
   "role": zod.enum(['admin', 'manager', 'viewer']),
   "createdAt": zod.coerce.date(),
   "lastSeenAt": zod.coerce.date().nullable()
@@ -33,7 +34,7 @@ export const GetCurrentAppUserResponse = zod.object({
 
 
 /**
- * @summary Sign in with the local administrator account
+ * @summary Sign in with a provisioned application account
  */
 
 
@@ -47,8 +48,9 @@ export const LoginBody = zod.object({
 export const LoginResponse = zod.object({
   "user": zod.object({
   "userId": zod.string(),
-  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
   "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
   "role": zod.enum(['admin', 'manager', 'viewer']),
   "createdAt": zod.coerce.date(),
   "lastSeenAt": zod.coerce.date().nullable()
@@ -68,12 +70,50 @@ export const LogoutResponse = zod.void()
 export const ListAdminUsersResponse = zod.object({
   "users": zod.array(zod.object({
   "userId": zod.string(),
-  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
   "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
   "role": zod.enum(['admin', 'manager', 'viewer']),
   "createdAt": zod.coerce.date(),
   "lastSeenAt": zod.coerce.date().nullable()
 }))
+})
+
+
+/**
+ * @summary Create a username and password account
+ */
+export const createAdminUserBodyFullNameMax = 200;
+
+export const createAdminUserBodyUsernameMin = 3;
+export const createAdminUserBodyUsernameMax = 64;
+
+
+export const createAdminUserBodyUsernameRegExp = new RegExp('^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$');
+export const createAdminUserBodyEmailMax = 320;
+
+export const createAdminUserBodyPasswordMax = 1024;
+
+
+
+export const CreateAdminUserBody = zod.object({
+  "fullName": zod.string().min(1).max(createAdminUserBodyFullNameMax),
+  "username": zod.string().min(createAdminUserBodyUsernameMin).max(createAdminUserBodyUsernameMax).regex(createAdminUserBodyUsernameRegExp),
+  "email": zod.string().max(createAdminUserBodyEmailMax).optional().describe('Optional contact email; it is not used to sign in or verified.'),
+  "password": zod.string().min(1).max(createAdminUserBodyPasswordMax),
+  "role": zod.enum(['admin', 'manager', 'viewer'])
+})
+
+export const CreateAdminUserResponse = zod.object({
+  "user": zod.object({
+  "userId": zod.string(),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
+  "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
+  "role": zod.enum(['admin', 'manager', 'viewer']),
+  "createdAt": zod.coerce.date(),
+  "lastSeenAt": zod.coerce.date().nullable()
+})
 })
 
 
@@ -91,8 +131,9 @@ export const UpdateAdminUserRoleBody = zod.object({
 export const UpdateAdminUserRoleResponse = zod.object({
   "user": zod.object({
   "userId": zod.string(),
-  "email": zod.string().describe('Verified primary email on the identity provider account'),
+  "email": zod.string().describe('Contact email, or a local placeholder when omitted'),
   "fullName": zod.string(),
+  "username": zod.string().nullable().describe('Login username for locally provisioned accounts'),
   "role": zod.enum(['admin', 'manager', 'viewer']),
   "createdAt": zod.coerce.date(),
   "lastSeenAt": zod.coerce.date().nullable()

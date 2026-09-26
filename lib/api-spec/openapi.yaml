@@ -54,7 +54,7 @@ paths:
     post:
       operationId: login
       tags: [auth]
-      summary: Sign in with the local administrator account
+      summary: Sign in with a provisioned application account
       requestBody:
         required: true
         content:
@@ -94,6 +94,29 @@ paths:
                 $ref: "#/components/schemas/AdminUsersResponse"
         "403":
           description: Administrator access required
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      summary: Create a username and password account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProvisionedUserInput"
+      responses:
+        "201":
+          description: Created application user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentAppUserResponse"
+        "400":
+          description: Invalid account details
+        "403":
+          description: Administrator access required
+        "409":
+          description: Username is already in use or reserved
   /admin/users/{userId}/role:
     patch:
       operationId: updateAdminUserRole
@@ -872,9 +895,12 @@ components:
           type: string
         email:
           type: string
-          description: Verified primary email on the identity provider account
+          description: Contact email, or a local placeholder when omitted
         fullName:
           type: string
+        username:
+          type: ["string", "null"]
+          description: Login username for locally provisioned accounts
         role:
           $ref: "#/components/schemas/AppRole"
         createdAt:
@@ -883,7 +909,7 @@ components:
         lastSeenAt:
           type: ["string", "null"]
           format: date-time
-      required: [userId, email, fullName, role, createdAt, lastSeenAt]
+      required: [userId, email, fullName, username, role, createdAt, lastSeenAt]
     CurrentAppUserResponse:
       type: object
       properties:
@@ -904,6 +930,29 @@ components:
         role:
           $ref: "#/components/schemas/AppRole"
       required: [role]
+    ProvisionedUserInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        username:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$"
+        email:
+          type: string
+          maxLength: 320
+          description: Optional contact email; it is not used to sign in or verified.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        role:
+          $ref: "#/components/schemas/AppRole"
+      required: [fullName, username, password, role]
     AuditTrailEntry:
       type: object
       properties:

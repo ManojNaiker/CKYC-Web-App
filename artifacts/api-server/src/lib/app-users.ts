@@ -5,6 +5,7 @@ export function toAppUserResponse(user: AppUser) {
     userId: user.clerkUserId,
     email: user.email,
     fullName: user.fullName,
+    username: user.username,
     role: user.role,
     createdAt: user.createdAt,
     lastSeenAt: user.lastSeenAt,

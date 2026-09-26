@@ -7,6 +7,7 @@ import {
   useUpdateAdminUserRole,
 } from "@workspace/api-client-react";
 import { Check, Loader2, Shield, Users } from "lucide-react";
+import { AdminUserCreateDialog } from "@/components/admin-user-create-dialog";
 import { EmptyState, PageIntro, QueryError } from "@/components/workspace-shell";
 import { roleLabel, type AppRole } from "@/lib/role-access";
 
@@ -88,11 +89,18 @@ export default function AdminUsers() {
       <PageIntro
         eyebrow="Access control / Admin"
         title="Manage users"
-        description="Assign Viewer, Manager, and Admin access to accounts that have signed in to this workspace."
+        description="Create username and password accounts, then assign Viewer, Manager, or Admin access."
         action={
-          <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
-            <Shield size={15} className="text-primary" />
-            {users.length} accounts
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <AdminUserCreateDialog
+              onCreated={(username) => {
+                setMessage(`Account @${username} created.`);
+              }}
+            />
+            <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <Shield size={15} className="text-primary" />
+              {users.length} accounts
+            </div>
           </div>
         }
       />
@@ -117,7 +125,7 @@ export default function AdminUsers() {
         <div
           role="status"
           className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
-            message === "User role updated."
+            message === "User role updated." || message.startsWith("Account @")
               ? "border-emerald-200 bg-emerald-50 text-emerald-800"
               : "border-destructive/25 bg-[hsl(var(--danger-bg))] text-destructive"
           }`}
@@ -137,7 +145,7 @@ export default function AdminUsers() {
         <EmptyState
           icon={Users}
           title="No accounts found"
-          detail="Accounts appear here after the user signs in for the first time."
+          detail="Add a user account here. Public sign-up is disabled."
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -165,6 +173,11 @@ export default function AdminUsers() {
                         <p className="font-semibold text-foreground">
                           {user.fullName}
                         </p>
+                        {user.username && (
+                          <p className="mt-0.5 text-xs font-medium text-primary">
+                            @{user.username}
+                          </p>
+                        )}
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           {user.email}
                         </p>
