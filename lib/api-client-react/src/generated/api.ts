@@ -40,6 +40,9 @@ import type {
   CkycRequestDetail,
   CkycRequestInput,
   CkycResponseInput,
+  ClientCkycResponseRestorationAuditResponse,
+  ClientCkycResponseRestoreInput,
+  ClientCkycResponseRestoreResponse,
   ClientImportInput,
   ClientList,
   CurrentAppUserResponse,
@@ -73,7 +76,6 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
-
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
@@ -90,8 +92,6 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
 };
 
 export const getHealthCheckUrl = () => {
-
-
 
 
   return `/api/healthz`
@@ -113,9 +113,6 @@ export const healthCheck = async ( options?: Parameters<typeof customFetch>[1]):
 );}
 
 
-
-
-
 export const getHealthCheckQueryKey = () => {
     return [
     `/api/healthz`
@@ -131,11 +128,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof healthCheck>>> = ({ signal }) => healthCheck({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof healthCheck>>, TError, TData> & { queryKey: QueryKey }
@@ -162,14 +155,7 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 }
 
 
-
-
-
-
-
 export const getGetCurrentAppUserUrl = () => {
-
-
 
 
   return `/api/auth/me`
@@ -190,9 +176,6 @@ export const getCurrentAppUser = async ( options?: Parameters<typeof customFetch
 );}
 
 
-
-
-
 export const getGetCurrentAppUserQueryKey = () => {
     return [
     `/api/auth/me`
@@ -208,11 +191,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetCurrentAppUserQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAppUser>>> = ({ signal }) => getCurrentAppUser({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentAppUser>>, TError, TData> & { queryKey: QueryKey }
@@ -239,14 +218,7 @@ export function useGetCurrentAppUser<TData = Awaited<ReturnType<typeof getCurren
 }
 
 
-
-
-
-
-
 export const getLoginUrl = () => {
-
-
 
 
   return `/api/auth/login`
@@ -267,9 +239,6 @@ export const login = async (loginInput: LoginInput, options?: Parameters<typeof 
 );}
 
 
-
-
-
 export const getLoginMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: BodyType<LoginInput>}, TContext> => {
@@ -282,17 +251,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, {data: BodyType<LoginInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  login(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -318,8 +281,6 @@ export const useLogin = <TError = ErrorType<void>,
 export const getLogoutUrl = () => {
 
 
-
-
   return `/api/auth/logout`
 }
 
@@ -338,9 +299,6 @@ export const logout = async ( options?: Parameters<typeof customFetch>[1]): Prom
 );}
 
 
-
-
-
 export const getLogoutMutationOptions = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
@@ -353,17 +311,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
 
 
           return  logout(requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -389,8 +341,6 @@ export const useLogout = <TError = ErrorType<unknown>,
 export const getListAdminUsersUrl = () => {
 
 
-
-
   return `/api/admin/users`
 }
 
@@ -409,9 +359,6 @@ export const listAdminUsers = async ( options?: Parameters<typeof customFetch>[1
 );}
 
 
-
-
-
 export const getListAdminUsersQueryKey = () => {
     return [
     `/api/admin/users`
@@ -427,11 +374,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
@@ -458,14 +401,7 @@ export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUse
 }
 
 
-
-
-
-
-
 export const getUpdateAdminUserRoleUrl = (userId: string,) => {
-
-
 
 
   return `/api/admin/users/${userId}/role`
@@ -487,9 +423,6 @@ export const updateAdminUserRole = async (userId: string,
 );}
 
 
-
-
-
 export const getUpdateAdminUserRoleMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserRole>>, TError,{userId: string;data: BodyType<AppUserRoleUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserRole>>, TError,{userId: string;data: BodyType<AppUserRoleUpdate>}, TContext> => {
@@ -502,17 +435,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUserRole>>, {userId: string;data: BodyType<AppUserRoleUpdate>}> = (props) => {
           const {userId,data} = props ?? {};
 
           return  updateAdminUserRole(userId,data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -565,9 +492,6 @@ export const listAuditTrails = async (params?: ListAuditTrailsParams, options?: 
 );}
 
 
-
-
-
 export const getListAuditTrailsQueryKey = (params?: ListAuditTrailsParams,) => {
     return [
     `/api/admin/audit-trails`, ...(params ? [params] : [])
@@ -583,11 +507,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListAuditTrailsQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditTrails>>> = ({ signal }) => listAuditTrails(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAuditTrails>>, TError, TData> & { queryKey: QueryKey }
@@ -614,14 +534,7 @@ export function useListAuditTrails<TData = Awaited<ReturnType<typeof listAuditTr
 }
 
 
-
-
-
-
-
 export const getGetDashboardSummaryUrl = () => {
-
-
 
 
   return `/api/dashboard/summary`
@@ -642,9 +555,6 @@ export const getDashboardSummary = async ( options?: Parameters<typeof customFet
 );}
 
 
-
-
-
 export const getGetDashboardSummaryQueryKey = () => {
     return [
     `/api/dashboard/summary`
@@ -660,11 +570,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetDashboardSummaryQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardSummary>>> = ({ signal }) => getDashboardSummary({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData> & { queryKey: QueryKey }
@@ -689,11 +595,6 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getExportClientsUrl = (params?: ExportClientsParams,) => {
@@ -726,9 +627,6 @@ export const exportClients = async (params?: ExportClientsParams, options?: Para
 );}
 
 
-
-
-
 export const getExportClientsQueryKey = (params?: ExportClientsParams,) => {
     return [
     `/api/clients/export`, ...(params ? [params] : [])
@@ -744,11 +642,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getExportClientsQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof exportClients>>> = ({ signal }) => exportClients(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportClients>>, TError, TData> & { queryKey: QueryKey }
@@ -773,11 +667,6 @@ export function useExportClients<TData = Awaited<ReturnType<typeof exportClients
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getListClientsUrl = (params?: ListClientsParams,) => {
@@ -810,9 +699,6 @@ export const listClients = async (params?: ListClientsParams, options?: Paramete
 );}
 
 
-
-
-
 export const getListClientsQueryKey = (params?: ListClientsParams,) => {
     return [
     `/api/clients`, ...(params ? [params] : [])
@@ -828,11 +714,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListClientsQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listClients>>> = ({ signal }) => listClients(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClients>>, TError, TData> & { queryKey: QueryKey }
@@ -859,14 +741,7 @@ export function useListClients<TData = Awaited<ReturnType<typeof listClients>>, 
 }
 
 
-
-
-
-
-
 export const getImportClientsUrl = () => {
-
-
 
 
   return `/api/clients`
@@ -887,9 +762,6 @@ export const importClients = async (clientImportInput: ClientImportInput, option
 );}
 
 
-
-
-
 export const getImportClientsMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importClients>>, TError,{data: BodyType<ClientImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof importClients>>, TError,{data: BodyType<ClientImportInput>}, TContext> => {
@@ -902,17 +774,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof importClients>>, {data: BodyType<ClientImportInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  importClients(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -935,9 +801,12 @@ export const useImportClients = <TError = ErrorType<ErrorResponse>,
       return useMutation(getImportClientsMutationOptions(options));
     }
 
+export const getRestoreClientCkycResponseRowsUrl = (clientId: number,) => {
+
+
+  return `/api/clients/${clientId}/ckyc-response/restore`
+}
 export const getPreviewFinfluxCkycImportUrl = () => {
-
-
 
 
   return `/api/finflux/ckyc-import/preview`
@@ -958,9 +827,6 @@ export const previewFinfluxCkycImport = async (finfluxCkycImportPreviewInput: Fi
 );}
 
 
-
-
-
 export const getPreviewFinfluxCkycImportMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, TError,{data: BodyType<FinfluxCkycImportPreviewInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, TError,{data: BodyType<FinfluxCkycImportPreviewInput>}, TContext> => {
@@ -973,17 +839,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewFinfluxCkycImport>>, {data: BodyType<FinfluxCkycImportPreviewInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  previewFinfluxCkycImport(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1009,8 +869,6 @@ export const usePreviewFinfluxCkycImport = <TError = ErrorType<ErrorResponse>,
 export const getCreateFinfluxCkycUpdateJobUrl = () => {
 
 
-
-
   return `/api/finflux/ckyc-update-jobs`
 }
 
@@ -1029,9 +887,6 @@ export const createFinfluxCkycUpdateJob = async (finfluxCkycUpdateJobInput: Finf
 );}
 
 
-
-
-
 export const getCreateFinfluxCkycUpdateJobMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, TError,{data: BodyType<FinfluxCkycUpdateJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, TError,{data: BodyType<FinfluxCkycUpdateJobInput>}, TContext> => {
@@ -1044,17 +899,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFinfluxCkycUpdateJob>>, {data: BodyType<FinfluxCkycUpdateJobInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  createFinfluxCkycUpdateJob(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1107,9 +956,6 @@ export const getFinfluxCkycUpdateJob = async (params: GetFinfluxCkycUpdateJobPar
 );}
 
 
-
-
-
 export const getGetFinfluxCkycUpdateJobQueryKey = (params?: GetFinfluxCkycUpdateJobParams,) => {
     return [
     `/api/finflux/ckyc-update-jobs`, ...(params ? [params] : [])
@@ -1125,11 +971,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetFinfluxCkycUpdateJobQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>> = ({ signal }) => getFinfluxCkycUpdateJob(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFinfluxCkycUpdateJob>>, TError, TData> & { queryKey: QueryKey }
@@ -1156,14 +998,7 @@ export function useGetFinfluxCkycUpdateJob<TData = Awaited<ReturnType<typeof get
 }
 
 
-
-
-
-
-
 export const getListCkycRequestsUrl = () => {
-
-
 
 
   return `/api/ckyc/requests`
@@ -1184,9 +1019,6 @@ export const listCkycRequests = async ( options?: Parameters<typeof customFetch>
 );}
 
 
-
-
-
 export const getListCkycRequestsQueryKey = () => {
     return [
     `/api/ckyc/requests`
@@ -1202,11 +1034,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCkycRequestsQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycRequests>>> = ({ signal }) => listCkycRequests({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycRequests>>, TError, TData> & { queryKey: QueryKey }
@@ -1233,14 +1061,7 @@ export function useListCkycRequests<TData = Awaited<ReturnType<typeof listCkycRe
 }
 
 
-
-
-
-
-
 export const getGenerateCkycRequestUrl = () => {
-
-
 
 
   return `/api/ckyc/requests`
@@ -1261,9 +1082,6 @@ export const generateCkycRequest = async (ckycRequestInput: CkycRequestInput, op
 );}
 
 
-
-
-
 export const getGenerateCkycRequestMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycRequest>>, TError,{data: BodyType<CkycRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof generateCkycRequest>>, TError,{data: BodyType<CkycRequestInput>}, TContext> => {
@@ -1276,17 +1094,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCkycRequest>>, {data: BodyType<CkycRequestInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  generateCkycRequest(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1339,9 +1151,6 @@ export const listCkycCreateData = async (params?: ListCkycCreateDataParams, opti
 );}
 
 
-
-
-
 export const getListCkycCreateDataQueryKey = (params?: ListCkycCreateDataParams,) => {
     return [
     `/api/ckyc/create-data`, ...(params ? [params] : [])
@@ -1357,11 +1166,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCkycCreateDataQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycCreateData>>> = ({ signal }) => listCkycCreateData(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateData>>, TError, TData> & { queryKey: QueryKey }
@@ -1388,14 +1193,7 @@ export function useListCkycCreateData<TData = Awaited<ReturnType<typeof listCkyc
 }
 
 
-
-
-
-
-
 export const getImportCkycCreateDataUrl = () => {
-
-
 
 
   return `/api/ckyc/create-data`
@@ -1416,9 +1214,6 @@ export const importCkycCreateData = async (ckycCreateDataImportInput: CkycCreate
 );}
 
 
-
-
-
 export const getImportCkycCreateDataMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCkycCreateData>>, TError,{data: BodyType<CkycCreateDataImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof importCkycCreateData>>, TError,{data: BodyType<CkycCreateDataImportInput>}, TContext> => {
@@ -1431,17 +1226,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof importCkycCreateData>>, {data: BodyType<CkycCreateDataImportInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  importCkycCreateData(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1467,8 +1256,6 @@ export const useImportCkycCreateData = <TError = ErrorType<ErrorResponse>,
 export const getListCkycCreateDataBatchesUrl = () => {
 
 
-
-
   return `/api/ckyc/create-data/batches`
 }
 
@@ -1487,9 +1274,6 @@ export const listCkycCreateDataBatches = async ( options?: Parameters<typeof cus
 );}
 
 
-
-
-
 export const getListCkycCreateDataBatchesQueryKey = () => {
     return [
     `/api/ckyc/create-data/batches`
@@ -1505,11 +1289,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCkycCreateDataBatchesQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycCreateDataBatches>>> = ({ signal }) => listCkycCreateDataBatches({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycCreateDataBatches>>, TError, TData> & { queryKey: QueryKey }
@@ -1534,11 +1314,6 @@ export function useListCkycCreateDataBatches<TData = Awaited<ReturnType<typeof l
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getExportCkycCreateDataUrl = (params: ExportCkycCreateDataParams,) => {
@@ -1571,9 +1346,6 @@ export const exportCkycCreateData = async (params: ExportCkycCreateDataParams, o
 );}
 
 
-
-
-
 export const getExportCkycCreateDataQueryKey = (params?: ExportCkycCreateDataParams,) => {
     return [
     `/api/ckyc/create-data/export`, ...(params ? [params] : [])
@@ -1589,11 +1361,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getExportCkycCreateDataQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof exportCkycCreateData>>> = ({ signal }) => exportCkycCreateData(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportCkycCreateData>>, TError, TData> & { queryKey: QueryKey }
@@ -1620,14 +1388,7 @@ export function useExportCkycCreateData<TData = Awaited<ReturnType<typeof export
 }
 
 
-
-
-
-
-
 export const getGetCkycRequestUrl = (id: number,) => {
-
-
 
 
   return `/api/ckyc/requests/${id}`
@@ -1648,9 +1409,6 @@ export const getCkycRequest = async (id: number, options?: Parameters<typeof cus
 );}
 
 
-
-
-
 export const getGetCkycRequestQueryKey = (id: number,) => {
     return [
     `/api/ckyc/requests/${id}`
@@ -1666,11 +1424,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getGetCkycRequestQueryKey(id);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getCkycRequest>>> = ({ signal }) => getCkycRequest(id, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCkycRequest>>, TError, TData> & { queryKey: QueryKey }
@@ -1697,14 +1451,7 @@ export function useGetCkycRequest<TData = Awaited<ReturnType<typeof getCkycReque
 }
 
 
-
-
-
-
-
 export const getUploadCkycResponseUrl = (id: number,) => {
-
-
 
 
   return `/api/ckyc/requests/${id}/response`
@@ -1726,9 +1473,6 @@ export const uploadCkycResponse = async (id: number,
 );}
 
 
-
-
-
 export const getUploadCkycResponseMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCkycResponse>>, TError,{id: number;data: BodyType<CkycResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof uploadCkycResponse>>, TError,{id: number;data: BodyType<CkycResponseInput>}, TContext> => {
@@ -1741,17 +1485,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCkycResponse>>, {id: number;data: BodyType<CkycResponseInput>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  uploadCkycResponse(id,data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1777,8 +1515,6 @@ export const useUploadCkycResponse = <TError = ErrorType<ErrorResponse>,
 export const getListCkycDownloadRequestsUrl = () => {
 
 
-
-
   return `/api/ckyc/download-requests`
 }
 
@@ -1797,9 +1533,6 @@ export const listCkycDownloadRequests = async ( options?: Parameters<typeof cust
 );}
 
 
-
-
-
 export const getListCkycDownloadRequestsQueryKey = () => {
     return [
     `/api/ckyc/download-requests`
@@ -1815,11 +1548,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCkycDownloadRequestsQueryKey();
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycDownloadRequests>>> = ({ signal }) => listCkycDownloadRequests({ signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadRequests>>, TError, TData> & { queryKey: QueryKey }
@@ -1846,14 +1575,7 @@ export function useListCkycDownloadRequests<TData = Awaited<ReturnType<typeof li
 }
 
 
-
-
-
-
-
 export const getGenerateCkycDownloadRequestUrl = () => {
-
-
 
 
   return `/api/ckyc/download-requests`
@@ -1874,9 +1596,6 @@ export const generateCkycDownloadRequest = async (ckycDownloadRequestInput: Ckyc
 );}
 
 
-
-
-
 export const getGenerateCkycDownloadRequestMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, TError,{data: BodyType<CkycDownloadRequestInput>}, TContext> => {
@@ -1889,17 +1608,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCkycDownloadRequest>>, {data: BodyType<CkycDownloadRequestInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  generateCkycDownloadRequest(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -1925,8 +1638,6 @@ export const useGenerateCkycDownloadRequest = <TError = ErrorType<ErrorResponse>
 export const getDownloadCkycDownloadRequestFileUrl = (id: number,) => {
 
 
-
-
   return `/api/ckyc/download-requests/${id}/file`
 }
 
@@ -1945,9 +1656,6 @@ export const downloadCkycDownloadRequestFile = async (id: number, options?: Para
 );}
 
 
-
-
-
 export const getDownloadCkycDownloadRequestFileQueryKey = (id: number,) => {
     return [
     `/api/ckyc/download-requests/${id}/file`
@@ -1963,11 +1671,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getDownloadCkycDownloadRequestFileQueryKey(id);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>> = ({ signal }) => downloadCkycDownloadRequestFile(id, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadRequestFile>>, TError, TData> & { queryKey: QueryKey }
@@ -1994,14 +1698,7 @@ export function useDownloadCkycDownloadRequestFile<TData = Awaited<ReturnType<ty
 }
 
 
-
-
-
-
-
 export const getDownloadCkycDownloadResponseFileUrl = (id: number,) => {
-
-
 
 
   return `/api/ckyc/download-requests/${id}/response-file`
@@ -2022,9 +1719,6 @@ export const downloadCkycDownloadResponseFile = async (id: number, options?: Par
 );}
 
 
-
-
-
 export const getDownloadCkycDownloadResponseFileQueryKey = (id: number,) => {
     return [
     `/api/ckyc/download-requests/${id}/response-file`
@@ -2040,11 +1734,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getDownloadCkycDownloadResponseFileQueryKey(id);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCkycDownloadResponseFile>>> = ({ signal }) => downloadCkycDownloadResponseFile(id, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadResponseFile>>, TError, TData> & { queryKey: QueryKey }
@@ -2069,11 +1759,6 @@ export function useDownloadCkycDownloadResponseFile<TData = Awaited<ReturnType<t
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
 
 
 export const getListCkycDownloadResponseFilesUrl = (params?: ListCkycDownloadResponseFilesParams,) => {
@@ -2106,9 +1791,6 @@ export const listCkycDownloadResponseFiles = async (params?: ListCkycDownloadRes
 );}
 
 
-
-
-
 export const getListCkycDownloadResponseFilesQueryKey = (params?: ListCkycDownloadResponseFilesParams,) => {
     return [
     `/api/ckyc/download-requests/response-files`, ...(params ? [params] : [])
@@ -2124,11 +1806,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getListCkycDownloadResponseFilesQueryKey(params);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>> = ({ signal }) => listCkycDownloadResponseFiles(params, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCkycDownloadResponseFiles>>, TError, TData> & { queryKey: QueryKey }
@@ -2155,14 +1833,7 @@ export function useListCkycDownloadResponseFiles<TData = Awaited<ReturnType<type
 }
 
 
-
-
-
-
-
 export const getArchiveCkycDownloadResponseFileUrl = (id: number,) => {
-
-
 
 
   return `/api/ckyc/download-requests/response-files/${id}/archive`
@@ -2183,9 +1854,6 @@ export const archiveCkycDownloadResponseFile = async (id: number, options?: Para
 );}
 
 
-
-
-
 export const getArchiveCkycDownloadResponseFileMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, TError,{id: number}, TContext> => {
@@ -2198,17 +1866,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveCkycDownloadResponseFile>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
           return  archiveCkycDownloadResponseFile(id,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -2234,8 +1896,6 @@ export const useArchiveCkycDownloadResponseFile = <TError = ErrorType<ErrorRespo
 export const getRestoreCkycDownloadResponseFileUrl = (id: number,) => {
 
 
-
-
   return `/api/ckyc/download-requests/response-files/${id}/restore`
 }
 
@@ -2254,9 +1914,6 @@ export const restoreCkycDownloadResponseFile = async (id: number, options?: Para
 );}
 
 
-
-
-
 export const getRestoreCkycDownloadResponseFileMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, TError,{id: number}, TContext> => {
@@ -2269,17 +1926,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreCkycDownloadResponseFile>>, {id: number}> = (props) => {
           const {id} = props ?? {};
 
           return  restoreCkycDownloadResponseFile(id,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -2305,8 +1956,6 @@ export const useRestoreCkycDownloadResponseFile = <TError = ErrorType<ErrorRespo
 export const getDownloadCkycDownloadResponseRecordFileUrl = (id: number,) => {
 
 
-
-
   return `/api/ckyc/download-requests/response-files/${id}/file`
 }
 
@@ -2325,9 +1974,6 @@ export const downloadCkycDownloadResponseRecordFile = async (id: number, options
 );}
 
 
-
-
-
 export const getDownloadCkycDownloadResponseRecordFileQueryKey = (id: number,) => {
     return [
     `/api/ckyc/download-requests/response-files/${id}/file`
@@ -2343,11 +1989,7 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
   const queryKey =  queryOptions?.queryKey ?? getDownloadCkycDownloadResponseRecordFileQueryKey(id);
 
 
-
     const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCkycDownloadResponseRecordFile>>> = ({ signal }) => downloadCkycDownloadResponseRecordFile(id, { signal, ...requestOptions });
-
-
-
 
 
    return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCkycDownloadResponseRecordFile>>, TError, TData> & { queryKey: QueryKey }
@@ -2374,14 +2016,7 @@ export function useDownloadCkycDownloadResponseRecordFile<TData = Awaited<Return
 }
 
 
-
-
-
-
-
 export const getUploadCkycDownloadResponseUrl = () => {
-
-
 
 
   return `/api/ckyc/download-requests/response`
@@ -2402,9 +2037,6 @@ export const uploadCkycDownloadResponse = async (ckycDownloadResponseInput: Ckyc
 );}
 
 
-
-
-
 export const getUploadCkycDownloadResponseMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, TError,{data: BodyType<CkycDownloadResponseInput>}, TContext> => {
@@ -2417,17 +2049,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCkycDownloadResponse>>, {data: BodyType<CkycDownloadResponseInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  uploadCkycDownloadResponse(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -2453,8 +2079,6 @@ export const useUploadCkycDownloadResponse = <TError = ErrorType<ErrorResponse>,
 export const getGenerateCkycDownloadRequestBatchUrl = () => {
 
 
-
-
   return `/api/ckyc/download-requests/batch`
 }
 
@@ -2473,9 +2097,6 @@ export const generateCkycDownloadRequestBatch = async (ckycDownloadBatchRequestI
 );}
 
 
-
-
-
 export const getGenerateCkycDownloadRequestBatchMutationOptions = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, TError,{data: BodyType<CkycDownloadBatchRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, TError,{data: BodyType<CkycDownloadBatchRequestInput>}, TContext> => {
@@ -2488,17 +2109,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       : {mutation: { mutationKey, }, request: undefined};
 
 
-
-
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateCkycDownloadRequestBatch>>, {data: BodyType<CkycDownloadBatchRequestInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  generateCkycDownloadRequestBatch(data,requestOptions)
         }
-
-
-
-
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -2521,3 +2136,119 @@ export const useGenerateCkycDownloadRequestBatch = <TError = ErrorType<ErrorResp
       return useMutation(getGenerateCkycDownloadRequestBatchMutationOptions(options));
     }
 
+
+export const getRestoreClientCkycResponseRowsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreClientCkycResponseRows>>, TError,{clientId: number;data: BodyType<ClientCkycResponseRestoreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreClientCkycResponseRows>>, TError,{clientId: number;data: BodyType<ClientCkycResponseRestoreInput>}, TContext> => {
+
+const mutationKey = ['restoreClientCkycResponseRows'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreClientCkycResponseRows>>, {clientId: number;data: BodyType<ClientCkycResponseRestoreInput>}> = (props) => {
+          const {clientId,data} = props ?? {};
+
+          return  restoreClientCkycResponseRows(clientId,data,requestOptions)
+        }
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+/**
+ * @summary Get the latest CKYC response row restoration audit event for a client
+ */
+
+export function useGetClientCkycResponseRestorationAudit<TData = Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>, TError = ErrorType<void>>(
+ clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClientCkycResponseRestorationAuditQueryOptions(clientId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+/**
+ * @summary Restore a client's saved CKYC source rows from its original response file
+ */
+export const restoreClientCkycResponseRows = async (clientId: number,
+    clientCkycResponseRestoreInput: ClientCkycResponseRestoreInput, options?: Parameters<typeof customFetch>[1]): Promise<ClientCkycResponseRestoreResponse> => {
+
+  return customFetch<ClientCkycResponseRestoreResponse>(getRestoreClientCkycResponseRowsUrl(clientId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(clientCkycResponseRestoreInput)
+  }
+);}
+
+    export type RestoreClientCkycResponseRowsMutationResult = NonNullable<Awaited<ReturnType<typeof restoreClientCkycResponseRows>>>
+
+    export type RestoreClientCkycResponseRowsMutationBody = BodyType<ClientCkycResponseRestoreInput>
+
+export const getGetClientCkycResponseRestorationAuditUrl = (clientId: number,) => {
+
+
+  return `/api/clients/${clientId}/ckyc-response/restoration-audit`
+}
+
+    export type RestoreClientCkycResponseRowsMutationError = ErrorType<void>
+
+/**
+ * @summary Get the latest CKYC response row restoration audit event for a client
+ */
+export const getClientCkycResponseRestorationAudit = async (clientId: number, options?: Parameters<typeof customFetch>[1]): Promise<ClientCkycResponseRestorationAuditResponse> => {
+
+  return customFetch<ClientCkycResponseRestorationAuditResponse>(getGetClientCkycResponseRestorationAuditUrl(clientId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+export const getGetClientCkycResponseRestorationAuditQueryKey = (clientId: number,) => {
+    return [
+    `/api/clients/${clientId}/ckyc-response/restoration-audit`
+    ] as const;
+    }
+
+export const getGetClientCkycResponseRestorationAuditQueryOptions = <TData = Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>, TError = ErrorType<void>>(clientId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClientCkycResponseRestorationAuditQueryKey(clientId);
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>> = ({ signal }) => getClientCkycResponseRestorationAudit(clientId, { signal, ...requestOptions });
+
+
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+    /**
+ * @summary Restore a client's saved CKYC source rows from its original response file
+ */
+export const useRestoreClientCkycResponseRows = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreClientCkycResponseRows>>, TError,{clientId: number;data: BodyType<ClientCkycResponseRestoreInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreClientCkycResponseRows>>,
+        TError,
+        {clientId: number;data: BodyType<ClientCkycResponseRestoreInput>},
+        TContext
+      > => {
+      return useMutation(getRestoreClientCkycResponseRowsMutationOptions(options));
+    }
+
+export type GetClientCkycResponseRestorationAuditQueryResult = NonNullable<Awaited<ReturnType<typeof getClientCkycResponseRestorationAudit>>>
+
+export type GetClientCkycResponseRestorationAuditQueryError = ErrorType<void>

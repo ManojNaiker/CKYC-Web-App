@@ -270,6 +270,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /clients/{clientId}/ckyc-response/restore:
+    post:
+      operationId: restoreClientCkycResponseRows
+      tags: [clients]
+      summary: Restore a client's saved CKYC source rows from its original response file
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientCkycResponseRestoreInput"
+      responses:
+        "200":
+          description: Restored source rows and their audit record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientCkycResponseRestoreResponse"
+        "400":
+          description: Invalid CKYC response file
+        "404":
+          description: Client not found
+        "409":
+          description: Response ID or request association is missing, duplicated, or ambiguous
+  /clients/{clientId}/ckyc-response/restoration-audit:
+    get:
+      operationId: getClientCkycResponseRestorationAudit
+      tags: [clients]
+      summary: Get the latest CKYC response row restoration audit event for a client
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: number
+            minimum: 1
+      responses:
+        "200":
+          description: Latest restoration audit event, if one exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientCkycResponseRestorationAuditResponse"
+        "404":
+          description: Client not found
   /finflux/ckyc-import/preview:
     post:
       operationId: previewFinfluxCkycImport
@@ -902,6 +954,51 @@ components:
         offset:
           type: number
       required: [events, total, limit, offset]
+    ClientCkycResponseRestoreInput:
+      type: object
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+        content:
+          type: string
+          minLength: 1
+      required: [fileName, content]
+    ClientCkycResponseRestorationAuditEntry:
+      type: object
+      properties:
+        actorEmail:
+          type: ["string", "null"]
+        actorRole:
+          $ref: "#/components/schemas/AppRole"
+        fileName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [actorEmail, actorRole, fileName, createdAt]
+    ClientCkycResponseRestoreResponse:
+      type: object
+      properties:
+        clientId:
+          type: number
+        requestLine:
+          type: string
+        responseLine:
+          type: string
+        requestId:
+          type: number
+        auditEntry:
+          $ref: "#/components/schemas/ClientCkycResponseRestorationAuditEntry"
+      required: [clientId, requestLine, responseLine, requestId, auditEntry]
+    ClientCkycResponseRestorationAuditResponse:
+      type: object
+      properties:
+        auditEntry:
+          anyOf:
+            - $ref: "#/components/schemas/ClientCkycResponseRestorationAuditEntry"
+            - type: "null"
+      required: [auditEntry]
     Client:
       type: object
       properties:

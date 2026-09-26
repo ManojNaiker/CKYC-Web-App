@@ -1,7 +1,23 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, FileText, UserRound } from 'lucide-react';
+import { useRef, useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ArrowRight, CheckCircle2, Clock3, FileText, Loader2, UserRound } from 'lucide-react';
 import { Link, useParams } from 'wouter';
-import { getListClientsQueryKey, useListClients } from '@workspace/api-client-react';
+import {
+  getGetClientCkycResponseRestorationAuditQueryKey,
+  getGetCurrentAppUserQueryKey,
+  getListClientsQueryKey,
+  useGetClientCkycResponseRestorationAudit,
+  useGetCurrentAppUser,
+  useListClients,
+  useRestoreClientCkycResponseRows,
+} from '@workspace/api-client-react';
 import { PageIntro, QueryError } from '@/components/workspace-shell';
+
+function getMutationErrorMessage(error: unknown) {
+  const apiError = error as { data?: { error?: unknown } };
+  if (typeof apiError.data?.error === 'string') return apiError.data.error;
+  return error instanceof Error ? error.message : 'Could not restore the CKYC source rows.';
+}
 
 function DetailItem({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -31,11 +47,63 @@ export default function ClientDetail() {
   const clientId = decodeURIComponent(params.clientId ?? '');
   const numericClientId = Number(clientId);
   const clientQuery = { clientId: Number.isInteger(numericClientId) && numericClientId > 0 ? numericClientId : undefined, page: 1, pageSize: 1 };
+  const safeClientId = clientQuery.clientId ?? 0;
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreFeedback, setRestoreFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
+  const [readingFile, setReadingFile] = useState(false);
+  const currentUserQuery = useGetCurrentAppUser({
+    query: { queryKey: getGetCurrentAppUserQueryKey() },
+  });
+  const restorationAuditQuery = useGetClientCkycResponseRestorationAudit(
+    safeClientId,
+    {
+      query: {
+        enabled: Boolean(clientQuery.clientId),
+        queryKey: getGetClientCkycResponseRestorationAuditQueryKey(safeClientId),
+      },
+    },
+  );
+  const restoreMutation = useRestoreClientCkycResponseRows();
   const query = useListClients(
     clientQuery,
     { query: { enabled: Boolean(clientQuery.clientId), queryKey: getListClientsQueryKey(clientQuery) } },
   );
   const client = query.data?.items[0];
+  const canRestore =
+    currentUserQuery.data?.user.role === 'manager' ||
+    currentUserQuery.data?.user.role === 'admin';
+
+  const restoreSourceRows = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!restoreFile || !clientQuery.clientId) return;
+
+    setRestoreFeedback(null);
+    setReadingFile(true);
+    try {
+      const content = await restoreFile.text();
+      setReadingFile(false);
+      await restoreMutation.mutateAsync({
+        clientId: clientQuery.clientId,
+        data: { fileName: restoreFile.name, content },
+      });
+      setRestoreFeedback({
+        kind: 'success',
+        message: 'Source rows restored. The audit entry is saved below.',
+      });
+      setRestoreFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      void queryClient.invalidateQueries({ queryKey: getListClientsQueryKey() });
+      void queryClient.invalidateQueries({
+        queryKey: getGetClientCkycResponseRestorationAuditQueryKey(safeClientId),
+      });
+    } catch (error) {
+      setRestoreFeedback({ kind: 'error', message: getMutationErrorMessage(error) });
+    } finally {
+      setReadingFile(false);
+    }
+  };
 
   if (query.isLoading) {
     return <div className="animate-pulse"><div className="h-5 w-36 rounded bg-muted" /><div className="mt-6 h-12 w-2/3 rounded bg-muted" /><div className="mt-8 h-56 rounded-xl bg-card" /></div>;
@@ -44,6 +112,9 @@ export default function ClientDetail() {
 
   const hasFinalCkyc = Boolean(client.ckycNumber?.trim());
   const hasResponseSummary = Boolean(client.ckycResponseId || client.ckycResponseFileName);
+  const hasMissingSourceRows =
+    !client.ckycResponseRequestLine?.trim() ||
+    !client.ckycResponseMatchedRow?.trim();
   const isCreateMatch = client.ckycResponseMatchStatus === 'Match via Create CKYC';
   const isUnresolvedResponseError =
     client.ckycResponseStatus === 'error' && !hasFinalCkyc;
@@ -111,6 +182,57 @@ export default function ClientDetail() {
                   ? <pre className="mt-2 overflow-x-auto rounded-lg bg-[#17343a] p-3 font-mono-ui text-[10px] leading-5 text-[#c2e3d9]">{client.ckycResponseMatchedRow}</pre>
                   : <p className="mt-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-[11px] leading-5 text-muted-foreground">{hasResponseSummary ? 'The response ID and file reference are saved, but the original raw response row was not retained. It cannot be reconstructed without the original response file.' : 'No response row saved yet.'}</p>}
               </div>
+              {canRestore && hasMissingSourceRows && client.ckycResponseId && (
+                <form
+                  onSubmit={restoreSourceRows}
+                  className="rounded-lg border border-border bg-muted/25 p-4"
+                  data-testid="restore-ckyc-response-rows"
+                >
+                  <p className="text-[12px] font-bold text-foreground">Restore missing source rows</p>
+                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                    Upload the original CKYC response file. The restore is accepted only when its saved response ID and request sequence identify one exact client row.
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.csv,text/plain"
+                    onChange={(event) => {
+                      setRestoreFile(event.target.files?.[0] ?? null);
+                      setRestoreFeedback(null);
+                    }}
+                    className="mt-3 block w-full text-[11px] text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2 file:font-semibold file:text-secondary-foreground"
+                    aria-label="Original CKYC response file"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!restoreFile || readingFile || restoreMutation.isPending}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-[11px] font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {(readingFile || restoreMutation.isPending) && <Loader2 size={13} className="animate-spin" />}
+                    {readingFile || restoreMutation.isPending ? 'Verifying file…' : 'Restore source rows'}
+                  </button>
+                  {restoreFeedback && (
+                    <p
+                      role="status"
+                      className={`mt-3 text-[11px] leading-5 ${restoreFeedback.kind === 'success' ? 'text-emerald-700' : 'text-destructive'}`}
+                    >
+                      {restoreFeedback.message}
+                    </p>
+                  )}
+                </form>
+              )}
+              {restorationAuditQuery.data?.auditEntry && (
+                <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3" data-testid="ckyc-restoration-audit">
+                  <p className="font-mono-ui text-[9px] uppercase tracking-[.14em] text-muted-foreground">Restoration audit entry</p>
+                  <p className="mt-1 text-[11px] font-semibold text-foreground">
+                    {restorationAuditQuery.data.auditEntry.actorEmail ?? restorationAuditQuery.data.auditEntry.actorRole}
+                    {' · '}{formatDate(restorationAuditQuery.data.auditEntry.createdAt)}
+                  </p>
+                  <p className="mt-1 break-words text-[10px] text-muted-foreground">
+                    Original response file: {restorationAuditQuery.data.auditEntry.fileName}
+                  </p>
+                </div>
+              )}
             </div>
           </section>
         </div>

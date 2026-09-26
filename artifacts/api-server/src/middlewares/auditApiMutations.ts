@@ -37,6 +37,10 @@ export function auditApiActivity(
   }
 
   res.once("finish", () => {
+    if (res.locals.auditRecorded === true) {
+      return;
+    }
+
     const metadata =
       req.path.startsWith("/admin/users/") && req.path.endsWith("/role")
         ? { assignedRole: req.body?.role ?? null }

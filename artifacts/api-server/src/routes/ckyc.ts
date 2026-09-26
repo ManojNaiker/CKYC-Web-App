@@ -1,12 +1,24 @@
 import { Router, type IRouter } from "express";
-import { desc, eq, inArray, sql } from "drizzle-orm";
-import { db, ckycRequestsTable, clientsTable } from "@workspace/db";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import {
+  appUsersTable,
+  auditTrailTable,
+  db,
+  ckycRequestsTable,
+  clientsTable,
+  type AppUser,
+} from "@workspace/db";
 import {
   GenerateCkycRequestBody,
   GenerateCkycRequestResponse,
+  GetClientCkycResponseRestorationAuditParams,
+  GetClientCkycResponseRestorationAuditResponse,
   GetCkycRequestParams,
   GetCkycRequestResponse,
   ListCkycRequestsResponse,
+  RestoreClientCkycResponseRowsBody,
+  RestoreClientCkycResponseRowsParams,
+  RestoreClientCkycResponseRowsResponse,
   UploadCkycResponseBody,
   UploadCkycResponseParams,
   UploadCkycResponseResponse,
@@ -14,6 +26,7 @@ import {
 
 const router: IRouter = Router();
 const MAX_CKYC_SEARCH_ROWS = 1_000_000;
+const RESPONSE_RESTORATION_AUDIT_ACTION = "ckyc_response_rows_restored";
 
 type ClientMapping = {
   sequence: number;
@@ -146,7 +159,10 @@ function deriveLegacyMapping(
 }
 
 function parseResponseRecords(content: string): ResponseRecord[] {
-  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const lines = content
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
   if (!lines.length || lines[0].split("|")[0] !== "10") {
     throw new Error("The uploaded file does not have a valid type 10 header.");
   }
@@ -527,5 +543,308 @@ router.post("/ckyc/requests/:id/response", async (req, res): Promise<void> => {
     UploadCkycResponseResponse.parse(toRequestResponse(updated, true)),
   );
 });
+
+router.post(
+  "/clients/:clientId/ckyc-response/restore",
+  async (req, res): Promise<void> => {
+    const params = RestoreClientCkycResponseRowsParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const parsedBody = RestoreClientCkycResponseRowsBody.safeParse(req.body);
+    if (!parsedBody.success) {
+      res.status(400).json({ error: parsedBody.error.message });
+      return;
+    }
+
+    const actor = res.locals.appUser as AppUser | undefined;
+    if (!actor) {
+      res.status(403).json({ error: "A signed-in manager or administrator is required." });
+      return;
+    }
+
+    let responseRecords: ResponseRecord[];
+    try {
+      responseRecords = parseResponseRecords(parsedBody.data.content);
+    } catch (error) {
+      res.status(400).json({
+        error: error instanceof Error ? error.message : "Invalid CKYC response file.",
+      });
+      return;
+    }
+
+    const transactionResult = await db.transaction(async (tx) => {
+      const [client] = await tx
+        .select()
+        .from(clientsTable)
+        .where(eq(clientsTable.id, params.data.clientId))
+        .for("update");
+      if (!client) {
+        return {
+          ok: false as const,
+          status: 404,
+          error: "Client not found.",
+        };
+      }
+
+      const savedResponseId = client.ckycResponseId?.trim();
+      if (!savedResponseId) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "This client does not have a saved CKYC response ID to match.",
+        };
+      }
+
+      const matchingResponses = responseRecords.filter(
+        (record) => record.responseId === savedResponseId,
+      );
+      if (matchingResponses.length !== 1) {
+        return {
+          ok: false as const,
+          status: 409,
+          error:
+            matchingResponses.length === 0
+              ? "The uploaded file has no response row matching this client's saved response ID."
+              : "The uploaded file contains more than one response row matching this client's saved response ID.",
+        };
+      }
+
+      const responseRecord = matchingResponses[0];
+      const responsesAtSequence = responseRecords.filter(
+        (record) => record.sequence === responseRecord.sequence,
+      );
+      if (responsesAtSequence.length !== 1) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "The matching response sequence is duplicated in the uploaded file.",
+        };
+      }
+
+      let request: typeof ckycRequestsTable.$inferSelect | undefined;
+      if (client.ckycResponseRequestId !== null) {
+        const [associatedRequest] = await tx
+          .select()
+          .from(ckycRequestsTable)
+          .where(eq(ckycRequestsTable.id, client.ckycResponseRequestId));
+        request = associatedRequest;
+      } else {
+        const clientMappingPattern =
+          `"clientId"\\s*:\\s*${client.id}(\\s*[,}])`;
+        const requestMappings = await tx
+          .select({
+            id: ckycRequestsTable.id,
+            clientMapping: ckycRequestsTable.clientMapping,
+          })
+          .from(ckycRequestsTable)
+          .where(sql`${ckycRequestsTable.clientMapping} ~ ${clientMappingPattern}`);
+        const candidateRequestIds = requestMappings
+          .filter((candidate) =>
+            parseClientMapping(candidate.clientMapping).some(
+              (mapping) =>
+                mapping.clientId === client.id &&
+                mapping.sequence === responseRecord.sequence,
+            ),
+          )
+          .map((candidate) => candidate.id);
+
+        if (candidateRequestIds.length !== 1) {
+          return {
+            ok: false as const,
+            status: 409,
+            error:
+              candidateRequestIds.length === 0
+                ? "No saved CKYC request can be verified for this client and response sequence."
+                : "More than one saved CKYC request can match this client and response sequence.",
+          };
+        }
+
+        const [associatedRequest] = await tx
+          .select()
+          .from(ckycRequestsTable)
+          .where(eq(ckycRequestsTable.id, candidateRequestIds[0]));
+        request = associatedRequest;
+      }
+
+      if (!request) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "The saved CKYC request associated with this response is no longer available.",
+        };
+      }
+
+      const requestMappings = parseClientMapping(request.clientMapping);
+      const mappingsForClient = requestMappings.filter(
+        (mapping) => mapping.clientId === client.id,
+      );
+      const mappingsForSequence = requestMappings.filter(
+        (mapping) => mapping.sequence === responseRecord.sequence,
+      );
+      if (
+        mappingsForClient.length !== 1 ||
+        mappingsForClient[0]?.sequence !== responseRecord.sequence ||
+        mappingsForSequence.length !== 1 ||
+        mappingsForSequence[0]?.clientId !== client.id
+      ) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "The saved request does not map this response sequence uniquely to this client.",
+        };
+      }
+
+      const requestRowsAtSequence = parseRequestRows(request.content).filter(
+        (row) => row.sequence === responseRecord.sequence,
+      );
+      if (requestRowsAtSequence.length !== 1) {
+        return {
+          ok: false as const,
+          status: 409,
+          error:
+            requestRowsAtSequence.length === 0
+              ? "The associated CKYC request does not contain the matching source row."
+              : "The associated CKYC request contains duplicate rows for this response sequence.",
+        };
+      }
+
+      const requestRow = requestRowsAtSequence[0];
+      if (
+        (client.ckycResponseRequestLine !== null &&
+          client.ckycResponseRequestLine !== requestRow.line) ||
+        (client.ckycResponseMatchedRow !== null &&
+          client.ckycResponseMatchedRow !== responseRecord.line)
+      ) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "Saved source data conflicts with the uploaded file; no rows were changed.",
+        };
+      }
+      if (
+        client.ckycResponseRequestLine !== null &&
+        client.ckycResponseMatchedRow !== null
+      ) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: "This client's CKYC source rows are already present.",
+        };
+      }
+
+      await tx
+        .update(clientsTable)
+        .set({
+          ckycResponseRequestLine: requestRow.line,
+          ckycResponseMatchedRow: responseRecord.line,
+          ckycResponseRequestId: request.id,
+        })
+        .where(eq(clientsTable.id, client.id));
+
+      const rawRequestId = (req as typeof req & { id?: string | number }).id;
+      const [auditEvent] = await tx
+        .insert(auditTrailTable)
+        .values({
+          actorUserId: actor.clerkUserId,
+          actorRole: actor.role,
+          method: req.method,
+          path: req.path,
+          statusCode: 200,
+          requestId: rawRequestId == null ? null : String(rawRequestId),
+          metadata: {
+            action: RESPONSE_RESTORATION_AUDIT_ACTION,
+            clientId: client.id,
+            responseId: savedResponseId,
+            fileName: parsedBody.data.fileName,
+            requestId: request.id,
+            sequence: responseRecord.sequence,
+          },
+        })
+        .returning();
+
+      return {
+        ok: true as const,
+        clientId: client.id,
+        requestLine: requestRow.line,
+        responseLine: responseRecord.line,
+        requestId: request.id,
+        auditEntry: {
+          actorEmail: actor.email,
+          actorRole: actor.role,
+          fileName: parsedBody.data.fileName,
+          createdAt: auditEvent.createdAt,
+        },
+      };
+    });
+
+    if (!transactionResult.ok) {
+      res
+        .status(transactionResult.status)
+        .json({ error: transactionResult.error });
+      return;
+    }
+
+    res.locals.auditRecorded = true;
+    res.json(RestoreClientCkycResponseRowsResponse.parse(transactionResult));
+  },
+);
+
+router.get(
+  "/clients/:clientId/ckyc-response/restoration-audit",
+  async (req, res): Promise<void> => {
+    const params =
+      GetClientCkycResponseRestorationAuditParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [client] = await db
+      .select({ id: clientsTable.id })
+      .from(clientsTable)
+      .where(eq(clientsTable.id, params.data.clientId));
+    if (!client) {
+      res.status(404).json({ error: "Client not found." });
+      return;
+    }
+
+    const [latestEvent] = await db
+      .select({
+        event: auditTrailTable,
+        actorEmail: appUsersTable.email,
+      })
+      .from(auditTrailTable)
+      .leftJoin(
+        appUsersTable,
+        eq(appUsersTable.clerkUserId, auditTrailTable.actorUserId),
+      )
+      .where(
+        and(
+          eq(auditTrailTable.statusCode, 200),
+          sql`${auditTrailTable.metadata}->>'action' = ${RESPONSE_RESTORATION_AUDIT_ACTION}`,
+          sql`${auditTrailTable.metadata}->>'clientId' = ${String(params.data.clientId)}`,
+        ),
+      )
+      .orderBy(desc(auditTrailTable.createdAt), desc(auditTrailTable.id))
+      .limit(1);
+
+    const fileName = latestEvent?.event.metadata.fileName;
+    res.json(
+      GetClientCkycResponseRestorationAuditResponse.parse({
+        auditEntry: latestEvent
+          ? {
+              actorEmail: latestEvent.actorEmail,
+              actorRole: latestEvent.event.actorRole,
+              fileName: typeof fileName === "string" ? fileName : "",
+              createdAt: latestEvent.event.createdAt,
+            }
+          : null,
+      }),
+    );
+  },
+);
 
 export default router;
