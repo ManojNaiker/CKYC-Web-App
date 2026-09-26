@@ -37,6 +37,8 @@ export const GetCurrentAppUserResponse = zod.object({
  */
 
 
+
+
 export const LoginBody = zod.object({
   "username": zod.string().min(1),
   "password": zod.string().min(1)
@@ -106,6 +108,7 @@ export const listAuditTrailsQueryLimitMax = 200;
 
 export const listAuditTrailsQueryOffsetDefault = 0;
 export const listAuditTrailsQueryOffsetMin = 0;
+
 
 
 export const ListAuditTrailsQueryParams = zod.object({
@@ -179,6 +182,7 @@ export const listClientsQueryPageSizeDefault = 50;
 export const listClientsQueryPageSizeMax = 1000000;
 
 
+
 export const ListClientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clientId": zod.coerce.number().min(1).optional().describe('Filter to one stored client record by database ID'),
@@ -232,6 +236,7 @@ export const ListClientsResponse = zod.object({
  */
 
 
+
 export const ImportClientsBody = zod.object({
   "fileName": zod.string().optional(),
   "headers": zod.array(zod.string()).describe('Original LMS CSV headers, used to detect missing required columns'),
@@ -257,15 +262,67 @@ export const ImportClientsResponse = zod.object({
   "fileName": zod.string().nullable()
 })
 
+
+/**
+ * @summary Restore a client's saved CKYC source rows from its original response file
+ */
+
+
+
 export const RestoreClientCkycResponseRowsParams = zod.object({
   "clientId": zod.coerce.number().min(1)
 })
+
+
+
+
+
+export const RestoreClientCkycResponseRowsBody = zod.object({
+  "fileName": zod.string().min(1),
+  "content": zod.string().min(1)
+})
+
+export const RestoreClientCkycResponseRowsResponse = zod.object({
+  "clientId": zod.number(),
+  "requestLine": zod.string(),
+  "responseLine": zod.string(),
+  "requestId": zod.number(),
+  "auditEntry": zod.object({
+  "actorEmail": zod.string().nullable(),
+  "actorRole": zod.enum(['admin', 'manager', 'viewer']),
+  "fileName": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+})
+
+
+/**
+ * @summary Get the latest CKYC response row restoration audit event for a client
+ */
+
+
+
+export const GetClientCkycResponseRestorationAuditParams = zod.object({
+  "clientId": zod.coerce.number().min(1)
+})
+
+export const GetClientCkycResponseRestorationAuditResponse = zod.object({
+  "auditEntry": zod.union([zod.object({
+  "actorEmail": zod.string().nullable(),
+  "actorRole": zod.enum(['admin', 'manager', 'viewer']),
+  "fileName": zod.string(),
+  "createdAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
 /**
  * @summary Preview a Finflux CKYC update spreadsheet
  */
 export const previewFinfluxCkycImportBodyFileNameMax = 255;
 
 export const previewFinfluxCkycImportBodyFileContentBase64Max = 20971520;
+
 
 
 export const PreviewFinfluxCkycImportBody = zod.object({
@@ -302,6 +359,7 @@ export const createFinfluxCkycUpdateJobBodyRecordsItemCkycNumberMax = 100;
 export const createFinfluxCkycUpdateJobBodyRecordsMax = 1000;
 
 
+
 export const CreateFinfluxCkycUpdateJobBody = zod.object({
   "credentials": zod.object({
   "username": zod.string().min(1).max(createFinfluxCkycUpdateJobBodyCredentialsUsernameMax),
@@ -323,6 +381,7 @@ export const CreateFinfluxCkycUpdateJobResponse = zod.object({
 /**
  * @summary Get Finflux CKYC update job progress and results
  */
+
 
 
 export const GetFinfluxCkycUpdateJobQueryParams = zod.object({
@@ -419,6 +478,7 @@ export const listCkycCreateDataQueryPageSizeDefault = 50;
 export const listCkycCreateDataQueryPageSizeMax = 1000;
 
 
+
 export const ListCkycCreateDataQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.coerce.string().optional(),
@@ -489,6 +549,7 @@ export const ListCkycCreateDataBatchesResponse = zod.array(ListCkycCreateDataBat
 /**
  * @summary Export one CKYC Create batch report
  */
+
 
 
 export const ExportCkycCreateDataQueryParams = zod.object({
@@ -734,36 +795,4 @@ export const GenerateCkycDownloadRequestBatchResponse = zod.object({
   "totalRecordCount": zod.number(),
   "matchedClientCount": zod.number(),
   "unmatchedReferences": zod.array(zod.string())
-})
-
-
-export const GetClientCkycResponseRestorationAuditResponse = zod.object({
-  "auditEntry": zod.union([zod.object({
-  "actorEmail": zod.string().nullable(),
-  "actorRole": zod.enum(['admin', 'manager', 'viewer']),
-  "fileName": zod.string(),
-  "createdAt": zod.coerce.date()
-}),zod.null()])
-})
-
-export const RestoreClientCkycResponseRowsResponse = zod.object({
-  "clientId": zod.number(),
-  "requestLine": zod.string(),
-  "responseLine": zod.string(),
-  "requestId": zod.number(),
-  "auditEntry": zod.object({
-  "actorEmail": zod.string().nullable(),
-  "actorRole": zod.enum(['admin', 'manager', 'viewer']),
-  "fileName": zod.string(),
-  "createdAt": zod.coerce.date()
-})
-})
-
-export const GetClientCkycResponseRestorationAuditParams = zod.object({
-  "clientId": zod.coerce.number().min(1)
-})
-
-export const RestoreClientCkycResponseRowsBody = zod.object({
-  "fileName": zod.string().min(1),
-  "content": zod.string().min(1)
 })

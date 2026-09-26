@@ -11,22 +11,15 @@
     "test": "NODE_ENV=test CKYC_TEST_AUTH_BYPASS=1 tsx --test --test-concurrency=1 ./src/ckyc-workflow.test.ts ./src/ckyc-response-restore.test.ts ./src/clients-response-status.test.ts ./src/finflux.test.ts ./src/role-permissions.test.ts ./src/local-auth.test.ts"
   },
   "dependencies": {
-    "@clerk/express": "^2.1.72",
-    "@clerk/shared": "^4.36.0",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
     "drizzle-orm": "catalog:",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "http-proxy-middleware": "^4.2.0",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0"
   },
   "devDependencies": {
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "catalog:",
     "esbuild": "0.27.3",

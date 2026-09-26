@@ -78,6 +78,27 @@ export interface ClientCkycResponseRestoreInput {
   /** @minLength 1 */
   content: string;
 }
+
+export interface ClientCkycResponseRestorationAuditEntry {
+  /** @nullable */
+  actorEmail: string | null;
+  actorRole: AppRole;
+  fileName: string;
+  createdAt: string;
+}
+
+export interface ClientCkycResponseRestoreResponse {
+  clientId: number;
+  requestLine: string;
+  responseLine: string;
+  requestId: number;
+  auditEntry: ClientCkycResponseRestorationAuditEntry;
+}
+
+export interface ClientCkycResponseRestorationAuditResponse {
+  auditEntry: ClientCkycResponseRestorationAuditEntry | null;
+}
+
 /**
  * @nullable
  */
@@ -712,24 +733,3 @@ importId: number;
 export type ListCkycDownloadResponseFilesParams = {
 includeArchived?: boolean;
 };
-
-
-export interface ClientCkycResponseRestoreResponse {
-  clientId: number;
-  requestLine: string;
-  responseLine: string;
-  requestId: number;
-  auditEntry: ClientCkycResponseRestorationAuditEntry;
-}
-
-export interface ClientCkycResponseRestorationAuditResponse {
-  auditEntry: ClientCkycResponseRestorationAuditEntry | null;
-}
-
-export interface ClientCkycResponseRestorationAuditEntry {
-  /** @nullable */
-  actorEmail: string | null;
-  actorRole: AppRole;
-  fileName: string;
-  createdAt: string;
-}
