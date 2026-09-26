@@ -400,6 +400,7 @@ function toClientResponse(
   client: typeof clientsTable.$inferSelect,
   ckycCreateMatched = false,
   finfluxCkycUpdatedAt: Date | null = null,
+  finfluxResourceId: string | null = null,
 ) {
   return {
     id: client.id,
@@ -433,6 +434,7 @@ function toClientResponse(
     ckycResponseRequestId: client.ckycResponseRequestId,
     ckycResponseAt: client.ckycResponseAt,
     finfluxCkycUpdatedAt,
+    finfluxResourceId,
   };
 }
 
@@ -541,6 +543,7 @@ router.get("/clients", async (req, res): Promise<void> => {
       .select({
         client: clientsTable,
         finfluxCkycUpdatedAt: finfluxCkycUpdatesTable.updatedAt,
+        finfluxResourceId: finfluxCkycUpdatesTable.resourceId,
       })
       .from(clientsTable)
       .leftJoin(
@@ -568,11 +571,12 @@ router.get("/clients", async (req, res): Promise<void> => {
   );
 
   res.json({
-    items: rows.map(({ client, finfluxCkycUpdatedAt }) =>
+    items: rows.map(({ client, finfluxCkycUpdatedAt, finfluxResourceId }) =>
       toClientResponse(
         client,
         createMatchedClientIds.has(client.id),
         finfluxCkycUpdatedAt,
+        finfluxResourceId,
       ),
     ),
     total: Number(countRows[0]?.count ?? 0),

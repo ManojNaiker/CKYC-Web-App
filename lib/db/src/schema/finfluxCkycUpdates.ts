@@ -15,6 +15,7 @@ export const finfluxCkycUpdatesTable = pgTable(
     id: serial("id").primaryKey(),
     clientId: text("client_id").notNull(),
     ckycNumber: text("ckyc_number").notNull(),
+    resourceId: text("resource_id"),
     statusCode: integer("status_code").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

@@ -735,6 +735,8 @@ components:
         finfluxCkycUpdatedAt:
           type: ["string", "null"]
           format: date-time
+        finfluxResourceId:
+          type: ["string", "null"]
       required:
         - id
         - loanid
@@ -761,6 +763,7 @@ components:
         - ckycResponseRequestId
         - ckycResponseAt
         - finfluxCkycUpdatedAt
+        - finfluxResourceId
     ClientInput:
       type: object
       properties:
@@ -1480,6 +1483,8 @@ components:
           type: ["number", "null"]
         durationMs:
           type: ["number", "null"]
+        resourceId:
+          type: ["string", "null"]
       required:
         - rowNumber
         - clientId
@@ -1488,6 +1493,7 @@ components:
         - message
         - statusCode
         - durationMs
+        - resourceId
     FinfluxCkycUpdateJob:
       type: object
       properties:

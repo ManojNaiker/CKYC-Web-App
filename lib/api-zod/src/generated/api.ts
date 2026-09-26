@@ -95,7 +95,8 @@ export const ListClientsResponse = zod.object({
   "ckycResponseFileName": zod.string().nullable(),
   "ckycResponseRequestId": zod.number().nullable(),
   "ckycResponseAt": zod.coerce.date().nullable(),
-  "finfluxCkycUpdatedAt": zod.coerce.date().nullable()
+  "finfluxCkycUpdatedAt": zod.coerce.date().nullable(),
+  "finfluxResourceId": zod.string().nullable()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -221,7 +222,8 @@ export const GetFinfluxCkycUpdateJobResponse = zod.object({
   "status": zod.enum(['success', 'failed']),
   "message": zod.string(),
   "statusCode": zod.number().nullable(),
-  "durationMs": zod.number().nullable()
+  "durationMs": zod.number().nullable(),
+  "resourceId": zod.string().nullable()
 })),
   "createdAt": zod.coerce.date(),
   "startedAt": zod.coerce.date().nullable(),

@@ -17,4 +17,6 @@ export interface FinfluxCkycUpdateResult {
   statusCode: number | null;
   /** @nullable */
   durationMs: number | null;
+  /** @nullable */
+  resourceId: string | null;
 }

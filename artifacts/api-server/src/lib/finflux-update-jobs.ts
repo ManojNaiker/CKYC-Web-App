@@ -24,6 +24,7 @@ export interface FinfluxSuccessfulUpdate {
   clientId: string;
   ckycNumber: string;
   statusCode: number;
+  resourceId: string | null;
 }
 
 type PersistSuccessfulRecords = (
@@ -100,6 +101,7 @@ async function processJob(job: StoredJob): Promise<void> {
         status: result.success ? "success" : "failed",
         message: result.message,
         statusCode: result.statusCode,
+        resourceId: result.resourceId,
         durationMs,
       });
       updateCounts(job);
@@ -115,6 +117,7 @@ async function processJob(job: StoredJob): Promise<void> {
             status: "failed",
             message,
             statusCode: result.statusCode,
+            resourceId: null,
             durationMs: 0,
           });
         }
@@ -138,6 +141,7 @@ async function processJob(job: StoredJob): Promise<void> {
         clientId: result.clientId,
         ckycNumber: result.ckycNumber,
         statusCode: result.statusCode ?? 200,
+        resourceId: result.resourceId,
       }));
     if (successfulUpdates.length > 0) {
       await job.persistSuccessfulRecords(successfulUpdates);

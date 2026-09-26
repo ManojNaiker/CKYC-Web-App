@@ -47,4 +47,6 @@ export interface Client {
   ckycResponseAt: Date | null;
   /** @nullable */
   finfluxCkycUpdatedAt: Date | null;
+  /** @nullable */
+  finfluxResourceId: string | null;
 }

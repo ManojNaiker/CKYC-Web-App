@@ -115,7 +115,7 @@ function csvCell(value: string | number | null | undefined) {
 }
 
 function downloadResultsReport(results: FinfluxCkycUpdateJob['results'], fileName: string) {
-  const header = ['row_number', 'client_id', 'ckyc_number', 'status', 'message', 'status_code', 'duration_ms'];
+  const header = ['row_number', 'client_id', 'ckyc_number', 'status', 'resource_id', 'message', 'status_code', 'duration_ms'];
   const lines = [
     header.join(','),
     ...results.map((result) =>
@@ -124,6 +124,7 @@ function downloadResultsReport(results: FinfluxCkycUpdateJob['results'], fileNam
         result.clientId,
         result.ckycNumber,
         result.status,
+        result.resourceId,
         result.message,
         result.statusCode,
         result.durationMs,
@@ -199,10 +200,10 @@ function JobPanel({ job, onDownload, onRetry }: { job: FinfluxCkycUpdateJob | un
         <div className="flex items-center justify-between gap-3 px-5 py-4 text-[11px] text-muted-foreground"><span>The job could not be completed.</span><button onClick={onRetry} className="inline-flex items-center gap-1.5 font-semibold text-primary hover:underline" data-testid="button-retry-job"><RefreshCw size={13} /> Check again</button></div>
       ) : job.results.length ? (
         <div className="overflow-x-auto">
-          <table className="data-table w-full min-w-[680px] text-left">
-            <thead className="bg-secondary/45"><tr className="border-b border-border text-muted-foreground"><th className="px-5 py-3">Row</th><th className="px-3 py-3">Client ID</th><th className="px-3 py-3">CKYC number</th><th className="px-3 py-3">Result</th><th className="px-3 py-3">Message</th><th className="px-3 py-3">Time</th></tr></thead>
+          <table className="data-table w-full min-w-[860px] text-left">
+            <thead className="bg-secondary/45"><tr className="border-b border-border text-muted-foreground"><th className="px-5 py-3">Row</th><th className="px-3 py-3">Client ID</th><th className="px-3 py-3">CKYC number</th><th className="px-3 py-3">Result</th><th className="px-3 py-3">FinFlux resource ID</th><th className="px-3 py-3">Message</th><th className="px-3 py-3">Time</th></tr></thead>
             <tbody className="divide-y divide-border">
-              {job.results.map((result) => <tr key={`${result.rowNumber}-${result.clientId}`} className="text-[11px]"><td className="px-5 py-3 font-mono-ui text-muted-foreground">{result.rowNumber}</td><td className="px-3 py-3 font-mono-ui font-semibold">{result.clientId}</td><td className="px-3 py-3 font-mono-ui text-foreground/75">{result.ckycNumber}</td><td className="px-3 py-3"><StatusPill status={result.status} /></td><td className="max-w-[260px] px-3 py-3 text-muted-foreground">{result.message}{result.statusCode ? ` · ${result.statusCode}` : ''}</td><td className="px-3 py-3 font-mono-ui text-muted-foreground">{result.durationMs === null ? '—' : `${result.durationMs} ms`}</td></tr>)}
+              {job.results.map((result) => <tr key={`${result.rowNumber}-${result.clientId}`} className="text-[11px]"><td className="px-5 py-3 font-mono-ui text-muted-foreground">{result.rowNumber}</td><td className="px-3 py-3 font-mono-ui font-semibold">{result.clientId}</td><td className="px-3 py-3 font-mono-ui text-foreground/75">{result.ckycNumber}</td><td className="px-3 py-3"><StatusPill status={result.status} /></td><td className="px-3 py-3 font-mono-ui text-foreground/75">{result.resourceId ?? '—'}</td><td className="max-w-[260px] px-3 py-3 text-muted-foreground">{result.message}{result.statusCode ? ` · ${result.statusCode}` : ''}</td><td className="px-3 py-3 font-mono-ui text-muted-foreground">{result.durationMs === null ? '—' : `${result.durationMs} ms`}</td></tr>)}
             </tbody>
           </table>
         </div>
@@ -686,7 +687,7 @@ export default function FinfluxUpdate() {
                       <td className="px-5 py-4"><input type="checkbox" checked={Boolean(selected)} disabled={!canEditSelectedRecords || selectionBusy} onChange={() => toggleClient(client)} aria-label={`Select ${client.ClientName}`} className="size-4 accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-40" data-testid={`checkbox-finflux-client-${client.id}`} /></td>
                       <td className="px-3 py-4"><div className="flex items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#dcefeb] font-mono-ui text-[9px] font-semibold text-primary">{initials(client.ClientName)}</span><div><p className="text-[12px] font-semibold">{client.ClientName}</p><p className="mt-0.5 font-mono-ui text-[10px] text-muted-foreground">{client.ClientID}</p></div></div></td>
                       <td className="px-3 py-4 font-mono-ui text-[10px] text-muted-foreground">{client.loanid}</td>
-                      <td className="px-3 py-4">{client.finfluxCkycUpdatedAt ? <span className="inline-flex rounded-full bg-[#dcf3e9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#31734d]">Updated</span> : client.ckycNumber ? <span className="inline-flex rounded-full bg-[#fff0c9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#9d761f]">Pending</span> : <span className="inline-flex rounded-full bg-secondary px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-muted-foreground">Final CKYC required</span>}</td>
+                      <td className="px-3 py-4">{client.finfluxCkycUpdatedAt ? <><span className="inline-flex rounded-full bg-[#dcf3e9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#31734d]">Updated</span>{client.finfluxResourceId && <p className="mt-1 font-mono-ui text-[9px] text-muted-foreground">Resource ID {client.finfluxResourceId}</p>}</> : client.ckycNumber ? <span className="inline-flex rounded-full bg-[#fff0c9] px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-[#9d761f]">Pending</span> : <span className="inline-flex rounded-full bg-secondary px-2 py-1 font-mono-ui text-[8px] font-semibold uppercase tracking-[.08em] text-muted-foreground">Final CKYC required</span>}</td>
                       <td className="px-3 py-4"><label><span className="sr-only">CKYC number for {client.ClientName}</span><input value={selected?.ckycNumber ?? client.ckycNumber ?? ''} disabled={!canEditSelectedRecords || selectionBusy} onChange={(event) => updateClientNumber(client, event.target.value)} placeholder="Enter CKYC number" className={`h-9 w-full max-w-[205px] rounded-md border bg-background px-2.5 font-mono-ui text-[11px] outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 ${selected && !selected.ckycNumber.trim() ? 'border-[#d2a94b]' : 'border-input'}`} data-testid={`input-finflux-ckyc-${client.id}`} /></label>{client.ckycNumber && <p className="mt-1 text-[9px] text-primary">Saved final CKYC prefilled</p>}</td>
                     </tr>;
                   })}</tbody></table></div>

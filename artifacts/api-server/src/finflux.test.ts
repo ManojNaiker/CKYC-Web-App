@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import ExcelJS from "exceljs";
+import { pool } from "@workspace/db";
 import {
   FinfluxImportError,
   previewFinfluxImportFile,
@@ -14,6 +16,7 @@ import {
   createFinfluxCkycUpdateJob,
   getFinfluxCkycUpdateJob,
 } from "./lib/finflux-update-jobs";
+import { persistFinfluxSuccessfulUpdates } from "./lib/finflux-update-status";
 
 test("CSV preview validates required fields and marks duplicate client IDs", async () => {
   const csv = [
@@ -88,7 +91,10 @@ test("OAuth and CKYC identifier requests follow the Finflux contract", async () 
         headers: { "Content-Type": "application/json" },
       });
     }
-    return new Response("{}", { status: 201 });
+    return new Response(
+      '{"officeId":336,"clientId":"LF/1001","resourceId":15733716}',
+      { status: 201, headers: { "Content-Type": "application/json" } },
+    );
   };
 
   const token = await authenticateWithFinflux(
@@ -126,6 +132,7 @@ test("OAuth and CKYC identifier requests follow the Finflux contract", async () 
   });
   assert.equal(result.success, true);
   assert.equal(result.statusCode, 201);
+  assert.equal(result.resourceId, "15733716");
 });
 
 test("Finflux credential rejection is surfaced as a safe authentication error", async () => {
@@ -192,6 +199,12 @@ test("Finflux resource-integrity 403 is treated as a row failure, not a batch-wi
 test("update job processes records and exposes per-client outcomes", async () => {
   const originalFetch = globalThis.fetch;
   const calls: string[] = [];
+  const persistedRecords: Array<{
+    clientId: string;
+    ckycNumber: string;
+    statusCode: number;
+    resourceId: string | null;
+  }> = [];
   globalThis.fetch = async (input) => {
     const url = String(input);
     calls.push(url);
@@ -207,6 +220,12 @@ test("update job processes records and exposes per-client outcomes", async () =>
         { status: 409, headers: { "Content-Type": "application/json" } },
       );
     }
+    if (url.endsWith("/LF-3001/identifiers")) {
+      return new Response(
+        '{"officeId":336,"clientId":"LF-3001","resourceId":15733716}',
+        { status: 201, headers: { "Content-Type": "application/json" } },
+      );
+    }
     return new Response("{}", { status: 201 });
   };
 
@@ -217,6 +236,7 @@ test("update job processes records and exposes per-client outcomes", async () =>
         { clientId: "LF-3001", ckycNumber: "12345678901234" },
         { clientId: "LF-3002", ckycNumber: "23456789012345" },
       ],
+      async (updates) => { persistedRecords.push(...updates); },
     );
 
     let job = getFinfluxCkycUpdateJob(accepted.id);
@@ -232,11 +252,55 @@ test("update job processes records and exposes per-client outcomes", async () =>
     assert.equal(job.successCount, 1);
     assert.equal(job.failureCount, 1);
     assert.equal(job.results[0].status, "success");
+    assert.equal(job.results[0].resourceId, "15733716");
     assert.equal(job.results[1].status, "failed");
     assert.equal(job.results[1].message, "Identifier already exists.");
+    assert.deepEqual(persistedRecords, [{
+      clientId: "LF-3001",
+      ckycNumber: "12345678901234",
+      statusCode: 201,
+      resourceId: "15733716",
+    }]);
     assert.equal(calls.length, 3);
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("FinFlux resource IDs persist and survive later responses without an ID", async () => {
+  const clientId = `FINFLUX-RESOURCE-TEST-${randomUUID()}`;
+  const ckycNumber = "12345678901234";
+
+  try {
+    await persistFinfluxSuccessfulUpdates([{
+      clientId,
+      ckycNumber,
+      statusCode: 201,
+      resourceId: "15733716",
+    }]);
+    const inserted = await pool.query<{ resource_id: string | null; status_code: number }>(
+      "SELECT resource_id, status_code FROM finflux_ckyc_updates WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
+    assert.equal(inserted.rows[0]?.resource_id, "15733716");
+
+    await persistFinfluxSuccessfulUpdates([{
+      clientId,
+      ckycNumber,
+      statusCode: 200,
+      resourceId: null,
+    }]);
+    const updated = await pool.query<{ resource_id: string | null; status_code: number }>(
+      "SELECT resource_id, status_code FROM finflux_ckyc_updates WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
+    assert.equal(updated.rows[0]?.resource_id, "15733716");
+    assert.equal(updated.rows[0]?.status_code, 200);
+  } finally {
+    await pool.query(
+      "DELETE FROM finflux_ckyc_updates WHERE client_id = $1 AND ckyc_number = $2",
+      [clientId, ckycNumber],
+    );
   }
 });
 

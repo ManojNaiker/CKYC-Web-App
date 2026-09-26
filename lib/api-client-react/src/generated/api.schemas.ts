@@ -72,6 +72,8 @@ export interface Client {
   ckycResponseAt: string | null;
   /** @nullable */
   finfluxCkycUpdatedAt: string | null;
+  /** @nullable */
+  finfluxResourceId: string | null;
 }
 
 export interface ClientInput {
@@ -467,6 +469,8 @@ export interface FinfluxCkycUpdateResult {
   statusCode: number | null;
   /** @nullable */
   durationMs: number | null;
+  /** @nullable */
+  resourceId: string | null;
 }
 
 export type FinfluxCkycUpdateJobStatus = typeof FinfluxCkycUpdateJobStatus[keyof typeof FinfluxCkycUpdateJobStatus];

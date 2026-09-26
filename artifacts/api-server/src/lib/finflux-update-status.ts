@@ -19,6 +19,7 @@ export async function persistFinfluxSuccessfulUpdates(
         ],
         set: {
           statusCode: sql`excluded.status_code`,
+          resourceId: sql`coalesce(excluded.resource_id, ${finfluxCkycUpdatesTable.resourceId})`,
           updatedAt: sql`now()`,
         },
       });
