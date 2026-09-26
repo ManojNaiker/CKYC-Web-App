@@ -16,13 +16,22 @@ let authConfigurationWarningLogged = false;
 
 publicAuthRouter.post("/auth/login", async (req, res): Promise<void> => {
   const configured = process.env.CKYC_ADMIN_PASSWORD;
-  const adminPasswordReady = Boolean(configured && configured.length >= 12);
+  const adminPasswordPresent = Boolean(configured);
+  const adminPasswordLengthValid = Boolean(configured && configured.length >= 12);
   const sessionSecret = process.env.SESSION_SECRET;
-  const sessionSecretReady = Boolean(sessionSecret && sessionSecret.length >= 32);
+  const sessionSecretPresent = Boolean(sessionSecret);
+  const sessionSecretLengthValid = Boolean(sessionSecret && sessionSecret.length >= 32);
+  const adminPasswordReady = adminPasswordPresent && adminPasswordLengthValid;
+  const sessionSecretReady = sessionSecretPresent && sessionSecretLengthValid;
   if (!adminPasswordReady || !sessionSecretReady) {
     if (!authConfigurationWarningLogged) {
       req.log.warn(
-        { adminPasswordReady, sessionSecretReady },
+        {
+          adminPasswordPresent,
+          adminPasswordLengthValid,
+          sessionSecretPresent,
+          sessionSecretLengthValid,
+        },
         "Local Admin login configuration is incomplete",
       );
       authConfigurationWarningLogged = true;
