@@ -67,7 +67,7 @@ function clearFailures(req: Request): void {
 
 export async function authenticateLocal(username: unknown, password: unknown, req: Request): Promise<AppUser | null> {
   const configured = process.env.CKYC_ADMIN_PASSWORD;
-  const validConfig = Boolean(configured && configured.length >= 12 && secret());
+  const validConfig = Boolean(configured && secret());
   const suppliedUser =
     typeof username === "string" && username.length <= 64 ? username.trim() : "";
   const suppliedPassword =

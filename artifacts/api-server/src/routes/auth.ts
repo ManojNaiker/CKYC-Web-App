@@ -17,18 +17,15 @@ let authConfigurationWarningLogged = false;
 publicAuthRouter.post("/auth/login", async (req, res): Promise<void> => {
   const configured = process.env.CKYC_ADMIN_PASSWORD;
   const adminPasswordPresent = Boolean(configured);
-  const adminPasswordLengthValid = Boolean(configured && configured.length >= 12);
   const sessionSecret = process.env.SESSION_SECRET;
   const sessionSecretPresent = Boolean(sessionSecret);
   const sessionSecretLengthValid = Boolean(sessionSecret && sessionSecret.length >= 32);
-  const adminPasswordReady = adminPasswordPresent && adminPasswordLengthValid;
   const sessionSecretReady = sessionSecretPresent && sessionSecretLengthValid;
-  if (!adminPasswordReady || !sessionSecretReady) {
+  if (!adminPasswordPresent || !sessionSecretReady) {
     if (!authConfigurationWarningLogged) {
       req.log.warn(
         {
           adminPasswordPresent,
-          adminPasswordLengthValid,
           sessionSecretPresent,
           sessionSecretLengthValid,
         },

@@ -65,6 +65,21 @@ describe("local Admin authentication", () => {
     assert.notEqual(signup.status, 200);
   });
 
+  it("accepts the configured password without imposing an application-specific length policy", async () => {
+    const originalPassword = process.env.CKYC_ADMIN_PASSWORD;
+    process.env.CKYC_ADMIN_PASSWORD = "short-ok";
+    try {
+      const login = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: "Admin", password: "short-ok" }),
+      });
+      assert.equal(login.status, 200);
+    } finally {
+      process.env.CKYC_ADMIN_PASSWORD = originalPassword;
+    }
+  });
+
   it("creates an HttpOnly session, enforces CSRF, keeps Admin access, and revokes on logout", async () => {
     const login = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
