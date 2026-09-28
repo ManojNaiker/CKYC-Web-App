@@ -128,6 +128,7 @@ describe("CKYC file workflow", () => {
   const createDataImportIds: number[] = [];
   const runId = `${Date.now()}-${process.pid}`;
   const loanPrefix = `workflow-regression-${runId}`;
+  const duplicateLoanPrefix = `duplicate-client-${runId}`;
   const downloadReference = `IN${String(process.pid).padStart(12, "0")}`;
   const fullResponseId = `O${downloadReference}`;
 
@@ -180,6 +181,9 @@ describe("CKYC file workflow", () => {
     await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
       `${loanPrefix}%`,
     ]);
+    await pool.query("DELETE FROM clients WHERE loanid LIKE $1", [
+      `${duplicateLoanPrefix}%`,
+    ]);
     await pool.end();
   });
 
@@ -215,90 +219,6 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       duplicates: 3,
       fileName,
     });
-
-    const sameClientId = `CLI-${runId}-same-client`;
-    const sameClientRows = [
-      {
-        ...rows[0],
-        loanid: `${loanPrefix}-same-client-first-loan`,
-        ClientID: sameClientId,
-        ClientName: "First Loan Record",
-      },
-      {
-        ...rows[0],
-        loanid: `${loanPrefix}-same-client-second-loan`,
-        ClientID: sameClientId,
-        ClientName: "Duplicate Loan Record",
-      },
-    ];
-    const sameUploadDuplicates = await requestJson<ImportResult>(
-      baseUrl,
-      "/clients",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          fileName: `${loanPrefix}-same-client.csv`,
-          headers: LMS_HEADERS,
-          rows: sameClientRows,
-        }),
-      },
-    );
-    assert.deepEqual(sameUploadDuplicates, {
-      imported: 1,
-      skipped: 0,
-      duplicates: 1,
-      fileName: `${loanPrefix}-same-client.csv`,
-    });
-
-    const differentLoanDuplicate = await requestJson<ImportResult>(
-      baseUrl,
-      "/clients",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          fileName: `${loanPrefix}-same-client-again.csv`,
-          headers: LMS_HEADERS,
-          rows: [
-            {
-              ...sameClientRows[0],
-              loanid: `${loanPrefix}-same-client-third-loan`,
-            },
-          ],
-        }),
-      },
-    );
-    assert.deepEqual(differentLoanDuplicate, {
-      imported: 0,
-      skipped: 0,
-      duplicates: 1,
-      fileName: `${loanPrefix}-same-client-again.csv`,
-    });
-
-    const sameClientList = await requestJson<{
-      items: ClientRecord[];
-      total: number;
-    }>(
-      baseUrl,
-      `/clients?search=${encodeURIComponent(sameClientId)}&pageSize=10`,
-    );
-    assert.equal(sameClientList.total, 1);
-    assert.equal(
-      sameClientList.items[0]?.loanid,
-      `${loanPrefix}-same-client-first-loan`,
-      "the first valid row for a ClientID is retained",
-    );
-
-    const sameClientExport = await fetch(
-      `${baseUrl}/clients/export?search=${encodeURIComponent(sameClientId)}`,
-    );
-    assert.equal(sameClientExport.status, 200);
-    const exportedSameClientRows = (await sameClientExport.text())
-      .trim()
-      .split(/\r?\n/)
-      .slice(1);
-    assert.equal(exportedSameClientRows.length, 1);
 
     const clientList = await requestJson<{
       items: ClientRecord[];
@@ -1763,5 +1683,84 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
     );
     assert.equal(clientList.total, 1);
     assert.equal(clientList.items[0]?.ClientName, "Valid Client");
+  });
+
+  it("skips duplicate LMS ClientIDs across loans and keeps exports unique", async () => {
+    const clientId = `CLI-${runId}-duplicate-upload`;
+    const firstLoanId = `${duplicateLoanPrefix}-first-loan`;
+    const duplicateLoanId = `${duplicateLoanPrefix}-second-loan`;
+    const rows: ClientInput[] = [
+      {
+        loanid: firstLoanId,
+        ClientID: clientId,
+        disbursedon_date: "01-01-2026",
+        Client_UID: "",
+        Client_VID: "",
+        Client_PAN: "",
+        ClientName: "First Loan Record",
+        mobile_no: "9876543210",
+        alternate_mobile_no: "",
+        Gender: "F",
+        date_of_birth: "01-01-1990",
+      },
+      {
+        loanid: duplicateLoanId,
+        ClientID: clientId,
+        disbursedon_date: "02-01-2026",
+        Client_UID: "",
+        Client_VID: "",
+        Client_PAN: "",
+        ClientName: "Duplicate Loan Record",
+        mobile_no: "9876543211",
+        alternate_mobile_no: "",
+        Gender: "F",
+        date_of_birth: "02-01-1990",
+      },
+    ];
+    const fileName = `${duplicateLoanPrefix}.csv`;
+    const sameUpload = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName, headers: LMS_HEADERS, rows }),
+    });
+    assert.deepEqual(sameUpload, {
+      imported: 1,
+      skipped: 0,
+      duplicates: 1,
+      fileName,
+    });
+
+    const laterUpload = await requestJson<ImportResult>(baseUrl, "/clients", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        fileName: `${duplicateLoanPrefix}-later.csv`,
+        headers: LMS_HEADERS,
+        rows: [{ ...rows[0], loanid: `${duplicateLoanPrefix}-third-loan` }],
+      }),
+    });
+    assert.deepEqual(laterUpload, {
+      imported: 0,
+      skipped: 0,
+      duplicates: 1,
+      fileName: `${duplicateLoanPrefix}-later.csv`,
+    });
+
+    const list = await requestJson<{ items: ClientRecord[]; total: number }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(clientId)}&pageSize=10`,
+    );
+    assert.equal(list.total, 1);
+    assert.equal(list.items[0]?.loanid, firstLoanId);
+
+    const exportResponse = await fetch(
+      `${baseUrl}/clients/export?search=${encodeURIComponent(clientId)}`,
+    );
+    assert.equal(exportResponse.status, 200);
+    const exportedRows = (await exportResponse.text())
+      .trim()
+      .split(/\r?\n/)
+      .slice(1);
+    assert.equal(exportedRows.length, 1);
   });
 });
