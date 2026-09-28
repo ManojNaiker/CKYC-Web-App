@@ -216,6 +216,90 @@ ${loanPrefix}-3,CLI-${runId}-3,03-01-2026,,,,No Identifier,9876543212,,F,20-12-1
       fileName,
     });
 
+    const sameClientId = `CLI-${runId}-same-client`;
+    const sameClientRows = [
+      {
+        ...rows[0],
+        loanid: `${loanPrefix}-same-client-first-loan`,
+        ClientID: sameClientId,
+        ClientName: "First Loan Record",
+      },
+      {
+        ...rows[0],
+        loanid: `${loanPrefix}-same-client-second-loan`,
+        ClientID: sameClientId,
+        ClientName: "Duplicate Loan Record",
+      },
+    ];
+    const sameUploadDuplicates = await requestJson<ImportResult>(
+      baseUrl,
+      "/clients",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName: `${loanPrefix}-same-client.csv`,
+          headers: LMS_HEADERS,
+          rows: sameClientRows,
+        }),
+      },
+    );
+    assert.deepEqual(sameUploadDuplicates, {
+      imported: 1,
+      skipped: 0,
+      duplicates: 1,
+      fileName: `${loanPrefix}-same-client.csv`,
+    });
+
+    const differentLoanDuplicate = await requestJson<ImportResult>(
+      baseUrl,
+      "/clients",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fileName: `${loanPrefix}-same-client-again.csv`,
+          headers: LMS_HEADERS,
+          rows: [
+            {
+              ...sameClientRows[0],
+              loanid: `${loanPrefix}-same-client-third-loan`,
+            },
+          ],
+        }),
+      },
+    );
+    assert.deepEqual(differentLoanDuplicate, {
+      imported: 0,
+      skipped: 0,
+      duplicates: 1,
+      fileName: `${loanPrefix}-same-client-again.csv`,
+    });
+
+    const sameClientList = await requestJson<{
+      items: ClientRecord[];
+      total: number;
+    }>(
+      baseUrl,
+      `/clients?search=${encodeURIComponent(sameClientId)}&pageSize=10`,
+    );
+    assert.equal(sameClientList.total, 1);
+    assert.equal(
+      sameClientList.items[0]?.loanid,
+      `${loanPrefix}-same-client-first-loan`,
+      "the first valid row for a ClientID is retained",
+    );
+
+    const sameClientExport = await fetch(
+      `${baseUrl}/clients/export?search=${encodeURIComponent(sameClientId)}`,
+    );
+    assert.equal(sameClientExport.status, 200);
+    const exportedSameClientRows = (await sameClientExport.text())
+      .trim()
+      .split(/\r?\n/)
+      .slice(1);
+    assert.equal(exportedSameClientRows.length, 1);
+
     const clientList = await requestJson<{
       items: ClientRecord[];
       total: number;

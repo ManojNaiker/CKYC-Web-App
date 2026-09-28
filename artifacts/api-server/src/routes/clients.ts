@@ -340,9 +340,9 @@ function isValidClientRow(row: ClientInput) {
   return REQUIRED_LMS_VALUES.every((header) => hasValue(row[header]));
 }
 
-function getImportIdentity(loanid: string, clientId: string) {
+function getImportIdentity(clientId: string) {
   return createHash("sha256")
-    .update(JSON.stringify([loanid, clientId]))
+    .update(JSON.stringify([clientId]))
     .digest("hex");
 }
 
@@ -757,21 +757,20 @@ router.post("/clients", async (req, res): Promise<void> => {
     gender: row.Gender,
     dateOfBirth: row.date_of_birth,
     sourceFileName,
-    importIdentity: getImportIdentity(row.loanid, row.ClientID),
+    importIdentity: getImportIdentity(row.ClientID),
   }));
 
   const existingIdentities = new Set<string>();
-  const loanIds = [...new Set(values.map((value) => value.loanid))];
-  for (let index = 0; index < loanIds.length; index += 500) {
+  const clientIds = [...new Set(values.map((value) => value.clientId))];
+  for (let index = 0; index < clientIds.length; index += 500) {
     const existingRows = await db
       .select({
-        loanid: clientsTable.loanid,
         clientId: clientsTable.clientId,
       })
       .from(clientsTable)
-      .where(inArray(clientsTable.loanid, loanIds.slice(index, index + 500)));
+      .where(inArray(clientsTable.clientId, clientIds.slice(index, index + 500)));
     for (const row of existingRows) {
-      existingIdentities.add(getImportIdentity(row.loanid, row.clientId));
+      existingIdentities.add(getImportIdentity(row.clientId));
     }
   }
   const newValues = values.filter(
