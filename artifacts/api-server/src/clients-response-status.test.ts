@@ -82,6 +82,9 @@ describe("CKYC response match status", () => {
         createImportId,
       ]);
     }
+    await pool.query("DELETE FROM finflux_ckyc_updates WHERE client_id LIKE $1", [
+      `CLI-${runId}%`,
+    ]);
     await pool.query("DELETE FROM finflux_ckyc_attempts WHERE client_id LIKE $1", [
       `CLI-${runId}%`,
     ]);
@@ -379,11 +382,25 @@ describe("CKYC response match status", () => {
       false,
     );
 
+    await pool.query(
+      `INSERT INTO finflux_ckyc_updates (
+         client_id, ckyc_number, resource_id, status_code
+       ) VALUES ($1, $2, $3, 200)`,
+      [rows[0].ClientID, createNumber, `resource-${runId}`],
+    );
+
     const exportResponse = await fetch(
       `${baseUrl}/clients/export?search=${encodeURIComponent(loanPrefix)}`,
     );
     assert.equal(exportResponse.status, 200);
     const csv = await exportResponse.text();
+    const headers = csv.trim().split(/\r?\n/, 1)[0]?.split(",") ?? [];
+    const finfluxStatusColumn = headers.indexOf('"FinFlux Update Status"');
+    const clientStatusColumn = headers.indexOf('"Status"');
+    const matchStatusColumn = headers.indexOf('"CKYC Response Match Status"');
+    assert.ok(finfluxStatusColumn >= 0);
+    assert.ok(clientStatusColumn >= 0);
+    assert.ok(matchStatusColumn >= 0);
     const exportedRowsByLoanId = new Map(
       csv
         .trim()
@@ -396,26 +413,66 @@ describe("CKYC response match status", () => {
         ] as const),
     );
     assert.equal(
-      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[10],
+      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[
+        clientStatusColumn
+      ],
       '"Final CKYC available"',
     );
     assert.equal(
-      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[13],
+      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[
+        matchStatusColumn
+      ],
       '"Match via Create CKYC"',
     );
     assert.equal(
-      exportedRowsByLoanId.get(`${loanPrefix}-legacy-match`)?.[13],
+      exportedRowsByLoanId.get(`${loanPrefix}-legacy-match`)?.[
+        matchStatusColumn
+      ],
       '"Properly Match"',
     );
     assert.equal(
-      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[10],
+      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[
+        clientStatusColumn
+      ],
       '"Final CKYC available"',
     );
     assert.equal(
-      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[13],
+      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[
+        matchStatusColumn
+      ],
       '"Not Match"',
     );
-    assert.equal(exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[10], '"Final CKYC available"');
-    assert.equal(exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[13], '""');
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[clientStatusColumn],
+      '"Final CKYC available"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[matchStatusColumn],
+      '""',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-create-match`)?.[
+        finfluxStatusColumn
+      ],
+      '"Updated"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-legacy-match`)?.[
+        finfluxStatusColumn
+      ],
+      '"Final CKYC required"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-ambiguous`)?.[
+        finfluxStatusColumn
+      ],
+      '"Pending"',
+    );
+    assert.equal(
+      exportedRowsByLoanId.get(`${loanPrefix}-rejected`)?.[
+        finfluxStatusColumn
+      ],
+      '"Failed"',
+    );
   });
 });
