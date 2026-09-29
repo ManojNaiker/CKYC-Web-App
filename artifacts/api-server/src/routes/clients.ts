@@ -73,6 +73,7 @@ type ClientExportRow = {
   ckycResponseRequestLine: string | null;
   ckycResponseMatchedRow: string | null;
   ckycCreateMatched?: boolean;
+  finfluxStatus?: "updated" | "failed" | "pending" | null;
 };
 
 type ClientCkycNumberCandidate = {
@@ -276,6 +277,7 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     "Disbursement Date",
     "CKYC Response ID",
     "Final CKYC Number",
+    "FinFlux Update Status",
     "Status",
     "Error",
     "CKYC Response Matched BY",
@@ -294,6 +296,13 @@ export function createClientsCsv(rows: ClientExportRow[]) {
     formatReportDate(row.disbursedOnDate),
     row.ckycResponseId,
     row.ckycNumber,
+    row.finfluxStatus === "updated"
+      ? "Updated"
+      : row.finfluxStatus === "failed"
+        ? "Failed"
+        : row.finfluxStatus === "pending"
+          ? "Pending"
+          : "Final CKYC required",
     row.ckycNumber?.trim()
       ? "Final CKYC available"
       : row.ckycResponseStatus === "matched"
@@ -416,14 +425,7 @@ function toClientResponse(
     attemptedAt: null,
   },
 ) {
-  const hasFinalCkyc = Boolean(client.ckycNumber?.trim());
-  const finfluxStatus = !hasFinalCkyc
-    ? null
-    : finflux.updatedAt
-      ? "updated"
-      : finflux.attemptStatus === "failed"
-        ? "failed"
-        : "pending";
+  const finfluxStatus = getFinfluxStatus(client.ckycNumber, finflux);
 
   return {
     id: client.id,
@@ -464,6 +466,18 @@ function toClientResponse(
     finfluxStatusCode: finflux.statusCode,
     finfluxAttemptedAt: finflux.attemptedAt,
   };
+}
+
+function getFinfluxStatus(
+  ckycNumber: string | null,
+  finflux: {
+    updatedAt: Date | null;
+    attemptStatus: "success" | "failed" | null;
+  },
+): "updated" | "failed" | "pending" | null {
+  if (!ckycNumber?.trim()) return null;
+  if (finflux.updatedAt) return "updated";
+  return finflux.attemptStatus === "failed" ? "failed" : "pending";
 }
 
 function getSearchFilter(search?: string) {
@@ -703,8 +717,24 @@ router.get("/clients/export", async (req, res): Promise<void> => {
       ckycResponseMatchedBy: clientsTable.ckycResponseMatchedBy,
       ckycResponseRequestLine: clientsTable.ckycResponseRequestLine,
       ckycResponseMatchedRow: clientsTable.ckycResponseMatchedRow,
+      finfluxCkycUpdatedAt: finfluxCkycUpdatesTable.updatedAt,
+      finfluxAttemptStatus: finfluxCkycAttemptsTable.status,
     })
     .from(clientsTable)
+    .leftJoin(
+      finfluxCkycUpdatesTable,
+      and(
+        eq(finfluxCkycUpdatesTable.clientId, clientsTable.clientId),
+        eq(finfluxCkycUpdatesTable.ckycNumber, clientsTable.ckycNumber),
+      ),
+    )
+    .leftJoin(
+      finfluxCkycAttemptsTable,
+      and(
+        eq(finfluxCkycAttemptsTable.clientId, clientsTable.clientId),
+        eq(finfluxCkycAttemptsTable.ckycNumber, clientsTable.ckycNumber),
+      ),
+    )
     .where(filter)
     .orderBy(desc(clientsTable.createdAt), desc(clientsTable.id));
 
@@ -718,6 +748,10 @@ router.get("/clients/export", async (req, res): Promise<void> => {
   const exportRows = rows.map((client) => ({
     ...client,
     ckycCreateMatched: createMatchedClientIds.has(client.id),
+    finfluxStatus: getFinfluxStatus(client.ckycNumber, {
+      updatedAt: client.finfluxCkycUpdatedAt,
+      attemptStatus: client.finfluxAttemptStatus,
+    }),
   }));
 
   const date = new Date().toISOString().slice(0, 10);
