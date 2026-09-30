@@ -1,5 +1,5 @@
-@layer theme, base, components, utilities;
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');
+@layer theme, base, components, utilities;
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -70,62 +70,62 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(83, 65, 184, 0.16);
-  --badge-outline: rgba(83, 65, 184, 0.1);
+  --button-outline: rgba(30, 70, 105, 0.16);
+  --badge-outline: rgba(30, 70, 105, 0.1);
 
   /* Automatic computation of border around primary / danger buttons */
   --opaque-button-border-intensity: -8; /* In terms of percentages */
 
   /* Backgrounds applied on top of other backgrounds when hovered/active */
-  --elevate-1: rgba(91, 69, 195, 0.045);
-  --elevate-2: rgba(91, 69, 195, 0.09);
+  --elevate-1: rgba(30, 70, 105, 0.045);
+  --elevate-2: rgba(30, 70, 105, 0.09);
 
-  /* Vivid operations palette: indigo, aqua, violet and warm amber accents. */
-  --background: 226 48% 97%;
-  --foreground: 235 39% 18%;
-  --border: 228 33% 86%;
-  --card: 0 0% 100%;
-  --card-foreground: 235 39% 18%;
-  --card-border: 228 33% 87%;
-  --sidebar: 250 57% 23%;
-  --sidebar-foreground: 220 100% 98%;
-  --sidebar-border: 249 38% 35%;
-  --sidebar-primary: 43 100% 62%;
-  --sidebar-primary-foreground: 250 48% 18%;
-  --sidebar-accent: 251 43% 32%;
-  --sidebar-accent-foreground: 43 100% 88%;
-  --sidebar-ring: 43 100% 62%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 235 39% 18%;
-  --popover-border: 228 33% 87%;
-  --primary: 248 72% 56%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 207 100% 94%;
-  --secondary-foreground: 228 52% 32%;
-  --muted: 228 42% 95%;
-  --muted-foreground: 233 19% 42%;
-  --accent: 39 100% 91%;
-  --accent-foreground: 26 57% 27%;
-  --destructive: 0 75% 47%;
-  --destructive-foreground: 0 0% 98%;
-  --input: 229 30% 82%;
-  --ring: 251 81% 65%;
-  --chart-1: 248 72% 57%;
-  --chart-2: 177 70% 37%;
-  --chart-3: 39 94% 50%;
-  --chart-4: 320 70% 55%;
-  --chart-5: 204 88% 56%;
-  --success: 151 63% 30%;
-  --success-bg: 150 68% 92%;
-  --warning: 28 79% 34%;
-  --warning-bg: 40 100% 91%;
-  --info: 213 82% 45%;
-  --info-bg: 208 100% 94%;
-  --danger-bg: 2 91% 96%;
+  /* Slate, paper, and restrained signal colors for long operational sessions. */
+  --background: 210 20% 96%;
+  --foreground: 213 31% 16%;
+  --border: 210 17% 86%;
+  --card: 205 29% 99%;
+  --card-foreground: 213 31% 16%;
+  --card-border: 210 17% 86%;
+  --sidebar: 215 30% 17%;
+  --sidebar-foreground: 207 22% 91%;
+  --sidebar-border: 214 22% 26%;
+  --sidebar-primary: 192 78% 70%;
+  --sidebar-primary-foreground: 214 33% 14%;
+  --sidebar-accent: 214 26% 26%;
+  --sidebar-accent-foreground: 205 38% 98%;
+  --sidebar-ring: 192 78% 70%;
+  --popover: 205 29% 99%;
+  --popover-foreground: 213 31% 16%;
+  --popover-border: 210 17% 86%;
+  --primary: 204 65% 32%;
+  --primary-foreground: 205 40% 98%;
+  --secondary: 204 24% 92%;
+  --secondary-foreground: 210 35% 23%;
+  --muted: 208 18% 93%;
+  --muted-foreground: 213 12% 43%;
+  --accent: 191 30% 89%;
+  --accent-foreground: 203 60% 26%;
+  --destructive: 3 60% 40%;
+  --destructive-foreground: 5 30% 98%;
+  --input: 210 17% 79%;
+  --ring: 198 76% 38%;
+  --chart-1: 203 72% 44%;
+  --chart-2: 164 48% 42%;
+  --chart-3: 39 70% 48%;
+  --chart-4: 4 58% 48%;
+  --chart-5: 214 30% 56%;
+  --success: 156 55% 31%;
+  --success-bg: 154 38% 91%;
+  --warning: 34 70% 34%;
+  --warning-bg: 42 67% 92%;
+  --info: 203 70% 37%;
+  --info-bg: 202 55% 93%;
+  --danger-bg: 5 67% 95%;
   --app-font-sans: 'Manrope', sans-serif;
   --app-font-serif: 'Manrope', sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
-  --radius: 0.65rem;
+  --radius: 0.5rem;
   --shadow-2xs: 0px 1px 1px 0px hsl(210 34% 20% / 0.04);
   --shadow-xs: 0px 1px 3px -1px hsl(210 34% 20% / 0.09);
   --shadow-sm:
@@ -209,25 +209,25 @@
   --elevate-1: rgba(255, 255, 255, 0.04);
   --elevate-2: rgba(255, 255, 255, 0.09);
 
-  --background: 232 32% 11%;
+  --background: 215 25% 11%;
   --foreground: 222 35% 94%;
   --border: 231 26% 27%;
   --card: 235 32% 15%;
   --card-foreground: 222 35% 94%;
   --card-border: 231 26% 26%;
-  --sidebar: 249 53% 9%;
+  --sidebar: 215 34% 9%;
   --sidebar-foreground: 222 38% 93%;
-  --sidebar-border: 249 25% 22%;
-  --sidebar-primary: 42 100% 62%;
-  --sidebar-primary-foreground: 248 50% 12%;
-  --sidebar-accent: 249 31% 18%;
-  --sidebar-accent-foreground: 42 100% 86%;
-  --sidebar-ring: 42 100% 62%;
+  --sidebar-border: 214 22% 22%;
+  --sidebar-primary: 192 78% 70%;
+  --sidebar-primary-foreground: 214 33% 14%;
+  --sidebar-accent: 214 26% 23%;
+  --sidebar-accent-foreground: 205 38% 98%;
+  --sidebar-ring: 192 78% 70%;
   --popover: 235 32% 15%;
   --popover-foreground: 222 35% 94%;
   --popover-border: 231 26% 26%;
-  --primary: 248 78% 70%;
-  --primary-foreground: 249 45% 12%;
+  --primary: 192 70% 68%;
+  --primary-foreground: 215 35% 13%;
   --secondary: 231 29% 23%;
   --secondary-foreground: 223 35% 92%;
   --muted: 231 29% 22%;
@@ -237,7 +237,7 @@
   --destructive: 3 70% 58%;
   --destructive-foreground: 0 0% 98%;
   --input: 231 23% 32%;
-  --ring: 252 85% 74%;
+  --ring: 192 70% 68%;
   --chart-1: 248 80% 70%;
   --chart-2: 173 72% 52%;
   --chart-3: 42 97% 61%;
@@ -335,7 +335,7 @@
     font-weight: 600;
     letter-spacing: 0.02em;
   }
-  /* Enlarge compact labels and keep operational pages tight and easy to scan. */
+  /* Retain readable small text without making every data row oversized. */
   .ckyc-readable-type [class~="text-[8px]"] {
     font-size: 0.6875rem;
     line-height: 1.35;
@@ -345,19 +345,19 @@
     line-height: 1.4;
   }
   .ckyc-readable-type [class~="text-[10px]"] {
-    font-size: 0.8125rem;
+    font-size: 0.6875rem;
     line-height: 1.45;
   }
   .ckyc-readable-type [class~="text-[11px]"] {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1.5;
   }
   .ckyc-readable-type [class~="text-[12px]"] {
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     line-height: 1.5;
   }
   .ckyc-readable-type [class~="text-[13px]"] {
-    font-size: 1rem;
+    font-size: 0.875rem;
     line-height: 1.55;
   }
   .ckyc-readable-type svg.lucide {
@@ -540,6 +540,32 @@
 @keyframes rise-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+/* Quiet, consistent workspace surfaces supersede the earlier decorative wash. */
+.ckyc-readable-type main,
+.ckyc-readable-type .app-sidebar,
+.ckyc-readable-type .app-topbar,
+.dark .ckyc-readable-type .app-sidebar,
+.dark .ckyc-readable-type .app-topbar {
+  background: hsl(var(--background));
+}
+.ckyc-readable-type .app-sidebar,
+.dark .ckyc-readable-type .app-sidebar { background: hsl(var(--sidebar)); }
+.ckyc-readable-type .app-topbar,
+.dark .ckyc-readable-type .app-topbar { background: hsl(var(--card) / .97); }
+.ckyc-readable-type .data-table thead,
+.ckyc-readable-type .data-table[class*="grid-cols-"],
+.dark .ckyc-readable-type .data-table thead,
+.dark .ckyc-readable-type .data-table[class*="grid-cols-"] {
+  background: hsl(var(--muted) / .55);
+}
+.ckyc-readable-type .data-table tbody tr:nth-child(even),
+.dark .ckyc-readable-type .data-table tbody tr:nth-child(even) {
+  background-color: hsl(var(--muted) / .25);
+}
+.ckyc-readable-type .data-table tbody tr:hover,
+.dark .ckyc-readable-type .data-table tbody tr:hover {
+  background-color: hsl(var(--accent) / .55);
 }
 @keyframes fade-in {
   from { opacity: 0; }

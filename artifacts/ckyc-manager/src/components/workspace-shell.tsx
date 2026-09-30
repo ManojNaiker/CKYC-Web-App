@@ -3,7 +3,6 @@ import { Link, useLocation } from 'wouter';
 import { useLogout } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronRight,
   Database,
   FileClock,
   FileDown,
@@ -14,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  ShieldCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -29,18 +29,18 @@ type WorkspaceUser = {
 const navItems: Array<{
   href: string;
   label: string;
+  shortLabel: string;
   icon: typeof LayoutDashboard;
-  color: string;
   roles: AppRole[];
 }> = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, color: 'text-sky-300', roles: ['viewer', 'manager', 'admin'] },
-  { href: '/clients', label: 'LMS Clients', icon: Database, color: 'text-emerald-300', roles: ['viewer', 'manager', 'admin'] },
-  { href: '/requests', label: 'CKYC Requests', icon: FileClock, color: 'text-violet-300', roles: ['manager', 'admin'] },
-  { href: '/download-requests', label: 'CKYC Downloads', icon: FileDown, color: 'text-amber-300', roles: ['manager', 'admin'] },
-  { href: '/ckyc-create-data', label: 'CKYC Create Data', icon: FileSpreadsheet, color: 'text-cyan-300', roles: ['manager', 'admin'] },
-  { href: '/finflux-update', label: 'Finflux Update', icon: FileUp, color: 'text-rose-300', roles: ['admin'] },
-  { href: '/manage-users', label: 'Manage Users', icon: Users, color: 'text-indigo-300', roles: ['admin'] },
-  { href: '/audit-trails', label: 'Audit Trails', icon: History, color: 'text-orange-300', roles: ['admin'] },
+  { href: '/', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard, roles: ['viewer', 'manager', 'admin'] },
+  { href: '/clients', label: 'LMS Clients', shortLabel: 'Clients', icon: Database, roles: ['viewer', 'manager', 'admin'] },
+  { href: '/requests', label: 'CKYC Requests', shortLabel: 'Requests', icon: FileClock, roles: ['manager', 'admin'] },
+  { href: '/download-requests', label: 'CKYC Downloads', shortLabel: 'Downloads', icon: FileDown, roles: ['manager', 'admin'] },
+  { href: '/ckyc-create-data', label: 'CKYC Create Data', shortLabel: 'Create', icon: FileSpreadsheet, roles: ['manager', 'admin'] },
+  { href: '/finflux-update', label: 'Finflux Update', shortLabel: 'FinFlux', icon: FileUp, roles: ['admin'] },
+  { href: '/manage-users', label: 'Manage Users', shortLabel: 'Users', icon: Users, roles: ['admin'] },
+  { href: '/audit-trails', label: 'Audit Trails', shortLabel: 'Audit', icon: History, roles: ['admin'] },
 ];
 
 export function WorkspaceShell({ children, user }: { children: React.ReactNode; user: WorkspaceUser }) {
@@ -48,15 +48,18 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
   const [mobileOpen, setMobileOpen] = useState(false);
   const logout = useLogout();
   const queryClient = useQueryClient();
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const [signOutError, setSignOutError] = useState(false);
   const signOut = () => {
+    setSignOutError(false);
     logout.mutate(undefined, {
       onSuccess: () => {
         queryClient.clear();
         window.location.assign(`${basePath || ''}/sign-in`);
       },
+      onError: () => setSignOutError(true),
     });
   };
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const visibleNavItems = navItems.filter((item) => item.roles.includes(user.role));
   const current = visibleNavItems.find((item) => item.href === location || (item.href !== '/' && location.startsWith(`${item.href}/`)));
   const initials = user.fullName
@@ -69,25 +72,18 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
 
   return (
     <div className="ckyc-readable-type min-h-[100dvh] bg-background">
-      <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 flex w-[250px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[8px_0_30px_hsl(250_57%_15%_/_0.2)] transition-transform duration-300 xl:w-[260px] lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex h-[86px] items-center justify-between border-b border-sidebar-border px-5">
-          <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
-            <span className="flex h-11 w-[190px] items-center rounded-lg bg-[#f1faf9] px-2.5 shadow-sm">
-              <img
-                src={lightFinanceLogo}
-                alt="Light Finance"
-                className="h-auto max-h-9 w-full object-contain"
-              />
-            </span>
+      <aside className={`app-sidebar fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-sidebar-border text-sidebar-foreground transition-transform duration-200 lg:w-[72px] lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-sidebar-border px-4 lg:justify-center lg:px-1">
+          <Link href="/" onClick={() => setMobileOpen(false)} className="flex min-w-0 flex-col items-start gap-0.5 lg:block" data-testid="link-brand" aria-label="Light Finance CKYC Manager — Dashboard" title="Light Finance CKYC Manager">
+            <span className="flex h-8 w-[138px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#f5f8f6] p-1 lg:hidden"><img src={lightFinanceLogo} alt="Light Finance" className="max-h-full max-w-full object-contain" /></span>
+            <span aria-hidden="true" className="hidden size-9 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent text-[12px] font-extrabold tracking-[-.08em] text-sidebar-foreground lg:flex">LF</span>
+            <span className="text-[10px] font-medium text-sidebar-foreground/55 lg:hidden">CKYC Manager</span>
           </Link>
-          <button className="rounded-md p-1 text-sidebar-foreground/60 hover:bg-sidebar-accent lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-menu">
-            <X size={18} />
-          </button>
+          <button type="button" className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-menu"><X size={18} /></button>
         </div>
-
-        <div className="px-3 pt-7">
-          <p className="mb-3 px-3 font-mono-ui text-[10px] font-semibold uppercase tracking-[0.17em] text-sidebar-foreground/55">Operations / 01</p>
-          <nav className="space-y-1">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-5 lg:px-1.5 lg:py-3">
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-sidebar-foreground/45 lg:sr-only">Workspace</p>
+          <nav aria-label="Workspace navigation" className="space-y-0.5 lg:space-y-1">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const active = location === item.href || (item.href !== '/' && location.startsWith(item.href));
@@ -97,29 +93,32 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
                   key={item.href}
                   onClick={() => setMobileOpen(false)}
                   data-testid={`link-nav-${item.label.toLowerCase().replaceAll(' ', '-')}`}
-                  className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-semibold transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_3px_0_0_hsl(var(--sidebar-primary))]' : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={item.label}
+                  title={item.label}
+                  className={`group flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-[12px] font-semibold transition-colors lg:min-h-[54px] lg:flex-col lg:justify-center lg:gap-1 lg:px-0.5 lg:py-1 ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_2px_0_0_hsl(var(--sidebar-primary))]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
-                  <Icon size={18} strokeWidth={active ? 2.2 : 1.8} className={active ? 'text-sidebar-primary' : item.color} />
-                  <span className="flex-1">{item.label}</span>
-                  {active && <ChevronRight size={14} className="text-sidebar-primary" />}
+                  <Icon size={17} strokeWidth={active ? 2 : 1.8} className={active ? 'text-sidebar-primary' : 'text-sidebar-foreground/55'} />
+                  <span className="flex-1 lg:hidden">{item.label}</span>
+                  <span aria-hidden="true" className="hidden max-w-full truncate text-[9px] leading-tight lg:block">{item.shortLabel}</span>
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        <div className="mt-auto px-3 pb-4">
-          <div className="mt-4 flex items-center gap-3 border-t border-sidebar-border pt-4">
-            <div className="grid size-9 place-items-center rounded-lg bg-sidebar-primary font-mono-ui text-[11px] font-bold text-sidebar-primary-foreground">{initials}</div>
-            <div className="min-w-0 flex-1">
+        <div className="border-t border-sidebar-border px-3 py-3 lg:px-1.5">
+          <div className="flex items-center gap-2.5 lg:flex-col lg:gap-1">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-[10px] font-bold text-sidebar-accent-foreground">{initials}</div>
+            <div className="min-w-0 flex-1 lg:hidden">
               <p className="truncate text-[12px] font-semibold text-sidebar-foreground">{user.fullName}</p>
-              <p className="truncate font-mono-ui text-[9px] uppercase tracking-[0.1em] text-sidebar-foreground/50">{roleLabel(user.role)}</p>
+              <p className="truncate text-[10px] text-sidebar-foreground/55">{roleLabel(user.role)}</p>
             </div>
             <button
               type="button"
               onClick={signOut}
               disabled={logout.isPending}
-              className="grid size-8 place-items-center rounded-md text-sidebar-foreground/55 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="grid size-8 place-items-center rounded-md text-sidebar-foreground/65 transition hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-50"
               aria-label="Sign out"
               title="Sign out"
               data-testid="button-sign-out"
@@ -127,42 +126,29 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
               <LogOut size={16} />
             </button>
           </div>
+          {signOutError && <p role="alert" className="mt-2 text-[11px] text-[hsl(12_85%_78%)] lg:sr-only">Sign out failed. Please try again.</p>}
         </div>
       </aside>
 
-      {mobileOpen && <button className="fixed inset-0 z-30 bg-[hsl(249_55%_12%_/_0.56)] lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" data-testid="button-overlay-menu" />}
+      {mobileOpen && <button type="button" className="fixed inset-0 z-30 bg-[hsl(215_30%_12%_/_0.55)] lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation overlay" data-testid="button-overlay-menu" />}
 
-        <main className="min-h-[100dvh] min-w-0 lg:pl-[250px] xl:pl-[260px]">
-        <header className="app-topbar sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border bg-card/95 px-5 shadow-[0_3px_18px_hsl(249_68%_51%_/_0.09)] backdrop-blur-xl sm:px-8">
-          <div className="flex items-center gap-3">
-            <button className="rounded-lg border border-border bg-card p-2 text-foreground/70 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-menu">
+      <main className="min-h-[100dvh] min-w-0 lg:pl-[72px]">
+        <header className="app-topbar sticky top-0 z-20 flex h-[56px] items-center justify-between gap-3 border-b border-border px-4 backdrop-blur-xl sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" className="rounded-md border border-border bg-card p-2 text-foreground/70 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-menu">
               <Menu size={18} />
             </button>
-            <div>
-              <p className="font-mono-ui text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">Light Finance / Operations</p>
-              <h1 className="mt-0.5 font-display text-[21px] font-semibold tracking-[-0.015em] text-foreground">{current?.label ?? 'Workspace'}</h1>
-            </div>
+            <span className="hidden text-[11px] font-medium text-muted-foreground sm:inline">Light Finance</span>
+            <span className="hidden text-border sm:inline">/</span>
+            <h1 className="truncate text-[13px] font-bold text-foreground">{current?.label ?? 'Workspace'}</h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden text-right sm:block">
-              <p className="max-w-48 truncate text-[11px] font-semibold text-foreground">{user.fullName}</p>
-              <p className="font-mono-ui text-[9px] uppercase tracking-[.1em] text-muted-foreground">{user.email}</p>
-            </div>
-            <span className="hidden rounded-md border border-border bg-secondary/55 px-2.5 py-1.5 font-mono-ui text-[9px] font-semibold uppercase tracking-[.1em] text-secondary-foreground md:inline-flex">{roleLabel(user.role)}</span>
-            <div className="grid size-9 place-items-center rounded-lg bg-primary font-mono-ui text-[10px] font-bold text-primary-foreground">{initials}</div>
-            <button
-              type="button"
-              onClick={signOut}
-              disabled={logout.isPending}
-              className="grid size-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
+          <div className="flex shrink-0 items-center gap-2.5">
+            <span className="hidden items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-semibold text-muted-foreground sm:inline-flex"><ShieldCheck size={13} className="text-[hsl(var(--success))]" /> Secure workspace</span>
+            <span className="hidden max-w-[190px] truncate text-[11px] font-medium text-muted-foreground md:inline" title={user.email}>{user.email}</span>
+            <div className="grid size-7 place-items-center rounded-full bg-secondary text-[10px] font-bold text-secondary-foreground" title={user.fullName}>{initials}</div>
           </div>
         </header>
-        <div className="w-full min-w-0 max-w-none p-3 sm:p-4 xl:p-5">{children}</div>
+        <div className="mx-auto w-full min-w-0 max-w-[1640px] p-4 sm:p-5 xl:p-6">{children}</div>
       </main>
     </div>
   );
