@@ -104,30 +104,6 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
           </Link>
           <button type="button" className="rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-menu"><X size={18} /></button>
         </div>
-        <div className={`hidden shrink-0 border-b border-sidebar-border lg:block ${sidebarExpanded ? 'px-3' : 'px-2'}`}>
-          <button
-            type="button"
-            onClick={() => setSidebarExpanded((expanded) => !expanded)}
-            aria-controls="workspace-sidebar"
-            aria-expanded={sidebarExpanded}
-            aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            data-testid="button-toggle-sidebar"
-            className={`my-2 flex w-full items-center rounded-md border border-sidebar-primary/40 bg-sidebar-accent/80 text-sidebar-foreground transition-colors hover:border-sidebar-primary hover:bg-sidebar-accent ${sidebarExpanded ? 'justify-between gap-2 px-3 py-2.5' : 'flex-col justify-center gap-1 px-1 py-2'}`}
-          >
-            {sidebarExpanded ? (
-              <>
-                <span className="text-[11px] font-bold">Collapse menu</span>
-                <ChevronLeft size={17} className="shrink-0 text-sidebar-primary" aria-hidden="true" />
-              </>
-            ) : (
-              <>
-                <ChevronRight size={18} className="text-sidebar-primary" aria-hidden="true" />
-                <span className="text-[10px] font-bold">Expand</span>
-              </>
-            )}
-          </button>
-        </div>
         <div className={`min-h-0 flex-1 overflow-y-auto px-2.5 py-5 ${sidebarExpanded ? 'lg:px-2 lg:py-4' : 'lg:px-1.5 lg:py-3'}`}>
           <p className={`mb-2 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-sidebar-foreground/45 ${sidebarExpanded ? '' : 'lg:sr-only'}`}>Workspace</p>
           <nav aria-label="Workspace navigation" className={`space-y-0.5 ${sidebarExpanded ? 'lg:space-y-0.5' : 'lg:space-y-1'}`}>
@@ -156,6 +132,30 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
           </nav>
         </div>
 
+        <div className={`hidden shrink-0 lg:block ${sidebarExpanded ? 'px-3 pb-1' : 'px-2 pb-1'}`}>
+          <button
+            type="button"
+            onClick={() => setSidebarExpanded((expanded) => !expanded)}
+            aria-controls="workspace-sidebar"
+            aria-expanded={sidebarExpanded}
+            aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            data-testid="button-toggle-sidebar"
+            className={`flex w-full items-center rounded-md text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-sidebar-primary ${sidebarExpanded ? 'justify-start gap-2 px-2 py-2' : 'flex-col justify-center gap-0.5 px-1 py-1.5'}`}
+          >
+            {sidebarExpanded ? (
+              <>
+                <ChevronLeft size={16} className="shrink-0" aria-hidden="true" />
+                <span className="text-[11px] font-medium">Collapse menu</span>
+              </>
+            ) : (
+              <>
+                <ChevronRight size={17} aria-hidden="true" />
+                <span className="text-[10px] font-medium">Expand</span>
+              </>
+            )}
+          </button>
+        </div>
         <div className={`border-t border-sidebar-border px-3 py-3 ${sidebarExpanded ? 'lg:px-3' : 'lg:px-1.5'}`}>
           <div className={`flex items-center gap-2.5 ${sidebarExpanded ? 'lg:flex-row' : 'lg:flex-col lg:gap-1'}`}>
             <div className="grid size-8 shrink-0 place-items-center rounded-full bg-sidebar-accent text-[10px] font-bold text-sidebar-accent-foreground">{initials}</div>
