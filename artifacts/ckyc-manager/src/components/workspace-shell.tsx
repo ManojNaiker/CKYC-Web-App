@@ -33,16 +33,17 @@ const navItems: Array<{
   label: string;
   shortLabel: string;
   icon: typeof LayoutDashboard;
+  iconTone: string;
   roles: AppRole[];
 }> = [
-  { href: '/', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard, roles: ['viewer', 'manager', 'admin'] },
-  { href: '/clients', label: 'LMS Clients', shortLabel: 'Clients', icon: Database, roles: ['viewer', 'manager', 'admin'] },
-  { href: '/requests', label: 'CKYC Requests', shortLabel: 'Requests', icon: FileClock, roles: ['manager', 'admin'] },
-  { href: '/download-requests', label: 'CKYC Downloads', shortLabel: 'Downloads', icon: FileDown, roles: ['manager', 'admin'] },
-  { href: '/ckyc-create-data', label: 'CKYC Create Data', shortLabel: 'Create', icon: FileSpreadsheet, roles: ['manager', 'admin'] },
-  { href: '/finflux-update', label: 'Finflux Update', shortLabel: 'FinFlux', icon: FileUp, roles: ['admin'] },
-  { href: '/manage-users', label: 'Manage Users', shortLabel: 'Users', icon: Users, roles: ['admin'] },
-  { href: '/audit-trails', label: 'Audit Trails', shortLabel: 'Audit', icon: History, roles: ['admin'] },
+  { href: '/', label: 'Dashboard', shortLabel: 'Home', icon: LayoutDashboard, iconTone: 'bg-[#228f85]/25 text-[#92e6d8]', roles: ['viewer', 'manager', 'admin'] },
+  { href: '/clients', label: 'LMS Clients', shortLabel: 'Clients', icon: Database, iconTone: 'bg-[#4978be]/25 text-[#a8cfff]', roles: ['viewer', 'manager', 'admin'] },
+  { href: '/requests', label: 'CKYC Requests', shortLabel: 'Requests', icon: FileClock, iconTone: 'bg-[#ae6943]/25 text-[#ffd0a5]', roles: ['manager', 'admin'] },
+  { href: '/download-requests', label: 'CKYC Downloads', shortLabel: 'Downloads', icon: FileDown, iconTone: 'bg-[#347e9f]/25 text-[#a2def5]', roles: ['manager', 'admin'] },
+  { href: '/ckyc-create-data', label: 'CKYC Create Data', shortLabel: 'Create', icon: FileSpreadsheet, iconTone: 'bg-[#7457ad]/25 text-[#d3bfff]', roles: ['manager', 'admin'] },
+  { href: '/finflux-update', label: 'Finflux Update', shortLabel: 'FinFlux', icon: FileUp, iconTone: 'bg-[#4d915c]/25 text-[#b0e6b1]', roles: ['admin'] },
+  { href: '/manage-users', label: 'Manage Users', shortLabel: 'Users', icon: Users, iconTone: 'bg-[#ad665f]/25 text-[#ffc1b7]', roles: ['admin'] },
+  { href: '/audit-trails', label: 'Audit Trails', shortLabel: 'Audit', icon: History, iconTone: 'bg-[#64739c]/30 text-[#c7d2f0]', roles: ['admin'] },
 ];
 
 export function WorkspaceShell({ children, user }: { children: React.ReactNode; user: WorkspaceUser }) {
@@ -89,8 +90,14 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
   return (
     <div className="ckyc-readable-type min-h-[100dvh] bg-background">
       <aside id="workspace-sidebar" className={`app-sidebar fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col border-r border-sidebar-border text-sidebar-foreground transition-[width,transform] duration-200 motion-reduce:transition-none lg:translate-x-0 ${sidebarExpanded ? 'lg:w-[248px]' : 'lg:w-[72px]'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className={`flex h-[64px] shrink-0 items-center justify-between border-b border-sidebar-border px-4 ${sidebarExpanded ? 'lg:justify-start lg:px-3' : 'lg:justify-center lg:px-1'}`}>
-          <Link href="/" onClick={() => setMobileOpen(false)} className={`flex min-w-0 flex-col items-start gap-0.5 ${sidebarExpanded ? 'lg:flex-row lg:items-center lg:gap-2' : 'lg:block'}`} data-testid="link-brand" aria-label="Light Finance CKYC Manager — Dashboard" title="Light Finance CKYC Manager">
+        <div className={`relative flex h-[64px] shrink-0 items-center justify-between overflow-hidden border-b border-sidebar-border px-4 ${sidebarExpanded ? 'lg:justify-start lg:px-3' : 'lg:justify-center lg:px-1'}`}>
+          <svg aria-hidden="true" className={`pointer-events-none absolute right-0 top-0 h-full w-[132px] ${sidebarExpanded ? 'hidden lg:block' : 'hidden'}`} viewBox="0 0 132 64" fill="none">
+            <path d="M4 6v17h30v16h34v17h60M48 0v13h38v17h42M100 0v17h26" stroke="hsl(var(--sidebar-primary) / .22)" strokeWidth="1.1" />
+            <circle cx="34" cy="23" r="2.5" fill="hsl(var(--sidebar-primary) / .55)" />
+            <circle cx="68" cy="39" r="2.5" fill="hsl(var(--accent) / .7)" />
+            <circle cx="86" cy="13" r="2.5" fill="hsl(var(--warning) / .65)" />
+          </svg>
+          <Link href="/" onClick={() => setMobileOpen(false)} className={`relative z-[1] flex min-w-0 flex-col items-start gap-0.5 ${sidebarExpanded ? 'lg:flex-row lg:items-center lg:gap-2' : 'lg:block'}`} data-testid="link-brand" aria-label="Light Finance CKYC Manager — Dashboard" title="Light Finance CKYC Manager">
             <span className="flex h-8 w-[138px] shrink-0 items-center justify-center overflow-hidden rounded-md bg-[#f5f8f6] p-1 lg:hidden"><img src={lightFinanceLogo} alt="Light Finance" className="max-h-full max-w-full object-contain" /></span>
             <span aria-hidden="true" className="hidden size-9 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent text-[12px] font-extrabold tracking-[-.08em] text-sidebar-foreground lg:flex">LF</span>
             <span className="text-[10px] font-medium text-sidebar-foreground/55 lg:hidden">CKYC Manager</span>
@@ -139,7 +146,9 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
                   title={item.label}
                   className={`group flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-[12px] font-semibold transition-colors ${sidebarExpanded ? 'lg:min-h-10 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:py-2' : 'lg:min-h-[54px] lg:flex-col lg:justify-center lg:gap-1 lg:px-0.5 lg:py-1'} ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-[inset_2px_0_0_hsl(var(--sidebar-primary))]' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                 >
-                  <Icon size={17} strokeWidth={active ? 2 : 1.8} className={`shrink-0 ${active ? 'text-sidebar-primary' : 'text-sidebar-foreground/55'}`} />
+                  <span aria-hidden="true" className={`grid size-7 shrink-0 place-items-center rounded-[7px] ${active ? 'bg-sidebar-primary/15 text-sidebar-primary ring-1 ring-sidebar-primary/35' : item.iconTone}`}>
+                    <Icon size={16} strokeWidth={active ? 2 : 1.8} />
+                  </span>
                   <span className={`flex-1 ${sidebarExpanded ? '' : 'lg:hidden'}`}>{item.label}</span>
                   <span aria-hidden="true" className={`hidden max-w-full truncate text-[9px] leading-tight ${sidebarExpanded ? '' : 'lg:block'}`}>{item.shortLabel}</span>
                 </Link>
