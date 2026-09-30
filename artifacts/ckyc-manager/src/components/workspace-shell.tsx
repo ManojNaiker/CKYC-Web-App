@@ -156,13 +156,22 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
 
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: React.ReactNode }) {
   return (
-    <div className="workspace-intro mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-      <div>
+    <div className="workspace-intro relative mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <svg aria-hidden="true" className="pointer-events-none absolute right-0 top-0 hidden h-[92px] w-[180px] text-primary/[.075] md:block" viewBox="0 0 180 92" fill="none">
+        <path d="M72 4v24h29v20h30v19h31" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M98 4v13h25v19h22v17h29" stroke="currentColor" strokeWidth="1" />
+        <path d="M149 4v12h15v17h15" stroke="currentColor" strokeWidth="1" />
+        <circle cx="101" cy="28" r="3" fill="hsl(var(--primary))" fillOpacity=".28" />
+        <circle cx="131" cy="48" r="3" fill="hsl(var(--success))" fillOpacity=".38" />
+        <circle cx="162" cy="67" r="3" fill="hsl(var(--accent))" fillOpacity=".48" />
+        <circle cx="164" cy="33" r="2.5" fill="hsl(var(--warning))" fillOpacity=".55" />
+      </svg>
+      <div className="relative z-[1]">
         <p className="mb-1.5 font-mono-ui text-[10px] font-medium uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
         <h2 className="font-display text-[29px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground">{title}</h2>
         <p className="mt-2 max-w-[620px] text-[13px] leading-[1.6] text-muted-foreground">{description}</p>
       </div>
-      {action}
+      {action && <div className="relative z-[1]">{action}</div>}
     </div>
   );
 }

@@ -25,12 +25,20 @@ function Metric({ label, value, note, icon: Icon, color, testId }: {
 }) {
   return (
     <div data-testid={testId} className="relative flex min-h-[112px] flex-col justify-between overflow-hidden rounded-lg border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_hsl(210_30%_20%_/.03)]">
+      <svg aria-hidden="true" className="pointer-events-none absolute -bottom-1 right-0 h-[58px] w-[88px] text-foreground/[.055]" viewBox="0 0 88 58" fill="none">
+        <path d="M8 46.5h17l9-10h16l9-13h20" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M8 52.5h29l9-10h18l12-14" stroke="currentColor" strokeWidth="1" />
+        <circle cx="8" cy="46.5" r="2.2" fill={color} fillOpacity=".55" />
+        <circle cx="34" cy="36.5" r="2.2" fill={color} fillOpacity=".38" />
+        <circle cx="59" cy="23.5" r="2.2" fill={color} fillOpacity=".55" />
+        <circle cx="79" cy="23.5" r="2.2" fill={color} fillOpacity=".8" />
+      </svg>
       <span className="absolute inset-x-0 bottom-0 h-[2px]" style={{ backgroundColor: color }} />
-      <div className="flex items-start justify-between gap-2">
+      <div className="relative z-[1] flex items-start justify-between gap-2">
         <span className="text-[11px] font-semibold text-muted-foreground">{label}</span>
         <Icon size={17} style={{ color }} strokeWidth={1.8} aria-hidden="true" />
       </div>
-      <div>
+      <div className="relative z-[1]">
         <p className="font-display text-[27px] font-bold leading-none tracking-[-.045em] text-foreground">{typeof value === 'number' ? number(value) : value}</p>
         <p className="mt-1.5 text-[10px] text-muted-foreground">{note}</p>
       </div>
@@ -99,13 +107,22 @@ export default function Overview() {
       <p className="pb-0.5 text-[11px] font-medium text-muted-foreground">{today}</p>
     </div>
 
-    <section aria-label="Workspace summary" className="rounded-lg border border-border bg-card px-4 py-4 shadow-[0_1px_2px_hsl(210_30%_20%_/.03)] sm:px-5">
+    <section aria-label="Workspace summary" className="relative overflow-hidden rounded-lg border border-border bg-card px-4 py-4 shadow-[0_1px_2px_hsl(210_30%_20%_/.03)] sm:px-5">
+      <svg aria-hidden="true" className="pointer-events-none absolute right-0 top-0 hidden h-full w-[230px] text-primary/[.07] md:block" viewBox="0 0 230 112" fill="none" preserveAspectRatio="xMaxYMid slice">
+        <path d="M82 0v28h31v26h33v29h42v29" stroke="currentColor" strokeWidth="1.2" />
+        <path d="M118 0v17h25v29h31v22h28v44" stroke="currentColor" strokeWidth="1" />
+        <path d="M168 0v15h21v18h19v27h22" stroke="currentColor" strokeWidth="1" />
+        <circle cx="113" cy="28" r="3" fill="hsl(var(--primary))" fillOpacity=".28" />
+        <circle cx="146" cy="54" r="3" fill="hsl(var(--success))" fillOpacity=".36" />
+        <circle cx="188" cy="83" r="3" fill="hsl(var(--accent))" fillOpacity=".5" />
+        <circle cx="208" cy="33" r="2.5" fill="hsl(var(--warning))" fillOpacity=".55" />
+      </svg>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="relative z-[1] flex min-w-0 items-center gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-lg border border-border bg-[#f3f7f5] p-1"><img src={lightFinanceLogo} alt="" className="max-h-full max-w-full object-contain" /></span>
           <div className="min-w-0"><p className="text-[14px] font-bold text-foreground">Light Finance <span className="font-medium text-muted-foreground">/ CKYC operations</span></p><p className="mt-0.5 text-[11px] text-muted-foreground">Client register and portal exchange status</p></div>
         </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 border-t border-border pt-3 sm:grid-cols-3 md:border-l md:border-t-0 md:py-0 md:pl-6">
+        <div className="relative z-[1] grid grid-cols-2 gap-x-8 gap-y-3 border-t border-border pt-3 sm:grid-cols-3 md:border-l md:border-t-0 md:py-0 md:pl-6">
           <div><p className="text-[10px] text-muted-foreground">Last import</p><p data-testid="text-last-import" className="mt-1 max-w-[170px] truncate font-mono-ui text-[10px] font-semibold text-foreground" title={data?.lastImportFile ?? undefined}>{summary.isLoading ? 'Loading…' : data?.lastImportFile ?? 'Not imported'}</p></div>
           <div><p className="text-[10px] text-muted-foreground">Last activity</p><p data-testid="text-last-activity" className="mt-1 whitespace-nowrap text-[11px] font-semibold text-foreground">{summary.isLoading ? 'Loading…' : date(data?.lastActivityAt)}</p></div>
           <div className="col-span-2 sm:col-span-1"><p className="text-[10px] text-muted-foreground">Register status</p><p className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-foreground"><ShieldCheck size={13} className="text-[hsl(var(--success))]" /> CKYC workspace</p></div>
