@@ -117,7 +117,7 @@ export default function ClientDetail() {
     !client.ckycResponseMatchedRow?.trim();
   const isCreateMatch = client.ckycResponseMatchStatus === 'Match via Create CKYC';
   const isUnresolvedResponseError =
-    client.ckycResponseStatus === 'error' && !hasFinalCkyc;
+    client.ckycResponseStatus === 'error' && !hasFinalCkyc && !client.ckycResponseId;
   const isFinfluxUpdated = Boolean(client.finfluxCkycUpdatedAt);
   const responseStatus = hasFinalCkyc
     ? isCreateMatch
@@ -240,7 +240,7 @@ export default function ClientDetail() {
           <section className="rounded-xl border border-border bg-card p-5 shadow-xs">
             <p className="font-mono-ui text-[9px] uppercase tracking-[.17em] text-muted-foreground">CKYC status</p>
             <div className="mt-5 flex items-start gap-3">
-              <span className={`grid size-9 place-items-center rounded-lg ${isUnresolvedResponseError ? 'bg-[#fff1d6] text-[#9b6915]' : client.ckycResponseId || client.ckycNumber ? 'bg-[#e2f2e9] text-[#31734d]' : 'bg-secondary text-primary'}`}>
+              <span className={`grid size-9 place-items-center rounded-lg ${isUnresolvedResponseError ? 'bg-[#fff1d6] text-[#9b6915]' : hasFinalCkyc ? 'bg-[hsl(var(--success-bg))] text-[hsl(var(--success))]' : client.ckycResponseId ? 'bg-[hsl(var(--info-bg))] text-[hsl(var(--info))]' : 'bg-secondary text-primary'}`}>
                 {isUnresolvedResponseError ? <Clock3 size={17} /> : <CheckCircle2 size={17} />}
               </span>
               <div><p className="text-[13px] font-bold">{responseStatus}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{isCreateMatch ? 'Source: CKYC Create data' : client.ckycResponseMatchedBy ? `Matched by ${client.ckycResponseMatchedBy}` : hasResponseSummary && !client.ckycResponseMatchedRow ? 'Cannot verify the name match without the saved response row.' : 'Matched by —'}</p></div>

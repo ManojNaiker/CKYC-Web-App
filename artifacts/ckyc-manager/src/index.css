@@ -672,6 +672,22 @@
 .dark .ckyc-readable-type .data-table tbody tr:hover {
   background-color: hsl(var(--accent) / .55);
 }
+/* In the LMS register, a saved final number is resolved (green); a response
+   reference without a final number is informational (blue). */
+.ckyc-readable-type [data-testid^="status-ckyc-final-"] > span {
+  background-color: hsl(var(--success-bg));
+  color: hsl(var(--success));
+}
+.ckyc-readable-type [data-testid^="status-ckyc-final-"] > p:first-of-type {
+  color: hsl(var(--success));
+}
+.ckyc-readable-type [data-testid^="status-ckyc-matched-"] > span {
+  background-color: hsl(var(--info-bg));
+  color: hsl(var(--info));
+}
+.ckyc-readable-type [data-testid^="status-ckyc-matched-"] > p {
+  color: hsl(var(--info));
+}
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
