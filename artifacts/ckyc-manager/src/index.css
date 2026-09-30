@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 @layer theme, base, components, utilities;
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -122,8 +122,8 @@
   --info: 203 70% 37%;
   --info-bg: 202 55% 93%;
   --danger-bg: 5 67% 95%;
-  --app-font-sans: 'Manrope', sans-serif;
-  --app-font-serif: 'Manrope', sans-serif;
+  --app-font-sans: 'IBM Plex Sans', sans-serif;
+  --app-font-serif: 'IBM Plex Sans', sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
   --radius: 0.5rem;
   --shadow-2xs: 0px 1px 1px 0px hsl(210 34% 20% / 0.04);
