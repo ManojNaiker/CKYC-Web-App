@@ -63,7 +63,7 @@ function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-8">
+    <div className="auth-background flex min-h-[100dvh] items-center justify-center px-4 py-8">
       <form className="w-full max-w-[440px] space-y-5 rounded-2xl border border-border bg-card p-8 shadow-xl"
         onSubmit={(event) => {
           event.preventDefault();

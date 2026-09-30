@@ -81,7 +81,7 @@
   --elevate-2: rgba(30, 70, 105, 0.09);
 
   /* Public surfaces retain the original neutral finance theme. */
-  --background: 210 20% 96%;
+  --background: 208 38% 98%;
   --foreground: 213 31% 16%;
   --border: 210 17% 86%;
   --card: 205 29% 99%;
@@ -545,7 +545,7 @@
    reconciliation work. It is scoped to the shell so public surfaces keep
    their existing identity. */
 .ckyc-readable-type {
-  --background: 210 32% 96%;
+  --background: 206 46% 98%;
   --foreground: 218 33% 15%;
   --border: 214 22% 84%;
   --card: 210 38% 99%;
@@ -624,8 +624,20 @@
 
 .ckyc-readable-type main {
   background:
-    radial-gradient(ellipse 64% 42% at 100% 0%, hsl(var(--accent) / .08), transparent 72%),
-    radial-gradient(ellipse 54% 38% at 0% 18%, hsl(var(--primary) / .08), transparent 74%),
+    radial-gradient(ellipse 58% 40% at 100% 0%, hsl(var(--accent) / .09), transparent 76%),
+    radial-gradient(ellipse 58% 44% at 0% 18%, hsl(var(--primary) / .09), transparent 76%),
+    linear-gradient(180deg, hsl(var(--card)), hsl(var(--background)) 55%);
+}
+.auth-background {
+  background:
+    radial-gradient(ellipse 42% 50% at 0% 0%, hsl(185 70% 88% / .34), transparent 78%),
+    radial-gradient(ellipse 40% 45% at 100% 100%, hsl(32 91% 90% / .28), transparent 80%),
+    hsl(var(--background));
+}
+.dark .auth-background {
+  background:
+    radial-gradient(ellipse 42% 50% at 0% 0%, hsl(var(--primary) / .11), transparent 78%),
+    radial-gradient(ellipse 40% 45% at 100% 100%, hsl(var(--accent) / .09), transparent 80%),
     hsl(var(--background));
 }
 .ckyc-readable-type .app-sidebar {
