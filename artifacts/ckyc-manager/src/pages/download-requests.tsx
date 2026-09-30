@@ -21,6 +21,12 @@ import {
 } from "@workspace/api-client-react";
 import { EmptyState, PageIntro, QueryError } from "@/components/workspace-shell";
 import { parseClientSelectionCsv } from "@/lib/csv";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 function todayDDMMYYYY() {
   const date = new Date();
@@ -58,6 +64,9 @@ function cleanApiError(error: unknown) {
 }
 
 export default function DownloadRequests() {
+  const [activeDownloadTab, setActiveDownloadTab] = useState<
+    "pending" | "portal-result"
+  >("pending");
   const [fileDate, setFileDate] = useState(todayDDMMYYYY());
   const [disbursementFrom, setDisbursementFrom] = useState("");
   const [disbursementTo, setDisbursementTo] = useState("");
@@ -292,9 +301,41 @@ export default function DownloadRequests() {
         description="Generate the portal TXT from a disbursement date criterion or an uploaded client selection. After processing, upload the portal Excel or final CKYC TXT response; both files are retained and matched to their D request when available."
       />
 
-      <div className="space-y-6">
-        <div className="grid items-start gap-6 lg:grid-cols-2">
-          <section className="rounded-xl border border-primary/25 bg-card shadow-xs">
+      <Tabs
+        value={activeDownloadTab}
+        onValueChange={(value) =>
+          setActiveDownloadTab(
+            value === "portal-result" ? "portal-result" : "pending",
+          )
+        }
+        className="space-y-5"
+      >
+        <TabsList
+          aria-label="CKYC download workflows"
+          className="grid h-auto w-full grid-cols-2 sm:w-auto sm:min-w-[480px]"
+        >
+          <TabsTrigger
+            value="pending"
+            className="h-auto min-h-11 whitespace-normal px-4 py-2 text-center text-xs leading-4 sm:text-sm"
+            data-testid="tab-pending-ckyc-response-ids"
+          >
+            Pending CKYC response IDs
+          </TabsTrigger>
+          <TabsTrigger
+            value="portal-result"
+            className="h-auto min-h-11 whitespace-normal px-4 py-2 text-center text-xs leading-4 sm:text-sm"
+            data-testid="tab-portal-result"
+          >
+            Portal result
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value={activeDownloadTab} className="mt-0">
+          <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <section
+            hidden={activeDownloadTab !== "pending"}
+            className="min-w-0 rounded-xl border border-primary/25 bg-card shadow-xs"
+          >
             <div className="border-b border-border bg-[#eff8f5] p-5 dark:bg-secondary/45">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -476,7 +517,10 @@ export default function DownloadRequests() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-border bg-card shadow-xs">
+          <section
+            hidden={activeDownloadTab !== "portal-result"}
+            className="min-w-0 rounded-xl border border-border bg-card shadow-xs"
+          >
             <div className="border-b border-border p-5">
               <div className="flex items-start gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
@@ -585,8 +629,11 @@ export default function DownloadRequests() {
           </section>
         </div>
 
-        <div className="grid items-start gap-6 xl:grid-cols-2">
-        <section className="min-w-0">
+        <div className="grid grid-cols-1 gap-6">
+        <section
+          hidden={activeDownloadTab !== "portal-result"}
+          className="min-w-0"
+        >
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">
@@ -729,7 +776,10 @@ export default function DownloadRequests() {
           )}
         </section>
 
-        <section className="min-w-0">
+        <section
+          hidden={activeDownloadTab !== "pending"}
+          className="min-w-0"
+        >
           <div className="mb-3">
             <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">
               Pending CKYC response IDs
@@ -825,7 +875,9 @@ export default function DownloadRequests() {
           )}
         </section>
         </div>
-      </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
