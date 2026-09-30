@@ -38,6 +38,10 @@ A CKYC operations workspace for importing LMS client records, generating documen
 
 ## Functional requirements
 
+The detailed application requirements and local setup/dependency workflow are
+maintained in [`APPLICATION_REQUIREMENTS.md`](./APPLICATION_REQUIREMENTS.md)
+and [`LOCAL_SETUP.md`](./LOCAL_SETUP.md).
+
 ### LMS client data
 
 - Import LMS CSV exports and preserve these source headers exactly:
@@ -48,8 +52,9 @@ A CKYC operations workspace for importing LMS client records, generating documen
 - Include Gender, DD-MM-YYYY Disbursement Date, CKYC response match source
   (UID, VID, or PAN), UID, VID, PAN, the derived response name match status
   (`Properly Match`, `Match`, or `Not Match`), the exact matched CKYC request
-  row, and the exact matched CKYC response row in the client register download
-  report.
+  row, the exact matched CKYC response row, and FinFlux update status
+  (`Updated`, `Failed`, `Pending`, or `Final CKYC required`) in the client
+  register download report.
 
 ### CKYC search request generation
 

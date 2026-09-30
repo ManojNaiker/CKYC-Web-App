@@ -8,6 +8,8 @@
     "test:ckyc": "pnpm --filter @workspace/api-server run test",
     "test:csv": "pnpm --filter @workspace/api-server exec tsx --test ../ckyc-manager/src/lib/csv.test.ts",
     "test:client-register": "pnpm --filter @workspace/api-server exec tsx --test ../ckyc-manager/src/lib/client-register-filters.test.ts",
+    "requirements:sync": "node ./scripts/update-ckyc-requirements.mjs",
+    "requirements:watch": "node ./scripts/update-ckyc-requirements.mjs --watch",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
