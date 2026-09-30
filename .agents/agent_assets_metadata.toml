@@ -19,14 +19,14 @@ content_type = "application/octet-stream"
 id = "2m4nPta8zptRj5iSpp9xm"
 uri = "file://exports/ckyc-manager-db-data.sql.gz"
 type = "unspecified"
-title = "CKYC Manager compressed SQL data dump"
-description = "Compressed data-only PostgreSQL dump. Import with: gzip -dc ckyc-manager-db-data.sql.gz | psql \"$DATABASE_URL\". Create the local schema first."
+title = "CKYC Manager SQL data export"
+description = "Compressed PostgreSQL data-only dump for local import. Apply the current schema and use an empty local database first. Authentication sessions are omitted and app-user password hashes are cleared."
 logical_id = "d09c0396-4603-4c0f-badd-5ffef9c52890"
-content_hash = "sha256:1ffa301ee311bc6e01c7d88d119fc4cbae79aa4c73de800a944ff9f8824d67e4"
-size = 22278358
-mtime_ms = 1789992183972
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/d09c0396-4603-4c0f-badd-5ffef9c52890/df2488c2-d179-4aed-b054-5d14856cbbc6"
-storage_version_token = "1789992191290764"
+content_hash = "sha256:4f8cff71b25449c97c84eca354b9dff59bdfc6b8b037a3b5e3d9858de81f749e"
+size = 30745489
+mtime_ms = 1790752481829
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:d0ca14e3-5a76-47e8-babc-2a9ea972018a/d09c0396-4603-4c0f-badd-5ffef9c52890/5a51b6d7-b24a-4629-ad8a-a7168589098f"
+storage_version_token = "1790752555032029"
 content_type = "application/octet-stream"
 
 [[outputs]]
