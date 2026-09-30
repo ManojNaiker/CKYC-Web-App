@@ -572,6 +572,81 @@
   to { opacity: 1; }
 }
 
+/* Secondary workspace routes share the dashboard's compact operational rhythm.
+   This scope intentionally excludes overview so its approved composition stays
+   unchanged while cards, tables, controls, and states remain consistent across
+   every working tab. */
+@layer utilities {
+  .workspace-page {
+    color: hsl(var(--foreground));
+  }
+  .workspace-page .rounded-xl {
+    border-radius: var(--radius);
+  }
+  .workspace-page .shadow-xs,
+  .workspace-page .shadow-sm,
+  .workspace-page .shadow-md {
+    box-shadow: var(--shadow-sm);
+  }
+  .workspace-page .workspace-intro {
+    margin-bottom: 1rem;
+  }
+  .workspace-page .workspace-intro h2 {
+    font-size: 1.8rem;
+    line-height: 1.08;
+  }
+  .workspace-page .workspace-intro p {
+    line-height: 1.5;
+  }
+  .workspace-page button.rounded-xl,
+  .workspace-page button.rounded-lg,
+  .workspace-page a.rounded-xl,
+  .workspace-page a.rounded-lg {
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+  }
+  .workspace-page .data-table tbody tr {
+    transition: background-color 160ms ease;
+  }
+  .workspace-page .data-table th {
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+  }
+  .workspace-page .data-table tbody td {
+    padding-top: .65rem;
+    padding-bottom: .65rem;
+  }
+  .workspace-page .workspace-empty {
+    min-height: 220px;
+  }
+  .workspace-page .workspace-error {
+    border-radius: var(--radius);
+  }
+  .workspace-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  .workspace-page select,
+  .workspace-page textarea {
+    border-radius: .45rem;
+  }
+  .workspace-page [role="tablist"] {
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    padding: .25rem;
+  }
+  .workspace-page [role="tab"][data-state="active"] {
+    background: hsl(var(--secondary));
+    color: hsl(var(--primary));
+    box-shadow: none;
+  }
+  .workspace-dialog {
+    border-color: hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+  }
+  .workspace-dialog input,
+  .workspace-dialog select {
+    background: hsl(var(--background));
+  }
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

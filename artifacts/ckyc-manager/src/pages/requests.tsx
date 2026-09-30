@@ -474,7 +474,7 @@ export default function Requests() {
   );
 
   return (
-    <div className="animate-fade">
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="File control"
         title="Requests, accounted for."

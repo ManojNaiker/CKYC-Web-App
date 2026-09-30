@@ -621,7 +621,7 @@ export default function FinfluxUpdate() {
   };
 
   return (
-    <div className="animate-fade">
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="Finflux / CKYC identifier delivery"
         title="One write. Clear results."

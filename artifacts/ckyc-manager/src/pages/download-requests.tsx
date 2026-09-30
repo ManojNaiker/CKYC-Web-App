@@ -294,7 +294,7 @@ export default function DownloadRequests() {
   const savedResponseRequestId = savedResponseRequest?.id;
 
   return (
-    <div className="animate-fade">
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="CKYC document retrieval"
         title="Build download requests."

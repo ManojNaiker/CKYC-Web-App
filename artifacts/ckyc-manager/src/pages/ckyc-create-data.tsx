@@ -195,7 +195,7 @@ export default function CkycCreateData() {
     : "0 rows";
 
   return (
-    <div className="animate-fade">
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="CKYC Create results"
         title="Create data by upload batch."

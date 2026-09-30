@@ -118,7 +118,7 @@ export function AdminUserCreateDialog({
           Add user
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="workspace-dialog max-w-xl rounded-lg border-border bg-card p-6 shadow-md">
         <DialogHeader>
           <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <UserPlus size={19} />

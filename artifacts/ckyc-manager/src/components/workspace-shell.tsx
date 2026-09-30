@@ -156,10 +156,10 @@ export function WorkspaceShell({ children, user }: { children: React.ReactNode; 
 
 export function PageIntro({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: React.ReactNode }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="workspace-intro mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
         <p className="mb-1.5 font-mono-ui text-[10px] font-medium uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
-        <h2 className="font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-[38px]">{title}</h2>
+        <h2 className="font-display text-[29px] font-semibold leading-[1.08] tracking-[-0.035em] text-foreground">{title}</h2>
         <p className="mt-2 max-w-[620px] text-[13px] leading-[1.6] text-muted-foreground">{description}</p>
       </div>
       {action}
@@ -169,7 +169,7 @@ export function PageIntro({ eyebrow, title, description, action }: { eyebrow: st
 
 export function EmptyState({ icon: Icon = FolderOpen, title, detail, action }: { icon?: typeof FolderOpen; title: string; detail: string; action?: React.ReactNode }) {
   return (
-     <div className="flex min-h-[250px] flex-col items-center justify-center rounded-xl border border-dashed border-primary/30 bg-[hsl(var(--info-bg))] px-6 text-center">
+     <div className="workspace-empty flex min-h-[250px] flex-col items-center justify-center rounded-xl border border-dashed border-primary/30 bg-[hsl(var(--info-bg))] px-6 text-center">
        <div className="mb-4 grid size-12 place-items-center rounded-xl border border-primary/15 bg-card text-primary shadow-xs"><Icon size={22} /></div>
       <h3 className="font-display text-[19px] font-semibold text-foreground">{title}</h3>
       <p className="mt-2 max-w-[360px] text-[12px] leading-5 text-muted-foreground">{detail}</p>
@@ -180,7 +180,7 @@ export function EmptyState({ icon: Icon = FolderOpen, title, detail, action }: {
 
 export function QueryError({ onRetry }: { onRetry: () => void }) {
   return (
-     <div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/25 bg-[hsl(var(--danger-bg))] px-4 py-3 text-[12px] text-destructive" data-testid="status-query-error">
+     <div className="workspace-error flex items-center justify-between gap-4 rounded-xl border border-destructive/25 bg-[hsl(var(--danger-bg))] px-4 py-3 text-[12px] text-destructive" data-testid="status-query-error">
       <span>We could not load this workspace data.</span>
       <button onClick={onRetry} className="font-semibold underline underline-offset-4" data-testid="button-retry-query">Retry</button>
     </div>

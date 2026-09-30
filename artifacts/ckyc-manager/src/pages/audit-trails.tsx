@@ -40,7 +40,7 @@ export default function AuditTrails() {
   const hasNext = offset + PAGE_SIZE < total;
 
   return (
-    <div>
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="Governance / Admin"
         title="Audit trails"

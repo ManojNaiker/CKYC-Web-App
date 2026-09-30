@@ -130,7 +130,7 @@ export default function ClientDetail() {
         : 'Awaiting CKYC response';
 
   return (
-    <div className="animate-fade">
+    <div className="workspace-page animate-fade">
       <Link href="/clients" className="mb-6 inline-flex items-center gap-2 font-mono-ui text-[10px] uppercase tracking-[.12em] text-muted-foreground hover:text-primary" data-testid="link-back-clients">
         <ArrowLeft size={14} /> All clients
       </Link>

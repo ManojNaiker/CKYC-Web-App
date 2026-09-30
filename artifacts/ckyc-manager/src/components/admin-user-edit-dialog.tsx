@@ -164,7 +164,7 @@ export function AdminUserEditDialog({
           Edit
         </button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+      <DialogContent className="workspace-dialog max-h-[90vh] max-w-xl overflow-y-auto rounded-lg border-border bg-card p-6 shadow-md">
         <DialogHeader>
           <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <UserRoundPen size={19} />

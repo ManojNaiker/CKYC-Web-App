@@ -42,7 +42,7 @@ export default function AdminUsers() {
   );
 
   return (
-    <div>
+    <div className="workspace-page animate-fade">
       <PageIntro
         eyebrow="Access control / Admin"
         title="Manage users"
