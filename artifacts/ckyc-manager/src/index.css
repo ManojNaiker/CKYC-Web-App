@@ -80,7 +80,7 @@
   --elevate-1: rgba(30, 70, 105, 0.045);
   --elevate-2: rgba(30, 70, 105, 0.09);
 
-  /* Slate, paper, and restrained signal colors for long operational sessions. */
+  /* Public surfaces retain the original neutral finance theme. */
   --background: 210 20% 96%;
   --foreground: 213 31% 16%;
   --border: 210 17% 86%;
@@ -541,23 +541,116 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-/* Quiet, consistent workspace surfaces supersede the earlier decorative wash. */
-.ckyc-readable-type main,
-.ckyc-readable-type .app-sidebar,
-.ckyc-readable-type .app-topbar,
-.dark .ckyc-readable-type .app-sidebar,
-.dark .ckyc-readable-type .app-topbar {
-  background: hsl(var(--background));
+/* Logged-in workspace palette: lively enough to scan, restrained enough for
+   reconciliation work. It is scoped to the shell so public surfaces keep
+   their existing identity. */
+.ckyc-readable-type {
+  --background: 210 32% 96%;
+  --foreground: 218 33% 15%;
+  --border: 214 22% 84%;
+  --card: 210 38% 99%;
+  --card-foreground: 218 33% 15%;
+  --card-border: 214 22% 84%;
+  --sidebar: 228 43% 17%;
+  --sidebar-foreground: 215 31% 93%;
+  --sidebar-border: 225 29% 29%;
+  --sidebar-primary: 180 67% 56%;
+  --sidebar-primary-foreground: 226 39% 12%;
+  --sidebar-accent: 226 34% 27%;
+  --sidebar-accent-foreground: 213 37% 98%;
+  --sidebar-ring: 180 67% 56%;
+  --popover: 210 38% 99%;
+  --popover-foreground: 218 33% 15%;
+  --popover-border: 214 22% 84%;
+  --primary: 196 79% 37%;
+  --primary-foreground: 205 40% 98%;
+  --secondary: 211 37% 91%;
+  --secondary-foreground: 218 34% 24%;
+  --muted: 213 29% 92%;
+  --muted-foreground: 216 17% 43%;
+  --accent: 22 87% 58%;
+  --accent-foreground: 219 35% 13%;
+  --destructive: 4 70% 45%;
+  --destructive-foreground: 5 30% 98%;
+  --input: 214 22% 76%;
+  --ring: 181 70% 39%;
+  --success: 157 58% 33%;
+  --success-bg: 153 44% 90%;
+  --warning: 35 83% 38%;
+  --warning-bg: 39 78% 91%;
+  --info: 196 78% 38%;
+  --info-bg: 194 57% 92%;
+  --danger-bg: 5 70% 95%;
 }
-.ckyc-readable-type .app-sidebar,
-.dark .ckyc-readable-type .app-sidebar { background: hsl(var(--sidebar)); }
-.ckyc-readable-type .app-topbar,
-.dark .ckyc-readable-type .app-topbar { background: hsl(var(--card) / .97); }
+
+.dark .ckyc-readable-type {
+  --background: 226 34% 10%;
+  --foreground: 213 32% 94%;
+  --border: 225 27% 25%;
+  --card: 225 31% 14%;
+  --card-foreground: 213 32% 94%;
+  --card-border: 225 27% 25%;
+  --sidebar: 230 45% 8%;
+  --sidebar-foreground: 215 31% 93%;
+  --sidebar-border: 226 27% 20%;
+  --sidebar-primary: 180 74% 64%;
+  --sidebar-primary-foreground: 228 39% 11%;
+  --sidebar-accent: 227 33% 22%;
+  --sidebar-accent-foreground: 213 37% 98%;
+  --sidebar-ring: 180 74% 64%;
+  --popover: 225 31% 14%;
+  --popover-foreground: 213 32% 94%;
+  --popover-border: 225 27% 25%;
+  --primary: 181 72% 61%;
+  --primary-foreground: 228 40% 11%;
+  --secondary: 225 28% 21%;
+  --secondary-foreground: 214 31% 92%;
+  --muted: 225 28% 19%;
+  --muted-foreground: 218 18% 69%;
+  --accent: 22 88% 62%;
+  --accent-foreground: 228 39% 11%;
+  --destructive: 4 74% 61%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 225 24% 32%;
+  --ring: 181 72% 61%;
+  --success: 153 59% 59%;
+  --success-bg: 153 40% 18%;
+  --warning: 38 91% 65%;
+  --warning-bg: 35 63% 18%;
+  --info: 194 88% 69%;
+  --info-bg: 210 43% 20%;
+  --danger-bg: 3 43% 21%;
+}
+
+.ckyc-readable-type main {
+  background:
+    radial-gradient(ellipse 64% 42% at 100% 0%, hsl(var(--accent) / .08), transparent 72%),
+    radial-gradient(ellipse 54% 38% at 0% 18%, hsl(var(--primary) / .08), transparent 74%),
+    hsl(var(--background));
+}
+.ckyc-readable-type .app-sidebar {
+  background:
+    radial-gradient(ellipse 90% 34% at 0% 0%, hsl(var(--accent) / .22), transparent 72%),
+    linear-gradient(165deg, hsl(228 43% 19%) 0%, hsl(var(--sidebar)) 62%, hsl(215 57% 22%) 100%);
+}
+.dark .ckyc-readable-type .app-sidebar {
+  background:
+    radial-gradient(ellipse 90% 34% at 0% 0%, hsl(var(--accent) / .14), transparent 72%),
+    linear-gradient(165deg, hsl(230 45% 11%) 0%, hsl(var(--sidebar)) 62%, hsl(220 54% 13%) 100%);
+}
+.ckyc-readable-type .app-topbar {
+  background:
+    linear-gradient(90deg, hsl(var(--card) / .98), hsl(var(--info-bg) / .68) 56%, hsl(var(--warning-bg) / .62));
+}
+.dark .ckyc-readable-type .app-topbar {
+  background:
+    linear-gradient(90deg, hsl(var(--card) / .98), hsl(var(--info-bg) / .52) 56%, hsl(var(--warning-bg) / .32));
+}
 .ckyc-readable-type .data-table thead,
 .ckyc-readable-type .data-table[class*="grid-cols-"],
 .dark .ckyc-readable-type .data-table thead,
 .dark .ckyc-readable-type .data-table[class*="grid-cols-"] {
-  background: hsl(var(--muted) / .55);
+  background: linear-gradient(90deg, hsl(var(--info-bg) / .85), hsl(var(--muted) / .56) 62%, hsl(var(--warning-bg) / .72));
 }
 .ckyc-readable-type .data-table tbody tr:nth-child(even),
 .dark .ckyc-readable-type .data-table tbody tr:nth-child(even) {
