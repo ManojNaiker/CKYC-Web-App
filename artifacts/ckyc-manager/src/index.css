@@ -1,5 +1,5 @@
 @layer theme, base, components, utilities;
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -122,8 +122,8 @@
   --info: 213 82% 45%;
   --info-bg: 208 100% 94%;
   --danger-bg: 2 91% 96%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Outfit', sans-serif;
+  --app-font-sans: 'Manrope', sans-serif;
+  --app-font-serif: 'Manrope', sans-serif;
   --app-font-mono: 'IBM Plex Mono', monospace;
   --radius: 0.65rem;
   --shadow-2xs: 0px 1px 1px 0px hsl(210 34% 20% / 0.04);
