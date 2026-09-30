@@ -293,7 +293,7 @@ export default function DownloadRequests() {
       />
 
       <div className="space-y-6">
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,.8fr)]">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           <section className="rounded-xl border border-primary/25 bg-card shadow-xs">
             <div className="border-b border-border bg-[#eff8f5] p-5 dark:bg-secondary/45">
               <div className="flex items-start gap-3">
@@ -585,11 +585,17 @@ export default function DownloadRequests() {
           </section>
         </div>
 
-        <section>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+        <section className="min-w-0">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">
-              Uploaded final response files
-            </p>
+            <div>
+              <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">
+                Portal result
+              </p>
+              <h3 className="mt-1 font-display text-[18px] font-semibold">
+                Uploaded final response files
+              </h3>
+            </div>
             <label className="inline-flex cursor-pointer items-center gap-2 text-[10px] text-muted-foreground">
               <input
                 type="checkbox"
@@ -723,11 +729,14 @@ export default function DownloadRequests() {
           )}
         </section>
 
-        <section>
+        <section className="min-w-0">
           <div className="mb-3">
-            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-muted-foreground">
-              Download request history
+            <p className="font-mono-ui text-[9px] uppercase tracking-[.16em] text-primary">
+              Pending CKYC response IDs
             </p>
+            <h3 className="mt-1 font-display text-[18px] font-semibold">
+              Download request history
+            </h3>
           </div>
           {historyQuery.isError ? (
             <QueryError onRetry={() => historyQuery.refetch()} />
@@ -815,6 +824,7 @@ export default function DownloadRequests() {
             </div>
           )}
         </section>
+        </div>
       </div>
     </div>
   );
