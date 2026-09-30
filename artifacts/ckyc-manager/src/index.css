@@ -642,11 +642,17 @@
 }
 .ckyc-readable-type .app-sidebar {
   background:
+    radial-gradient(circle 34px at 88% 72%, hsl(182 78% 69% / .10) 0 76%, transparent 80%),
+    radial-gradient(circle 13px at 28% 64%, hsl(33 95% 72% / .12) 0 75%, transparent 80%),
+    radial-gradient(circle 24px at 79% 42%, hsl(265 75% 80% / .09) 0 72%, transparent 78%),
     radial-gradient(ellipse 90% 34% at 0% 0%, hsl(var(--accent) / .22), transparent 72%),
     linear-gradient(165deg, hsl(228 43% 19%) 0%, hsl(var(--sidebar)) 62%, hsl(215 57% 22%) 100%);
 }
 .dark .ckyc-readable-type .app-sidebar {
   background:
+    radial-gradient(circle 34px at 88% 72%, hsl(182 78% 69% / .09) 0 76%, transparent 80%),
+    radial-gradient(circle 13px at 28% 64%, hsl(33 95% 72% / .10) 0 75%, transparent 80%),
+    radial-gradient(circle 24px at 79% 42%, hsl(265 75% 80% / .08) 0 72%, transparent 78%),
     radial-gradient(ellipse 90% 34% at 0% 0%, hsl(var(--accent) / .14), transparent 72%),
     linear-gradient(165deg, hsl(230 45% 11%) 0%, hsl(var(--sidebar)) 62%, hsl(220 54% 13%) 100%);
 }
